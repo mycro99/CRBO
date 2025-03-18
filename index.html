@@ -165,7 +165,7 @@
       text-align: center;
       margin-top: 30px;
     }
-    .save-button, .share-button {
+    .save-button {
       display: inline-block;
       padding: 12px 24px;
       font-size: 16px;
@@ -177,7 +177,7 @@
       box-shadow: var(--box-shadow);
       margin: 0 10px;
     }
-    .save-button:hover, .share-button:hover {
+    .save-button:hover {
       background-color: #c82333;
     }
   </style>
@@ -285,6 +285,7 @@
       <td><input type="radio" name="item1" value="OK"></td>
       <td><input type="text" class="remarque"></td>
     </tr>
+    <!-- Répétez pour les items 2 à 13 -->
     <tr>
       <td>2</td>
       <td><input type="radio" name="item2" value="NOK"></td>
@@ -387,7 +388,6 @@
 
   <div class="button-container">
     <button class="save-button" onclick="saveFile()">Enregistrer</button>
-    <button class="share-button" onclick="sendMail()">Envoyer</button>
   </div>
 
   <script>
@@ -464,33 +464,6 @@
         link.download = "checklist_ambulance.png";
         link.click();
       });
-    }
-    
-    function sendMail() {
-      // Récupération des réponses
-      let plaque = document.getElementById('plaque').value;
-      let date = document.getElementById('date').value;
-      let heure = document.getElementById('heure').value;
-      let chauffeur = document.getElementById('chauffeur').value;
-      let convoyeur = document.getElementById('convoyeur').value;
-      let remarques = document.getElementById('remarques').value;
-      
-      // URL de la page hébergée sur GitHub
-      let hostedURL = "https://mycro99.github.io/checkambu/";
-      
-      let subject = "Résumé Checklist Ambulance - CS Oupeye";
-      let body = "Bonjour,\n\nVoici un aperçu clair de vos réponses :\n\n";
-      body += "1. Informations du véhicule:\n";
-      body += "   - Plaque: " + plaque + "\n";
-      body += "   - Date: " + date + "\n";
-      body += "   - Heure: " + heure + "\n";
-      body += "   - Chauffeur: " + chauffeur + "\n";
-      body += "   - Convoyeur: " + convoyeur + "\n\n";
-      body += "2. Remarques et anomalies:\n" + remarques + "\n\n";
-      body += "Pour consulter l'intégralité de vos réponses en ligne, cliquez ici:\n" + hostedURL + "\n\n";
-      body += "Cordialement,\nChecklist Ambulance - CS Oupeye";
-      
-      window.location.href = "mailto:votre.email@example.com?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
     }
     
     window.onload = function() {
