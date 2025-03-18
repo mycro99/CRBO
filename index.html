@@ -20,7 +20,7 @@
       background-color: var(--bg-color);
       color: var(--text-color);
     }
-    /* Conteneur pour le PDF */
+    /* Conteneur du contenu à exporter en PDF */
     #pdfContent {
       max-width: 900px;
       margin: auto;
@@ -182,23 +182,14 @@
     .save-button:hover, .pdf-button:hover {
       background-color: #c82333;
     }
-    /* Styles pour le PDF */
+    /* Pour le rendu PDF, on masque les boutons */
     @media print {
-      body, #pdfContent {
-        margin: 0;
-        padding: 0;
-      }
-      #pdfContent {
-        width: 100%;
-      }
-      .button-container {
-        display: none;
-      }
+      .button-container { display: none; }
     }
   </style>
-  <!-- Inclusion de html2canvas et html2pdf via CDN -->
+  <!-- Inclusion de html2canvas et jsPDF via CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div id="pdfContent">
@@ -403,7 +394,7 @@
         <button onclick="clearSignature('signatureConvoyeur')">Effacer</button>
       </div>
     </div>
-  </div> <!-- Fin du conteneur #pdfContent -->
+  </div> <!-- Fin de #pdfContent -->
 
   <div class="button-container">
     <button class="save-button" onclick="saveFile()">Enregistrer</button>
@@ -487,16 +478,30 @@
     }
     
     function generatePDF() {
-      // Utiliser le conteneur #pdfContent pour générer le PDF
       const element = document.getElementById('pdfContent');
-      let opt = {
-        margin:       0.2,
-        filename:     'checklist_ambulance.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, allowTaint: true },
-        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-      };
-      html2pdf().set(opt).from(element).save();
+      html2canvas(element, { useCORS: true, scale: 2, scrollY: -window.scrollY }).then(canvas => {
+        const imgData = canvas.toDataURL("image/png");
+        // Utilisation de jsPDF (assurez-vous d'avoir inclus la bibliothèque jsPDF via CDN)
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        // Calcul de la hauteur de l'image en fonction de la largeur du PDF
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgWidth = pageWidth;
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        pdf.save("checklist_ambulance.pdf");
+      });
     }
     
     window.onload = function() {
