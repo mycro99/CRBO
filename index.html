@@ -139,10 +139,6 @@
       color: #fff;
       font-weight: 500;
     }
-    /* Modification : "Portes" remplacé par "Armoire" dans l'en-tête */
-    th:first-child {
-      content: "Armoire";
-    }
     .remarque {
       width: 100%;
       height: 50px;
@@ -264,7 +260,6 @@
     <h2>Inventaire des équipements</h2>
     <table>
       <tr>
-        <!-- En-tête modifié : "Armoire" au lieu de "Portes" -->
         <th>Armoire</th>
         <th>NOK</th>
         <th>REC</th>
@@ -313,13 +308,16 @@
         <td><input type="radio" name="item3" value="OK"></td>
         <td><input type="text" class="remarque"></td>
       </tr>
-      <!-- Ligne 4 modifiée : options "rouge - jaune - vert" -->
+      <!-- Ligne 4 modifiée : Remarque remplacé par radio rouge-jaune-vert -->
       <tr>
         <td>4</td>
-        <td colspan="4">
-          <label><input type="radio" name="item4" value="rouge"> Rouge</label>
-          <label><input type="radio" name="item4" value="jaune"> Jaune</label>
-          <label><input type="radio" name="item4" value="vert"> Vert</label>
+        <td><input type="radio" name="item4" value="NOK"></td>
+        <td><input type="radio" name="item4" value="REC"></td>
+        <td><input type="radio" name="item4" value="OK"></td>
+        <td>
+          <label><input type="radio" name="item4_remarque" value="rouge"> Rouge</label>
+          <label><input type="radio" name="item4_remarque" value="jaune"> Jaune</label>
+          <label><input type="radio" name="item4_remarque" value="vert"> Vert</label>
         </td>
       </tr>
       <tr>
@@ -371,13 +369,16 @@
         <td><input type="radio" name="item11" value="OK"></td>
         <td><input type="text" class="remarque"></td>
       </tr>
-      <!-- Ligne 12 modifiée : options "rouge - jaune - vert" -->
+      <!-- Ligne 12 modifiée : Remarque remplacé par radio rouge-jaune-vert -->
       <tr>
         <td>12</td>
-        <td colspan="4">
-          <label><input type="radio" name="item12" value="rouge"> Rouge</label>
-          <label><input type="radio" name="item12" value="jaune"> Jaune</label>
-          <label><input type="radio" name="item12" value="vert"> Vert</label>
+        <td><input type="radio" name="item12" value="NOK"></td>
+        <td><input type="radio" name="item12" value="REC"></td>
+        <td><input type="radio" name="item12" value="OK"></td>
+        <td>
+          <label><input type="radio" name="item12_remarque" value="rouge"> Rouge</label>
+          <label><input type="radio" name="item12_remarque" value="jaune"> Jaune</label>
+          <label><input type="radio" name="item12_remarque" value="vert"> Vert</label>
         </td>
       </tr>
       <tr>
