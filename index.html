@@ -165,7 +165,7 @@
       text-align: center;
       margin-top: 30px;
     }
-    .save-button, .send-button {
+    .save-button, .share-button {
       display: inline-block;
       padding: 12px 24px;
       font-size: 16px;
@@ -177,11 +177,10 @@
       box-shadow: var(--box-shadow);
       margin: 0 10px;
     }
-    .save-button:hover, .send-button:hover {
+    .save-button:hover, .share-button:hover {
       background-color: #c82333;
     }
   </style>
-  <!-- Inclusion de html2canvas via CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -207,47 +206,38 @@
         <label>Feux bleus :</label>
         <label><input type="radio" name="feux" value="fonctionne"> Fonctionne</label>
         <label><input type="radio" name="feux" value="defectueux"> Défectueux</label>
-
         <label>Sirène :</label>
         <label><input type="radio" name="sirene" value="fonctionne"> Fonctionne</label>
         <label><input type="radio" name="sirene" value="defectueux"> Défectueux</label>
-
         <label>Carburant :</label>
         <label><input type="radio" name="carburant" value="1/4"> 1/4</label>
         <label><input type="radio" name="carburant" value="1/2"> 1/2</label>
         <label><input type="radio" name="carburant" value="3/4"> 3/4</label>
         <label><input type="radio" name="carburant" value="1/1"> 1/1</label>
-
         <label>AdBlue :</label>
         <label><input type="radio" name="adblue" value="bas"> Bas</label>
         <label><input type="radio" name="adblue" value="bon"> Bon</label>
         <label><input type="radio" name="adblue" value="haut"> Haut</label>
-
         <label>Phares :</label>
         <label><input type="radio" name="phares" value="fonctionne"> Fonctionne</label>
         <label><input type="radio" name="phares" value="defectueux"> Défectueux</label>
       </div>
     </div>
-
     <div>
       <h2>Hygiène</h2>
       <div class="radio-list">
         <label>Sanitaire :</label>
         <label><input type="radio" name="sanitaire" value="propre"> Propre</label>
         <label><input type="radio" name="sanitaire" value="sale"> Sale</label>
-
         <label>Conducteur :</label>
         <label><input type="radio" name="conducteur" value="propre"> Propre</label>
         <label><input type="radio" name="conducteur" value="sale"> Sale</label>
-
         <label>Matériel :</label>
         <label><input type="radio" name="materiel" value="propre"> Propre</label>
         <label><input type="radio" name="materiel" value="sale"> Sale</label>
-
         <label>Carrosserie :</label>
         <label><input type="radio" name="carrosserie" value="propre"> Propre</label>
         <label><input type="radio" name="carrosserie" value="sale"> Sale</label>
-
         <label>Poubelle :</label>
         <label><input type="radio" name="poubelle" value="vide"> Vide</label>
         <label><input type="radio" name="poubelle" value="pleine"> Pleine</label>
@@ -397,7 +387,7 @@
 
   <div class="button-container">
     <button class="save-button" onclick="saveFile()">Enregistrer</button>
-    <button class="send-button" onclick="sendMail()">Envoyer</button>
+    <button class="share-button" onclick="sendMail()">Envoyer</button>
   </div>
 
   <script>
@@ -477,18 +467,38 @@
     }
     
     function sendMail() {
-      // Récupérer les valeurs du formulaire
-      let plaque = document.getElementById('plaque').value;
-      let date = document.getElementById('date').value;
-      let heure = document.getElementById('heure').value;
-      let chauffeur = document.getElementById('chauffeur').value;
-      let convoyeur = document.getElementById('convoyeur').value;
-      let remarques = document.getElementById('remarques').value;
-      
-      let subject = "Checklist Ambulance - CS Oupeye";
-      let body = "Plaque: " + plaque + "\nDate: " + date + "\nHeure: " + heure + "\nChauffeur: " + chauffeur + "\nConvoyeur: " + convoyeur + "\n\nRemarques et anomalies:\n" + remarques;
-      
-      window.location.href = "mailto:votre.email@example.com?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      // Si l'API Web Share est disponible, utiliser la fonctionnalité de partage
+      if (navigator.share) {
+        let plaque = document.getElementById('plaque').value;
+        let date = document.getElementById('date').value;
+        let heure = document.getElementById('heure').value;
+        let chauffeur = document.getElementById('chauffeur').value;
+        let convoyeur = document.getElementById('convoyeur').value;
+        let remarques = document.getElementById('remarques').value;
+        let subject = "Checklist Ambulance - CS Oupeye";
+        let body = "Plaque: " + plaque + "\nDate: " + date + "\nHeure: " + heure +
+                   "\nChauffeur: " + chauffeur + "\nConvoyeur: " + convoyeur +
+                   "\n\nRemarques et anomalies:\n" + remarques;
+        
+        navigator.share({
+          title: subject,
+          text: body
+        }).catch((error) => console.log("Erreur lors du partage: ", error));
+      } else {
+        // Repli via mailto si l'API Web Share n'est pas supportée
+        let plaque = document.getElementById('plaque').value;
+        let date = document.getElementById('date').value;
+        let heure = document.getElementById('heure').value;
+        let chauffeur = document.getElementById('chauffeur').value;
+        let convoyeur = document.getElementById('convoyeur').value;
+        let remarques = document.getElementById('remarques').value;
+        let subject = "Checklist Ambulance - CS Oupeye";
+        let body = "Plaque: " + plaque + "\nDate: " + date + "\nHeure: " + heure +
+                   "\nChauffeur: " + chauffeur + "\nConvoyeur: " + convoyeur +
+                   "\n\nRemarques et anomalies:\n" + remarques;
+        
+        window.location.href = "mailto:votre.email@example.com?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      }
     }
     
     window.onload = function() {
