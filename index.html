@@ -104,8 +104,13 @@
       box-shadow: var(--box-shadow);
       resize: vertical;
     }
-    /* Nouvelle section Cabine */
+    /* Nouvelle section Cabine avec mise en page uniforme */
     .cabine-container {
+      background-color: #fff;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      padding: 10px;
       margin-bottom: 20px;
     }
     .cabine-container h2 {
@@ -267,7 +272,7 @@
       </div>
     </div>
 
-    <!-- Nouvelle section Cabine -->
+    <!-- Nouvelle section Cabine avec style uniformisé -->
     <div class="cabine-container">
       <h2>Cabine</h2>
       <label><input type="checkbox" name="cabine" value="papier_du_vehicule"> Papier du véhicule</label>
@@ -331,7 +336,7 @@
         <td><input type="radio" name="item3" value="OK"></td>
         <td><input type="text" class="remarque"></td>
       </tr>
-      <!-- Ligne 4 : colonnes NOK, REC, OK inchangées, Remarque contient deux groupes -->
+      <!-- Ligne 4 : colonnes inchangées, Remarque contient deux groupes -->
       <tr>
         <td>4</td>
         <td><input type="radio" name="item4" value="NOK"></td>
