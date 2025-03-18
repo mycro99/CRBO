@@ -139,6 +139,10 @@
       color: #fff;
       font-weight: 500;
     }
+    /* Modification : "Portes" remplacé par "Armoire" dans l'en-tête */
+    th:first-child {
+      content: "Armoire";
+    }
     .remarque {
       width: 100%;
       height: 50px;
@@ -167,7 +171,7 @@
       text-align: center;
       margin-top: 30px;
     }
-    .save-button, .pdf-button {
+    .pdf-button {
       display: inline-block;
       padding: 12px 24px;
       font-size: 16px;
@@ -179,10 +183,10 @@
       box-shadow: var(--box-shadow);
       margin: 0 10px;
     }
-    .save-button:hover, .pdf-button:hover {
+    .pdf-button:hover {
       background-color: #c82333;
     }
-    /* Pour le rendu PDF, on masque les boutons */
+    /* Masquer les boutons lors de l'impression */
     @media print {
       .button-container { display: none; }
     }
@@ -260,7 +264,8 @@
     <h2>Inventaire des équipements</h2>
     <table>
       <tr>
-        <th>Portes</th>
+        <!-- En-tête modifié : "Armoire" au lieu de "Portes" -->
+        <th>Armoire</th>
         <th>NOK</th>
         <th>REC</th>
         <th>OK</th>
@@ -294,7 +299,6 @@
         <td><input type="radio" name="item1" value="OK"></td>
         <td><input type="text" class="remarque"></td>
       </tr>
-      <!-- Répétez pour les items 2 à 13 -->
       <tr>
         <td>2</td>
         <td><input type="radio" name="item2" value="NOK"></td>
@@ -309,12 +313,14 @@
         <td><input type="radio" name="item3" value="OK"></td>
         <td><input type="text" class="remarque"></td>
       </tr>
+      <!-- Ligne 4 modifiée : options "rouge - jaune - vert" -->
       <tr>
         <td>4</td>
-        <td><input type="radio" name="item4" value="NOK"></td>
-        <td><input type="radio" name="item4" value="REC"></td>
-        <td><input type="radio" name="item4" value="OK"></td>
-        <td><input type="text" class="remarque"></td>
+        <td colspan="4">
+          <label><input type="radio" name="item4" value="rouge"> Rouge</label>
+          <label><input type="radio" name="item4" value="jaune"> Jaune</label>
+          <label><input type="radio" name="item4" value="vert"> Vert</label>
+        </td>
       </tr>
       <tr>
         <td>5</td>
@@ -365,12 +371,14 @@
         <td><input type="radio" name="item11" value="OK"></td>
         <td><input type="text" class="remarque"></td>
       </tr>
+      <!-- Ligne 12 modifiée : options "rouge - jaune - vert" -->
       <tr>
         <td>12</td>
-        <td><input type="radio" name="item12" value="NOK"></td>
-        <td><input type="radio" name="item12" value="REC"></td>
-        <td><input type="radio" name="item12" value="OK"></td>
-        <td><input type="text" class="remarque"></td>
+        <td colspan="4">
+          <label><input type="radio" name="item12" value="rouge"> Rouge</label>
+          <label><input type="radio" name="item12" value="jaune"> Jaune</label>
+          <label><input type="radio" name="item12" value="vert"> Vert</label>
+        </td>
       </tr>
       <tr>
         <td>13</td>
@@ -397,7 +405,6 @@
   </div> <!-- Fin de #pdfContent -->
 
   <div class="button-container">
-    <button class="save-button" onclick="saveFile()">Enregistrer</button>
     <button class="pdf-button" onclick="generatePDF()">Générer PDF</button>
   </div>
 
@@ -468,40 +475,16 @@
       });
     }
     
-    function saveFile() {
-      html2canvas(document.body, { useCORS: true, allowTaint: true }).then(canvas => {
-        let link = document.createElement('a');
-        link.href = canvas.toDataURL("image/png");
-        link.download = "checklist_ambulance.png";
-        link.click();
-      });
-    }
-    
     function generatePDF() {
       const element = document.getElementById('pdfContent');
-      html2canvas(element, { useCORS: true, scale: 2, scrollY: -window.scrollY }).then(canvas => {
-        const imgData = canvas.toDataURL("image/png");
-        // Utilisation de jsPDF (assurez-vous d'avoir inclus la bibliothèque jsPDF via CDN)
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        // Calcul de la hauteur de l'image en fonction de la largeur du PDF
-        const imgProps = pdf.getImageProperties(imgData);
-        const imgWidth = pageWidth;
-        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-        pdf.save("checklist_ambulance.pdf");
-      });
+      let opt = {
+        margin: 0.2,
+        filename: 'checklist_ambulance.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
     }
     
     window.onload = function() {
