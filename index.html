@@ -161,9 +161,12 @@
       display: block;
       margin: 0 auto 10px auto;
     }
-    .save-button {
-      display: block;
-      margin: 30px auto;
+    .button-container {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .save-button, .send-button {
+      display: inline-block;
       padding: 12px 24px;
       font-size: 16px;
       background-color: var(--primary-color);
@@ -172,9 +175,9 @@
       border-radius: var(--border-radius);
       cursor: pointer;
       box-shadow: var(--box-shadow);
-      text-align: center;
+      margin: 0 10px;
     }
-    .save-button:hover {
+    .save-button:hover, .send-button:hover {
       background-color: #c82333;
     }
   </style>
@@ -392,7 +395,10 @@
     </div>
   </div>
 
-  <button class="save-button" onclick="saveFile()">Enregistrer</button>
+  <div class="button-container">
+    <button class="save-button" onclick="saveFile()">Enregistrer</button>
+    <button class="send-button" onclick="sendMail()">Envoyer</button>
+  </div>
 
   <script>
     function addAnnotation(event) {
@@ -468,6 +474,21 @@
         link.download = "checklist_ambulance.png";
         link.click();
       });
+    }
+    
+    function sendMail() {
+      // Récupérer les valeurs du formulaire
+      let plaque = document.getElementById('plaque').value;
+      let date = document.getElementById('date').value;
+      let heure = document.getElementById('heure').value;
+      let chauffeur = document.getElementById('chauffeur').value;
+      let convoyeur = document.getElementById('convoyeur').value;
+      let remarques = document.getElementById('remarques').value;
+      
+      let subject = "Checklist Ambulance - CS Oupeye";
+      let body = "Plaque: " + plaque + "\nDate: " + date + "\nHeure: " + heure + "\nChauffeur: " + chauffeur + "\nConvoyeur: " + convoyeur + "\n\nRemarques et anomalies:\n" + remarques;
+      
+      window.location.href = "mailto:votre.email@example.com?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
     }
     
     window.onload = function() {
