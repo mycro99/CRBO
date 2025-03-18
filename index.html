@@ -285,6 +285,7 @@
       <td><input type="radio" name="item1" value="OK"></td>
       <td><input type="text" class="remarque"></td>
     </tr>
+    <!-- Répétez pour les items 2 à 13 -->
     <tr>
       <td>2</td>
       <td><input type="radio" name="item2" value="NOK"></td>
@@ -467,7 +468,7 @@
     }
     
     function sendMail() {
-      // Si l'API Web Share est disponible, utiliser la fonctionnalité de partage
+      // Si l'API Web Share est disponible, utiliser la fonctionnalité native de partage
       if (navigator.share) {
         let plaque = document.getElementById('plaque').value;
         let date = document.getElementById('date').value;
