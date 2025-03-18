@@ -6,7 +6,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary-color: #dc3545; /* rouge vif */
+      --primary-color: #dc3545;
       --secondary-color: #6c757d;
       --bg-color: #f5f5f5;
       --text-color: #333;
@@ -20,7 +20,7 @@
       background-color: var(--bg-color);
       color: var(--text-color);
     }
-    /* Conteneur du contenu à exporter en PDF */
+    /* Conteneur du contenu à exporter */
     #pdfContent {
       max-width: 900px;
       margin: auto;
@@ -139,10 +139,6 @@
       color: #fff;
       font-weight: 500;
     }
-    /* L'en-tête de la première colonne est "Armoire" */
-    th:first-child {
-      /* On peut utiliser un pseudo-élément ou simplement laisser le texte "Armoire" dans le code HTML */
-    }
     .remarque {
       width: 100%;
       height: 50px;
@@ -186,7 +182,6 @@
     .pdf-button:hover {
       background-color: #c82333;
     }
-    /* Masquer les boutons lors de l'impression */
     @media print {
       .button-container { display: none; }
     }
@@ -312,7 +307,7 @@
         <td><input type="radio" name="item3" value="OK"></td>
         <td><input type="text" class="remarque"></td>
       </tr>
-      <!-- Ligne 4 : conserver colonnes NOK, REC, OK inchangées et dans la colonne "Remarque", deux groupes radio -->
+      <!-- Ligne 4 avec boutons radio rouge, jaune, vert dans la colonne "Remarque" -->
       <tr>
         <td>4</td>
         <td><input type="radio" name="item4" value="NOK"></td>
@@ -382,7 +377,7 @@
         <td><input type="radio" name="item11" value="OK"></td>
         <td><input type="text" class="remarque"></td>
       </tr>
-      <!-- Ligne 12 : colonnes NOK, REC, OK inchangées et colonne Remarque avec deux groupes -->
+      <!-- Ligne 12 avec boutons radio rouge, jaune, vert dans la colonne Remarque -->
       <tr>
         <td>12</td>
         <td><input type="radio" name="item12" value="NOK"></td>
@@ -434,7 +429,6 @@
   <script>
     function addAnnotation(event) {
       let rect = event.target.getBoundingClientRect();
-      // Utilisation d'un offset de 48px pour compenser le décalage
       let offset = 48;
       let x = event.clientX - rect.left + offset;
       let y = event.clientY - rect.top;
@@ -500,14 +494,27 @@
     
     function generatePDF() {
       const element = document.getElementById('pdfContent');
-      let opt = {
-        margin: 0.2,
-        filename: 'checklist_ambulance.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, allowTaint: true },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-      };
-      html2pdf().set(opt).from(element).save();
+      html2canvas(element, { useCORS: true, scale: 2, allowTaint: true }).then(canvas => {
+        const imgData = canvas.toDataURL("image/png");
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgWidth = pageWidth;
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        pdf.save("checklist_ambulance.pdf");
+      });
     }
     
     window.onload = function() {
