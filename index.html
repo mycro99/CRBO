@@ -104,6 +104,17 @@
       box-shadow: var(--box-shadow);
       resize: vertical;
     }
+    .cabine-container {
+      margin-bottom: 20px;
+    }
+    .cabine-container h2 {
+      margin-bottom: 10px;
+    }
+    .cabine-container label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
     .signature-pad {
       border: 1px solid var(--secondary-color);
       background-color: #fff;
@@ -139,8 +150,6 @@
       color: #fff;
       font-weight: 500;
     }
-    /* En-tête : première colonne affiche "Armoire" */
-    /* Vous pouvez aussi saisir "Armoire" directement dans le HTML */
     .remarque {
       width: 100%;
       height: 50px;
@@ -209,50 +218,14 @@
       <img src="https://i.ibb.co/ymFJncWC/vehicle-image-jpg.png" id="vehicle" width="800" height="400" alt="Schéma du véhicule" onclick="addAnnotation(event)">
     </div>
 
-    <div class="section-container">
-      <div>
-        <h2>État du véhicule</h2>
-        <div class="radio-list">
-          <label>Feux bleus :</label>
-          <label><input type="radio" name="feux" value="fonctionne"> Fonctionne</label>
-          <label><input type="radio" name="feux" value="defectueux"> Défectueux</label>
-          <label>Sirène :</label>
-          <label><input type="radio" name="sirene" value="fonctionne"> Fonctionne</label>
-          <label><input type="radio" name="sirene" value="defectueux"> Défectueux</label>
-          <label>Carburant :</label>
-          <label><input type="radio" name="carburant" value="1/4"> 1/4</label>
-          <label><input type="radio" name="carburant" value="1/2"> 1/2</label>
-          <label><input type="radio" name="carburant" value="3/4"> 3/4</label>
-          <label><input type="radio" name="carburant" value="1/1"> 1/1</label>
-          <label>AdBlue :</label>
-          <label><input type="radio" name="adblue" value="bas"> Bas</label>
-          <label><input type="radio" name="adblue" value="bon"> Bon</label>
-          <label><input type="radio" name="adblue" value="haut"> Haut</label>
-          <label>Phares :</label>
-          <label><input type="radio" name="phares" value="fonctionne"> Fonctionne</label>
-          <label><input type="radio" name="phares" value="defectueux"> Défectueux</label>
-        </div>
-      </div>
-      <div>
-        <h2>Hygiène</h2>
-        <div class="radio-list">
-          <label>Sanitaire :</label>
-          <label><input type="radio" name="sanitaire" value="propre"> Propre</label>
-          <label><input type="radio" name="sanitaire" value="sale"> Sale</label>
-          <label>Conducteur :</label>
-          <label><input type="radio" name="conducteur" value="propre"> Propre</label>
-          <label><input type="radio" name="conducteur" value="sale"> Sale</label>
-          <label>Matériel :</label>
-          <label><input type="radio" name="materiel" value="propre"> Propre</label>
-          <label><input type="radio" name="materiel" value="sale"> Sale</label>
-          <label>Carrosserie :</label>
-          <label><input type="radio" name="carrosserie" value="propre"> Propre</label>
-          <label><input type="radio" name="carrosserie" value="sale"> Sale</label>
-          <label>Poubelle :</label>
-          <label><input type="radio" name="poubelle" value="vide"> Vide</label>
-          <label><input type="radio" name="poubelle" value="pleine"> Pleine</label>
-        </div>
-      </div>
+    <!-- Nouveau champ "Cabine" -->
+    <div class="cabine-container">
+      <h2>Cabine</h2>
+      <label><input type="checkbox" name="cabine" value="papier_du_vehicule"> Papier du véhicule</label>
+      <label><input type="checkbox" name="cabine" value="bon_CPM"> Bon CPM</label>
+      <label><input type="checkbox" name="cabine" value="carnet_de_bord"> Carnet de bord</label>
+      <label><input type="checkbox" name="cabine" value="carte_carburant"> Carte carburant</label>
+      <label><input type="checkbox" name="cabine" value="constat_d_accident"> Constat d'accident</label>
     </div>
 
     <h2>Remarques et anomalies</h2>
@@ -309,7 +282,7 @@
         <td><input type="radio" name="item3" value="OK"></td>
         <td><input type="text" class="remarque"></td>
       </tr>
-      <!-- Ligne 4 : colonnes NOK, REC, OK inchangées, Remarque contient deux groupes -->
+      <!-- Ligne 4 : colonnes inchangées, Remarque contient deux groupes -->
       <tr>
         <td>4</td>
         <td><input type="radio" name="item4" value="NOK"></td>
