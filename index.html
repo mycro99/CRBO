@@ -139,6 +139,10 @@
       color: #fff;
       font-weight: 500;
     }
+    /* L'en-tête de la première colonne est "Armoire" */
+    th:first-child {
+      /* On peut utiliser un pseudo-élément ou simplement laisser le texte "Armoire" dans le code HTML */
+    }
     .remarque {
       width: 100%;
       height: 50px;
@@ -308,7 +312,7 @@
         <td><input type="radio" name="item3" value="OK"></td>
         <td><input type="text" class="remarque"></td>
       </tr>
-      <!-- Ligne 4 modifiée -->
+      <!-- Ligne 4 : conserver colonnes NOK, REC, OK inchangées et dans la colonne "Remarque", deux groupes radio -->
       <tr>
         <td>4</td>
         <td><input type="radio" name="item4" value="NOK"></td>
@@ -316,18 +320,16 @@
         <td><input type="radio" name="item4" value="OK"></td>
         <td>
           <div>
-            <label>B10(1): 
-              <label><input type="radio" name="item4_remarque_1" value="rouge"> Rouge</label>
-              <label><input type="radio" name="item4_remarque_1" value="jaune"> Jaune</label>
-              <label><input type="radio" name="item4_remarque_1" value="vert"> Vert</label>
-            </label>
+            <span>B10(1): </span>
+            <label><input type="radio" name="item4_remarque1" value="rouge"> Rouge</label>
+            <label><input type="radio" name="item4_remarque1" value="jaune"> Jaune</label>
+            <label><input type="radio" name="item4_remarque1" value="vert"> Vert</label>
           </div>
           <div>
-            <label>B10(2): 
-              <label><input type="radio" name="item4_remarque_2" value="rouge"> Rouge</label>
-              <label><input type="radio" name="item4_remarque_2" value="jaune"> Jaune</label>
-              <label><input type="radio" name="item4_remarque_2" value="vert"> Vert</label>
-            </label>
+            <span>B10(2): </span>
+            <label><input type="radio" name="item4_remarque2" value="rouge"> Rouge</label>
+            <label><input type="radio" name="item4_remarque2" value="jaune"> Jaune</label>
+            <label><input type="radio" name="item4_remarque2" value="vert"> Vert</label>
           </div>
         </td>
       </tr>
@@ -380,7 +382,7 @@
         <td><input type="radio" name="item11" value="OK"></td>
         <td><input type="text" class="remarque"></td>
       </tr>
-      <!-- Ligne 12 modifiée -->
+      <!-- Ligne 12 : colonnes NOK, REC, OK inchangées et colonne Remarque avec deux groupes -->
       <tr>
         <td>12</td>
         <td><input type="radio" name="item12" value="NOK"></td>
@@ -388,18 +390,16 @@
         <td><input type="radio" name="item12" value="OK"></td>
         <td>
           <div>
-            <label>B5(1): 
-              <label><input type="radio" name="item12_remarque_1" value="rouge"> Rouge</label>
-              <label><input type="radio" name="item12_remarque_1" value="jaune"> Jaune</label>
-              <label><input type="radio" name="item12_remarque_1" value="vert"> Vert</label>
-            </label>
+            <span>B5(1): </span>
+            <label><input type="radio" name="item12_remarque1" value="rouge"> Rouge</label>
+            <label><input type="radio" name="item12_remarque1" value="jaune"> Jaune</label>
+            <label><input type="radio" name="item12_remarque1" value="vert"> Vert</label>
           </div>
           <div>
-            <label>B5(2): 
-              <label><input type="radio" name="item12_remarque_2" value="rouge"> Rouge</label>
-              <label><input type="radio" name="item12_remarque_2" value="jaune"> Jaune</label>
-              <label><input type="radio" name="item12_remarque_2" value="vert"> Vert</label>
-            </label>
+            <span>B5(2): </span>
+            <label><input type="radio" name="item12_remarque2" value="rouge"> Rouge</label>
+            <label><input type="radio" name="item12_remarque2" value="jaune"> Jaune</label>
+            <label><input type="radio" name="item12_remarque2" value="vert"> Vert</label>
           </div>
         </td>
       </tr>
@@ -434,7 +434,7 @@
   <script>
     function addAnnotation(event) {
       let rect = event.target.getBoundingClientRect();
-      // Offset de 48px pour compenser le décalage
+      // Utilisation d'un offset de 48px pour compenser le décalage
       let offset = 48;
       let x = event.clientX - rect.left + offset;
       let y = event.clientY - rect.top;
@@ -489,4 +489,31 @@
         if (drawing) {
           let touch = e.touches[0];
           let rect = canvas.getBoundingClientRect();
-          ctx.lineTo(t
+          ctx.lineTo(touch.clientX - rect.left - canvas.clientLeft, touch.clientY - rect.top - canvas.clientTop);
+          ctx.stroke();
+        }
+      });
+      canvas.addEventListener("touchend", function() {
+        drawing = false;
+      });
+    }
+    
+    function generatePDF() {
+      const element = document.getElementById('pdfContent');
+      let opt = {
+        margin: 0.2,
+        filename: 'checklist_ambulance.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+    
+    window.onload = function() {
+      initSignature('signatureChauffeur');
+      initSignature('signatureConvoyeur');
+    }
+  </script>
+</body>
+</html>
