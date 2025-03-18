@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Checklist Ambulance - CS Oupeye&reg;</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #dc3545; /* rouge vif */
+      --secondary-color: #6c757d;
+      --bg-color: #f5f5f5;
+      --text-color: #333;
+      --border-radius: 6px;
+      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 20px;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1, h2 {
+      text-align: center;
+      color: var(--primary-color);
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .form-row div {
+      flex: 1;
+      min-width: 150px;
+    }
+    .form-row label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    .form-row input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    .image-container {
+      text-align: center;
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .image-container img {
+      max-width: 100%;
+      height: auto;
+      border: 2px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      cursor: crosshair;
+    }
+    .annotation {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+    }
+    .section-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .section-container > div {
+      flex: 1;
+      min-width: 280px;
+      padding: 10px;
+      background-color: #fff;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    .radio-list label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      resize: vertical;
+    }
+    .signature-pad {
+      border: 1px solid var(--secondary-color);
+      background-color: #fff;
+      width: 100%;
+      max-width: 400px;
+      height: 100px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    @media screen and (max-width: 600px) {
+      .signature-pad {
+        max-width: 300px;
+        height: 80px;
+      }
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #fff;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--box-shadow);
+    }
+    th, td {
+      border: 1px solid var(--secondary-color);
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: var(--primary-color);
+      color: #fff;
+      font-weight: 500;
+    }
+    .remarque {
+      width: 100%;
+      height: 50px;
+      padding: 5px;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+    }
+    .signature-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      align-items: flex-start;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .signature-box {
+      flex: 1;
+      text-align: center;
+      min-width: 280px;
+    }
+    .signature-box canvas {
+      display: block;
+      margin: 0 auto 10px auto;
+    }
+    .save-button {
+      display: block;
+      margin: 30px auto;
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: var(--primary-color);
+      color: #fff;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      box-shadow: var(--box-shadow);
+      text-align: center;
+    }
+    .save-button:hover {
+      background-color: #c82333;
+    }
+  </style>
+  <!-- Inclusion de html2canvas via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  <h1>Checklist Ambulance - CS Oupeye&reg;</h1>
+
+  <div class="form-row">
+    <div><label for="plaque">Plaque :</label><input type="text" id="plaque" placeholder="Ex: AB-123-CD"></div>
+    <div><label for="date">Date :</label><input type="date" id="date"></div>
+    <div><label for="heure">Heure :</label><input type="time" id="heure"></div>
+    <div><label for="chauffeur">Chauffeur :</label><input type="text" id="chauffeur"></div>
+    <div><label for="convoyeur">Convoyeur :</label><input type="text" id="convoyeur"></div>
+  </div>
+
+  <h2>Schéma du véhicule</h2>
+  <div class="image-container" id="image-container">
+    <img src="https://i.ibb.co/ymFJncWC/vehicle-image-jpg.png" id="vehicle" width="800" height="400" alt="Schéma du véhicule" onclick="addAnnotation(event)">
+  </div>
+
+  <div class="section-container">
+    <div>
+      <h2>État du véhicule</h2>
+      <div class="radio-list">
+        <label>Feux bleus :</label>
+        <label><input type="radio" name="feux" value="fonctionne"> Fonctionne</label>
+        <label><input type="radio" name="feux" value="defectueux"> Défectueux</label>
+
+        <label>Sirène :</label>
+        <label><input type="radio" name="sirene" value="fonctionne"> Fonctionne</label>
+        <label><input type="radio" name="sirene" value="defectueux"> Défectueux</label>
+
+        <label>Carburant :</label>
+        <label><input type="radio" name="carburant" value="1/4"> 1/4</label>
+        <label><input type="radio" name="carburant" value="1/2"> 1/2</label>
+        <label><input type="radio" name="carburant" value="3/4"> 3/4</label>
+        <label><input type="radio" name="carburant" value="1/1"> 1/1</label>
+
+        <label>AdBlue :</label>
+        <label><input type="radio" name="adblue" value="bas"> Bas</label>
+        <label><input type="radio" name="adblue" value="bon"> Bon</label>
+        <label><input type="radio" name="adblue" value="haut"> Haut</label>
+
+        <label>Phares :</label>
+        <label><input type="radio" name="phares" value="fonctionne"> Fonctionne</label>
+        <label><input type="radio" name="phares" value="defectueux"> Défectueux</label>
+      </div>
+    </div>
+
+    <div>
+      <h2>Hygiène</h2>
+      <div class="radio-list">
+        <label>Sanitaire :</label>
+        <label><input type="radio" name="sanitaire" value="propre"> Propre</label>
+        <label><input type="radio" name="sanitaire" value="sale"> Sale</label>
+
+        <label>Conducteur :</label>
+        <label><input type="radio" name="conducteur" value="propre"> Propre</label>
+        <label><input type="radio" name="conducteur" value="sale"> Sale</label>
+
+        <label>Matériel :</label>
+        <label><input type="radio" name="materiel" value="propre"> Propre</label>
+        <label><input type="radio" name="materiel" value="sale"> Sale</label>
+
+        <label>Carrosserie :</label>
+        <label><input type="radio" name="carrosserie" value="propre"> Propre</label>
+        <label><input type="radio" name="carrosserie" value="sale"> Sale</label>
+
+        <label>Poubelle :</label>
+        <label><input type="radio" name="poubelle" value="vide"> Vide</label>
+        <label><input type="radio" name="poubelle" value="pleine"> Pleine</label>
+      </div>
+    </div>
+  </div>
+
+  <h2>Remarques et anomalies</h2>
+  <textarea id="remarques"></textarea>
+
+  <h2>Inventaire des équipements</h2>
+  <table>
+    <tr>
+      <th>Portes</th>
+      <th>NOK</th>
+      <th>REC</th>
+      <th>OK</th>
+      <th>Remarque</th>
+    </tr>
+    <tr>
+      <td>Sac Ambu</td>
+      <td><input type="radio" name="sacambu" value="NOK"></td>
+      <td><input type="radio" name="sacambu" value="REC"></td>
+      <td><input type="radio" name="sacambu" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>Sac Complément</td>
+      <td><input type="radio" name="saccompl" value="NOK"></td>
+      <td><input type="radio" name="saccompl" value="REC"></td>
+      <td><input type="radio" name="saccompl" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>Scellé</td>
+      <td colspan="4">
+        <label><input type="radio" name="scelle" value="oui"> Oui</label>
+        <label><input type="radio" name="scelle" value="non"> Non</label>
+      </td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td><input type="radio" name="item1" value="NOK"></td>
+      <td><input type="radio" name="item1" value="REC"></td>
+      <td><input type="radio" name="item1" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><input type="radio" name="item2" value="NOK"></td>
+      <td><input type="radio" name="item2" value="REC"></td>
+      <td><input type="radio" name="item2" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><input type="radio" name="item3" value="NOK"></td>
+      <td><input type="radio" name="item3" value="REC"></td>
+      <td><input type="radio" name="item3" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><input type="radio" name="item4" value="NOK"></td>
+      <td><input type="radio" name="item4" value="REC"></td>
+      <td><input type="radio" name="item4" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><input type="radio" name="item5" value="NOK"></td>
+      <td><input type="radio" name="item5" value="REC"></td>
+      <td><input type="radio" name="item5" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><input type="radio" name="item6" value="NOK"></td>
+      <td><input type="radio" name="item6" value="REC"></td>
+      <td><input type="radio" name="item6" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><input type="radio" name="item7" value="NOK"></td>
+      <td><input type="radio" name="item7" value="REC"></td>
+      <td><input type="radio" name="item7" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><input type="radio" name="item8" value="NOK"></td>
+      <td><input type="radio" name="item8" value="REC"></td>
+      <td><input type="radio" name="item8" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td><input type="radio" name="item9" value="NOK"></td>
+      <td><input type="radio" name="item9" value="REC"></td>
+      <td><input type="radio" name="item9" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td><input type="radio" name="item10" value="NOK"></td>
+      <td><input type="radio" name="item10" value="REC"></td>
+      <td><input type="radio" name="item10" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td><input type="radio" name="item11" value="NOK"></td>
+      <td><input type="radio" name="item11" value="REC"></td>
+      <td><input type="radio" name="item11" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td><input type="radio" name="item12" value="NOK"></td>
+      <td><input type="radio" name="item12" value="REC"></td>
+      <td><input type="radio" name="item12" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+    <tr>
+      <td>13</td>
+      <td><input type="radio" name="item13" value="NOK"></td>
+      <td><input type="radio" name="item13" value="REC"></td>
+      <td><input type="radio" name="item13" value="OK"></td>
+      <td><input type="text" class="remarque"></td>
+    </tr>
+  </table>
+
+  <h2>Signature</h2>
+  <div class="signature-container">
+    <div class="signature-box">
+      <label>Signature du chauffeur :</label>
+      <canvas id="signatureChauffeur" class="signature-pad"></canvas>
+      <button onclick="clearSignature('signatureChauffeur')">Effacer</button>
+    </div>
+    <div class="signature-box">
+      <label>Signature du convoyeur :</label>
+      <canvas id="signatureConvoyeur" class="signature-pad"></canvas>
+      <button onclick="clearSignature('signatureConvoyeur')">Effacer</button>
+    </div>
+  </div>
+
+  <button class="save-button" onclick="saveFile()">Enregistrer</button>
+
+  <script>
+    function addAnnotation(event) {
+      let rect = event.target.getBoundingClientRect();
+      // Utilisation d'un offset de 48px pour compenser le décalage
+      let offset = 48;
+      let x = event.clientX - rect.left + offset;
+      let y = event.clientY - rect.top;
+      let annotation = document.createElement("div");
+      annotation.classList.add("annotation");
+      annotation.style.left = x + "px";
+      annotation.style.top = y + "px";
+      document.getElementById("image-container").appendChild(annotation);
+    }
+    
+    function clearSignature(canvasId) {
+      let canvas = document.getElementById(canvasId);
+      let ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    function initSignature(canvasId) {
+      let canvas = document.getElementById(canvasId);
+      let ctx = canvas.getContext("2d");
+      let drawing = false;
+      
+      canvas.addEventListener("mousedown", function(e) {
+        drawing = true;
+        let rect = canvas.getBoundingClientRect();
+        ctx.beginPath();
+        ctx.moveTo(e.clientX - rect.left - canvas.clientLeft, e.clientY - rect.top - canvas.clientTop);
+      });
+      canvas.addEventListener("mousemove", function(e) {
+        if (drawing) {
+          let rect = canvas.getBoundingClientRect();
+          ctx.lineTo(e.clientX - rect.left - canvas.clientLeft, e.clientY - rect.top - canvas.clientTop);
+          ctx.stroke();
+        }
+      });
+      canvas.addEventListener("mouseup", function() {
+        drawing = false;
+      });
+      canvas.addEventListener("mouseout", function() {
+        drawing = false;
+      });
+      
+      canvas.addEventListener("touchstart", function(e) {
+        e.preventDefault();
+        drawing = true;
+        let touch = e.touches[0];
+        let rect = canvas.getBoundingClientRect();
+        ctx.beginPath();
+        ctx.moveTo(touch.clientX - rect.left - canvas.clientLeft, touch.clientY - rect.top - canvas.clientTop);
+      });
+      canvas.addEventListener("touchmove", function(e) {
+        e.preventDefault();
+        if (drawing) {
+          let touch = e.touches[0];
+          let rect = canvas.getBoundingClientRect();
+          ctx.lineTo(touch.clientX - rect.left - canvas.clientLeft, touch.clientY - rect.top - canvas.clientTop);
+          ctx.stroke();
+        }
+      });
+      canvas.addEventListener("touchend", function() {
+        drawing = false;
+      });
+    }
+    
+    function saveFile() {
+      html2canvas(document.body, { useCORS: true, allowTaint: true }).then(canvas => {
+        let link = document.createElement('a');
+        link.href = canvas.toDataURL("image/png");
+        link.download = "checklist_ambulance.png";
+        link.click();
+      });
+    }
+    
+    window.onload = function() {
+      initSignature('signatureChauffeur');
+      initSignature('signatureConvoyeur');
+    }
+  </script>
+</body>
+</html>
