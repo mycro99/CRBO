@@ -285,7 +285,6 @@
       <td><input type="radio" name="item1" value="OK"></td>
       <td><input type="text" class="remarque"></td>
     </tr>
-    <!-- Répétez pour les items 2 à 13 -->
     <tr>
       <td>2</td>
       <td><input type="radio" name="item2" value="NOK"></td>
@@ -468,38 +467,30 @@
     }
     
     function sendMail() {
-      // Si l'API Web Share est disponible, utiliser la fonctionnalité native de partage
-      if (navigator.share) {
-        let plaque = document.getElementById('plaque').value;
-        let date = document.getElementById('date').value;
-        let heure = document.getElementById('heure').value;
-        let chauffeur = document.getElementById('chauffeur').value;
-        let convoyeur = document.getElementById('convoyeur').value;
-        let remarques = document.getElementById('remarques').value;
-        let subject = "Checklist Ambulance - CS Oupeye";
-        let body = "Plaque: " + plaque + "\nDate: " + date + "\nHeure: " + heure +
-                   "\nChauffeur: " + chauffeur + "\nConvoyeur: " + convoyeur +
-                   "\n\nRemarques et anomalies:\n" + remarques;
-        
-        navigator.share({
-          title: subject,
-          text: body
-        }).catch((error) => console.log("Erreur lors du partage: ", error));
-      } else {
-        // Repli via mailto si l'API Web Share n'est pas supportée
-        let plaque = document.getElementById('plaque').value;
-        let date = document.getElementById('date').value;
-        let heure = document.getElementById('heure').value;
-        let chauffeur = document.getElementById('chauffeur').value;
-        let convoyeur = document.getElementById('convoyeur').value;
-        let remarques = document.getElementById('remarques').value;
-        let subject = "Checklist Ambulance - CS Oupeye";
-        let body = "Plaque: " + plaque + "\nDate: " + date + "\nHeure: " + heure +
-                   "\nChauffeur: " + chauffeur + "\nConvoyeur: " + convoyeur +
-                   "\n\nRemarques et anomalies:\n" + remarques;
-        
-        window.location.href = "mailto:votre.email@example.com?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
-      }
+      // Récupération des réponses
+      let plaque = document.getElementById('plaque').value;
+      let date = document.getElementById('date').value;
+      let heure = document.getElementById('heure').value;
+      let chauffeur = document.getElementById('chauffeur').value;
+      let convoyeur = document.getElementById('convoyeur').value;
+      let remarques = document.getElementById('remarques').value;
+      
+      // URL de la page hébergée sur GitHub
+      let hostedURL = "https://mycro99.github.io/checkambu/";
+      
+      let subject = "Résumé Checklist Ambulance - CS Oupeye";
+      let body = "Bonjour,\n\nVoici un aperçu clair de vos réponses :\n\n";
+      body += "1. Informations du véhicule:\n";
+      body += "   - Plaque: " + plaque + "\n";
+      body += "   - Date: " + date + "\n";
+      body += "   - Heure: " + heure + "\n";
+      body += "   - Chauffeur: " + chauffeur + "\n";
+      body += "   - Convoyeur: " + convoyeur + "\n\n";
+      body += "2. Remarques et anomalies:\n" + remarques + "\n\n";
+      body += "Pour consulter l'intégralité de vos réponses en ligne, cliquez ici:\n" + hostedURL + "\n\n";
+      body += "Cordialement,\nChecklist Ambulance - CS Oupeye";
+      
+      window.location.href = "mailto:votre.email@example.com?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
     }
     
     window.onload = function() {
