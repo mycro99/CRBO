@@ -165,7 +165,7 @@
       text-align: center;
       margin-top: 30px;
     }
-    .save-button {
+    .save-button, .pdf-button {
       display: inline-block;
       padding: 12px 24px;
       font-size: 16px;
@@ -177,11 +177,13 @@
       box-shadow: var(--box-shadow);
       margin: 0 10px;
     }
-    .save-button:hover {
+    .save-button:hover, .pdf-button:hover {
       background-color: #c82333;
     }
   </style>
+  <!-- Inclusion de html2canvas et html2pdf via CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
   <h1>Checklist Ambulance - CS Oupeye&reg;</h1>
@@ -388,6 +390,7 @@
 
   <div class="button-container">
     <button class="save-button" onclick="saveFile()">Enregistrer</button>
+    <button class="pdf-button" onclick="generatePDF()">Générer PDF</button>
   </div>
 
   <script>
@@ -464,6 +467,18 @@
         link.download = "checklist_ambulance.png";
         link.click();
       });
+    }
+    
+    function generatePDF() {
+      // Options pour html2pdf
+      let opt = {
+        margin:       0.5,
+        filename:     'checklist_ambulance.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(document.body).save();
     }
     
     window.onload = function() {
