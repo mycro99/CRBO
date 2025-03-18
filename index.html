@@ -15,13 +15,14 @@
     }
     body {
       font-family: 'Roboto', sans-serif;
-      margin: 20px;
+      margin: 0;
       padding: 20px;
       background-color: var(--bg-color);
       color: var(--text-color);
+    }
+    #content {
       max-width: 900px;
-      margin-left: auto;
-      margin-right: auto;
+      margin: auto;
     }
     h1, h2 {
       text-align: center;
@@ -186,207 +187,209 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
-  <h1>Checklist Ambulance - CS Oupeye&reg;</h1>
+  <div id="content">
+    <h1>Checklist Ambulance - CS Oupeye&reg;</h1>
 
-  <div class="form-row">
-    <div><label for="plaque">Plaque :</label><input type="text" id="plaque" placeholder="Ex: AB-123-CD"></div>
-    <div><label for="date">Date :</label><input type="date" id="date"></div>
-    <div><label for="heure">Heure :</label><input type="time" id="heure"></div>
-    <div><label for="chauffeur">Chauffeur :</label><input type="text" id="chauffeur"></div>
-    <div><label for="convoyeur">Convoyeur :</label><input type="text" id="convoyeur"></div>
-  </div>
+    <div class="form-row">
+      <div><label for="plaque">Plaque :</label><input type="text" id="plaque" placeholder="Ex: AB-123-CD"></div>
+      <div><label for="date">Date :</label><input type="date" id="date"></div>
+      <div><label for="heure">Heure :</label><input type="time" id="heure"></div>
+      <div><label for="chauffeur">Chauffeur :</label><input type="text" id="chauffeur"></div>
+      <div><label for="convoyeur">Convoyeur :</label><input type="text" id="convoyeur"></div>
+    </div>
 
-  <h2>Schéma du véhicule</h2>
-  <div class="image-container" id="image-container">
-    <img src="https://i.ibb.co/ymFJncWC/vehicle-image-jpg.png" id="vehicle" width="800" height="400" alt="Schéma du véhicule" onclick="addAnnotation(event)">
-  </div>
+    <h2>Schéma du véhicule</h2>
+    <div class="image-container" id="image-container">
+      <img src="https://i.ibb.co/ymFJncWC/vehicle-image-jpg.png" id="vehicle" width="800" height="400" alt="Schéma du véhicule" onclick="addAnnotation(event)">
+    </div>
 
-  <div class="section-container">
-    <div>
-      <h2>État du véhicule</h2>
-      <div class="radio-list">
-        <label>Feux bleus :</label>
-        <label><input type="radio" name="feux" value="fonctionne"> Fonctionne</label>
-        <label><input type="radio" name="feux" value="defectueux"> Défectueux</label>
-        <label>Sirène :</label>
-        <label><input type="radio" name="sirene" value="fonctionne"> Fonctionne</label>
-        <label><input type="radio" name="sirene" value="defectueux"> Défectueux</label>
-        <label>Carburant :</label>
-        <label><input type="radio" name="carburant" value="1/4"> 1/4</label>
-        <label><input type="radio" name="carburant" value="1/2"> 1/2</label>
-        <label><input type="radio" name="carburant" value="3/4"> 3/4</label>
-        <label><input type="radio" name="carburant" value="1/1"> 1/1</label>
-        <label>AdBlue :</label>
-        <label><input type="radio" name="adblue" value="bas"> Bas</label>
-        <label><input type="radio" name="adblue" value="bon"> Bon</label>
-        <label><input type="radio" name="adblue" value="haut"> Haut</label>
-        <label>Phares :</label>
-        <label><input type="radio" name="phares" value="fonctionne"> Fonctionne</label>
-        <label><input type="radio" name="phares" value="defectueux"> Défectueux</label>
+    <div class="section-container">
+      <div>
+        <h2>État du véhicule</h2>
+        <div class="radio-list">
+          <label>Feux bleus :</label>
+          <label><input type="radio" name="feux" value="fonctionne"> Fonctionne</label>
+          <label><input type="radio" name="feux" value="defectueux"> Défectueux</label>
+          <label>Sirène :</label>
+          <label><input type="radio" name="sirene" value="fonctionne"> Fonctionne</label>
+          <label><input type="radio" name="sirene" value="defectueux"> Défectueux</label>
+          <label>Carburant :</label>
+          <label><input type="radio" name="carburant" value="1/4"> 1/4</label>
+          <label><input type="radio" name="carburant" value="1/2"> 1/2</label>
+          <label><input type="radio" name="carburant" value="3/4"> 3/4</label>
+          <label><input type="radio" name="carburant" value="1/1"> 1/1</label>
+          <label>AdBlue :</label>
+          <label><input type="radio" name="adblue" value="bas"> Bas</label>
+          <label><input type="radio" name="adblue" value="bon"> Bon</label>
+          <label><input type="radio" name="adblue" value="haut"> Haut</label>
+          <label>Phares :</label>
+          <label><input type="radio" name="phares" value="fonctionne"> Fonctionne</label>
+          <label><input type="radio" name="phares" value="defectueux"> Défectueux</label>
+        </div>
+      </div>
+      <div>
+        <h2>Hygiène</h2>
+        <div class="radio-list">
+          <label>Sanitaire :</label>
+          <label><input type="radio" name="sanitaire" value="propre"> Propre</label>
+          <label><input type="radio" name="sanitaire" value="sale"> Sale</label>
+          <label>Conducteur :</label>
+          <label><input type="radio" name="conducteur" value="propre"> Propre</label>
+          <label><input type="radio" name="conducteur" value="sale"> Sale</label>
+          <label>Matériel :</label>
+          <label><input type="radio" name="materiel" value="propre"> Propre</label>
+          <label><input type="radio" name="materiel" value="sale"> Sale</label>
+          <label>Carrosserie :</label>
+          <label><input type="radio" name="carrosserie" value="propre"> Propre</label>
+          <label><input type="radio" name="carrosserie" value="sale"> Sale</label>
+          <label>Poubelle :</label>
+          <label><input type="radio" name="poubelle" value="vide"> Vide</label>
+          <label><input type="radio" name="poubelle" value="pleine"> Pleine</label>
+        </div>
       </div>
     </div>
-    <div>
-      <h2>Hygiène</h2>
-      <div class="radio-list">
-        <label>Sanitaire :</label>
-        <label><input type="radio" name="sanitaire" value="propre"> Propre</label>
-        <label><input type="radio" name="sanitaire" value="sale"> Sale</label>
-        <label>Conducteur :</label>
-        <label><input type="radio" name="conducteur" value="propre"> Propre</label>
-        <label><input type="radio" name="conducteur" value="sale"> Sale</label>
-        <label>Matériel :</label>
-        <label><input type="radio" name="materiel" value="propre"> Propre</label>
-        <label><input type="radio" name="materiel" value="sale"> Sale</label>
-        <label>Carrosserie :</label>
-        <label><input type="radio" name="carrosserie" value="propre"> Propre</label>
-        <label><input type="radio" name="carrosserie" value="sale"> Sale</label>
-        <label>Poubelle :</label>
-        <label><input type="radio" name="poubelle" value="vide"> Vide</label>
-        <label><input type="radio" name="poubelle" value="pleine"> Pleine</label>
+
+    <h2>Remarques et anomalies</h2>
+    <textarea id="remarques"></textarea>
+
+    <h2>Inventaire des équipements</h2>
+    <table>
+      <tr>
+        <th>Portes</th>
+        <th>NOK</th>
+        <th>REC</th>
+        <th>OK</th>
+        <th>Remarque</th>
+      </tr>
+      <tr>
+        <td>Sac Ambu</td>
+        <td><input type="radio" name="sacambu" value="NOK"></td>
+        <td><input type="radio" name="sacambu" value="REC"></td>
+        <td><input type="radio" name="sacambu" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>Sac Complément</td>
+        <td><input type="radio" name="saccompl" value="NOK"></td>
+        <td><input type="radio" name="saccompl" value="REC"></td>
+        <td><input type="radio" name="saccompl" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>Scellé</td>
+        <td colspan="4">
+          <label><input type="radio" name="scelle" value="oui"> Oui</label>
+          <label><input type="radio" name="scelle" value="non"> Non</label>
+        </td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td><input type="radio" name="item1" value="NOK"></td>
+        <td><input type="radio" name="item1" value="REC"></td>
+        <td><input type="radio" name="item1" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <!-- Répétez pour les items 2 à 13 -->
+      <tr>
+        <td>2</td>
+        <td><input type="radio" name="item2" value="NOK"></td>
+        <td><input type="radio" name="item2" value="REC"></td>
+        <td><input type="radio" name="item2" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><input type="radio" name="item3" value="NOK"></td>
+        <td><input type="radio" name="item3" value="REC"></td>
+        <td><input type="radio" name="item3" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><input type="radio" name="item4" value="NOK"></td>
+        <td><input type="radio" name="item4" value="REC"></td>
+        <td><input type="radio" name="item4" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><input type="radio" name="item5" value="NOK"></td>
+        <td><input type="radio" name="item5" value="REC"></td>
+        <td><input type="radio" name="item5" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><input type="radio" name="item6" value="NOK"></td>
+        <td><input type="radio" name="item6" value="REC"></td>
+        <td><input type="radio" name="item6" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><input type="radio" name="item7" value="NOK"></td>
+        <td><input type="radio" name="item7" value="REC"></td>
+        <td><input type="radio" name="item7" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><input type="radio" name="item8" value="NOK"></td>
+        <td><input type="radio" name="item8" value="REC"></td>
+        <td><input type="radio" name="item8" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td><input type="radio" name="item9" value="NOK"></td>
+        <td><input type="radio" name="item9" value="REC"></td>
+        <td><input type="radio" name="item9" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td><input type="radio" name="item10" value="NOK"></td>
+        <td><input type="radio" name="item10" value="REC"></td>
+        <td><input type="radio" name="item10" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>11</td>
+        <td><input type="radio" name="item11" value="NOK"></td>
+        <td><input type="radio" name="item11" value="REC"></td>
+        <td><input type="radio" name="item11" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>12</td>
+        <td><input type="radio" name="item12" value="NOK"></td>
+        <td><input type="radio" name="item12" value="REC"></td>
+        <td><input type="radio" name="item12" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+      <tr>
+        <td>13</td>
+        <td><input type="radio" name="item13" value="NOK"></td>
+        <td><input type="radio" name="item13" value="REC"></td>
+        <td><input type="radio" name="item13" value="OK"></td>
+        <td><input type="text" class="remarque"></td>
+      </tr>
+    </table>
+
+    <h2>Signature</h2>
+    <div class="signature-container">
+      <div class="signature-box">
+        <label>Signature du chauffeur :</label>
+        <canvas id="signatureChauffeur" class="signature-pad"></canvas>
+        <button onclick="clearSignature('signatureChauffeur')">Effacer</button>
+      </div>
+      <div class="signature-box">
+        <label>Signature du convoyeur :</label>
+        <canvas id="signatureConvoyeur" class="signature-pad"></canvas>
+        <button onclick="clearSignature('signatureConvoyeur')">Effacer</button>
       </div>
     </div>
-  </div>
-
-  <h2>Remarques et anomalies</h2>
-  <textarea id="remarques"></textarea>
-
-  <h2>Inventaire des équipements</h2>
-  <table>
-    <tr>
-      <th>Portes</th>
-      <th>NOK</th>
-      <th>REC</th>
-      <th>OK</th>
-      <th>Remarque</th>
-    </tr>
-    <tr>
-      <td>Sac Ambu</td>
-      <td><input type="radio" name="sacambu" value="NOK"></td>
-      <td><input type="radio" name="sacambu" value="REC"></td>
-      <td><input type="radio" name="sacambu" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>Sac Complément</td>
-      <td><input type="radio" name="saccompl" value="NOK"></td>
-      <td><input type="radio" name="saccompl" value="REC"></td>
-      <td><input type="radio" name="saccompl" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>Scellé</td>
-      <td colspan="4">
-        <label><input type="radio" name="scelle" value="oui"> Oui</label>
-        <label><input type="radio" name="scelle" value="non"> Non</label>
-      </td>
-    </tr>
-    <tr>
-      <td>1</td>
-      <td><input type="radio" name="item1" value="NOK"></td>
-      <td><input type="radio" name="item1" value="REC"></td>
-      <td><input type="radio" name="item1" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <!-- Répétez pour les items 2 à 13 -->
-    <tr>
-      <td>2</td>
-      <td><input type="radio" name="item2" value="NOK"></td>
-      <td><input type="radio" name="item2" value="REC"></td>
-      <td><input type="radio" name="item2" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>3</td>
-      <td><input type="radio" name="item3" value="NOK"></td>
-      <td><input type="radio" name="item3" value="REC"></td>
-      <td><input type="radio" name="item3" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>4</td>
-      <td><input type="radio" name="item4" value="NOK"></td>
-      <td><input type="radio" name="item4" value="REC"></td>
-      <td><input type="radio" name="item4" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>5</td>
-      <td><input type="radio" name="item5" value="NOK"></td>
-      <td><input type="radio" name="item5" value="REC"></td>
-      <td><input type="radio" name="item5" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>6</td>
-      <td><input type="radio" name="item6" value="NOK"></td>
-      <td><input type="radio" name="item6" value="REC"></td>
-      <td><input type="radio" name="item6" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>7</td>
-      <td><input type="radio" name="item7" value="NOK"></td>
-      <td><input type="radio" name="item7" value="REC"></td>
-      <td><input type="radio" name="item7" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>8</td>
-      <td><input type="radio" name="item8" value="NOK"></td>
-      <td><input type="radio" name="item8" value="REC"></td>
-      <td><input type="radio" name="item8" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>9</td>
-      <td><input type="radio" name="item9" value="NOK"></td>
-      <td><input type="radio" name="item9" value="REC"></td>
-      <td><input type="radio" name="item9" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>10</td>
-      <td><input type="radio" name="item10" value="NOK"></td>
-      <td><input type="radio" name="item10" value="REC"></td>
-      <td><input type="radio" name="item10" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>11</td>
-      <td><input type="radio" name="item11" value="NOK"></td>
-      <td><input type="radio" name="item11" value="REC"></td>
-      <td><input type="radio" name="item11" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>12</td>
-      <td><input type="radio" name="item12" value="NOK"></td>
-      <td><input type="radio" name="item12" value="REC"></td>
-      <td><input type="radio" name="item12" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-    <tr>
-      <td>13</td>
-      <td><input type="radio" name="item13" value="NOK"></td>
-      <td><input type="radio" name="item13" value="REC"></td>
-      <td><input type="radio" name="item13" value="OK"></td>
-      <td><input type="text" class="remarque"></td>
-    </tr>
-  </table>
-
-  <h2>Signature</h2>
-  <div class="signature-container">
-    <div class="signature-box">
-      <label>Signature du chauffeur :</label>
-      <canvas id="signatureChauffeur" class="signature-pad"></canvas>
-      <button onclick="clearSignature('signatureChauffeur')">Effacer</button>
-    </div>
-    <div class="signature-box">
-      <label>Signature du convoyeur :</label>
-      <canvas id="signatureConvoyeur" class="signature-pad"></canvas>
-      <button onclick="clearSignature('signatureConvoyeur')">Effacer</button>
-    </div>
-  </div>
+  </div> <!-- Fin du conteneur #content -->
 
   <div class="button-container">
     <button class="save-button" onclick="saveFile()">Enregistrer</button>
@@ -470,15 +473,16 @@
     }
     
     function generatePDF() {
-      // Options pour html2pdf
+      // Utilisation de l'élément #content pour générer le PDF
+      const element = document.getElementById('content');
       let opt = {
-        margin:       0.5,
+        margin:       0.2,
         filename:     'checklist_ambulance.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
       };
-      html2pdf().set(opt).from(document.body).save();
+      html2pdf().set(opt).from(element).save();
     }
     
     window.onload = function() {
