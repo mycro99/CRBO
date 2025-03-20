@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Check Péremption - CS Oupeye</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #dc3545;
+      --secondary-color: #6c757d;
+      --bg-color: #f5f5f5;
+      --text-color: #333;
+      --border-radius: 6px;
+      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+    #pdfContent {
+      max-width: 900px;
+      margin: auto;
+    }
+    h1, h2 {
+      text-align: center;
+      color: var(--primary-color);
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .form-row > div {
+      flex: 1;
+      min-width: 150px;
+    }
+    .form-row label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    .form-row input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #fff;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--box-shadow);
+    }
+    th, td {
+      border: 1px solid var(--secondary-color);
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: var(--primary-color);
+      color: #fff;
+    }
+    .signature-container {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .signature-pad {
+      border: 1px solid var(--secondary-color);
+      background-color: #fff;
+      width: 100%;
+      max-width: 400px;
+      height: 100px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      margin: auto;
+    }
+    .button-container {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .pdf-button {
+      display: inline-block;
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: var(--primary-color);
+      color: #fff;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      box-shadow: var(--box-shadow);
+    }
+    .pdf-button:hover {
+      background-color: #c82333;
+    }
+  </style>
+  <!-- Inclusion de html2canvas et jsPDF via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div id="pdfContent">
+    <h1>Check Péremption - CS Oupeye ©</h1>
+
+    <!-- Informations de base -->
+    <div class="form-row">
+      <div>
+        <label for="plaque">Plaque :</label>
+        <input type="text" id="plaque" placeholder="Ex : AB-123-CD">
+      </div>
+      <div>
+        <label for="date">Date :</label>
+        <input type="date" id="date">
+      </div>
+      <div>
+        <label for="heure">Heure :</label>
+        <input type="time" id="heure">
+      </div>
+      <div>
+        <label for="nom">Nom :</label>
+        <input type="text" id="nom" placeholder="Nom">
+      </div>
+      <div>
+        <label for="kilometrage">Kilométrage :</label>
+        <input type="number" id="kilometrage" placeholder="Ex : 12345">
+      </div>
+    </div>
+
+    <!-- Tableau de test -->
+    <h2>Tableau de vérification</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Entrée</th>
+          <th>Date (mois/année)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Test 1</td>
+          <td><input type="month" value="01-2023"></td>
+        </tr>
+        <tr>
+          <td>Test 2</td>
+          <td><input type="month" value="02-2023"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Zone de signature tactile -->
+    <h2>Signature</h2>
+    <div class="signature-container">
+      <canvas id="signaturePad" class="signature-pad"></canvas>
+      <br>
+      <button onclick="clearSignature('signaturePad')">Effacer la signature</button>
+    </div>
+
+    <!-- Bouton de génération du PDF -->
+    <div class="button-container">
+      <button class="pdf-button" onclick="generatePDF()">Générer PDF</button>
+    </div>
+  </div> <!-- Fin de #pdfContent -->
+
+  <script>
+    // Génération du PDF
+    function generatePDF() {
+      const element = document.getElementById('pdfContent');
+      html2canvas(element, { useCORS: true, scale: 2 }).then(canvas => {
+        const imgData = canvas.toDataURL("image/jpeg", 1.0);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgWidth = pageWidth;
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        pdf.save("check_peremption.pdf");
+      });
+    }
+
+    // Effacer la signature
+    function clearSignature(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Initialisation de la signature tactile
+    function initSignature(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext("2d");
+      let drawing = false;
+      
+      // Ajuste la taille du canvas en fonction de ses dimensions affichées
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      
+      canvas.addEventListener("mousedown", function(e) {
+        drawing = true;
+        const rect = canvas.getBoundingClientRect();
+        ctx.beginPath();
+        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+      });
+      canvas.addEventListener("mousemove", function(e) {
+        if (drawing) {
+          const rect = canvas.getBoundingClientRect();
+          ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+          ctx.stroke();
+        }
+      });
+      canvas.addEventListener("mouseup", function() {
+        drawing = false;
+      });
+      canvas.addEventListener("mouseout", function() {
+        drawing = false;
+      });
+      
+      canvas.addEventListener("touchstart", function(e) {
+        e.preventDefault();
+        drawing = true;
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        ctx.beginPath();
+        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+      });
+      canvas.addEventListener("touchmove", function(e) {
+        e.preventDefault();
+        if (drawing) {
+          const touch = e.touches[0];
+          const rect = canvas.getBoundingClientRect();
+          ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+          ctx.stroke();
+        }
+      });
+      canvas.addEventListener("touchend", function() {
+        drawing = false;
+      });
+    }
+
+    window.onload = function() {
+      initSignature('signaturePad');
+    }
+  </script>
+</body>
+</html>
