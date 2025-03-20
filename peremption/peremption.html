@@ -166,25 +166,45 @@
   </div> <!-- Fin de #pdfContent -->
 
   <script>
-    // Générer 50 entrées dans le tableau
+     // Création d'un tableau contenant 50 libellés personnalisés
+    const customLabels = [
+      "Inspection Visuelle", "Contrôle Mécanique", "Vérification des Freins", 
+      "Contrôle des Phares", "Test Électronique", "Vérification du Système Hydraulique",
+      "Vérification Pneus", "Contrôle des Essuie-glaces", "Test Batterie", "Contrôle des Fluides",
+      // Ajoute ici les libellés pour les entrées 11 à 50...
+      "Libellé 11", "Libellé 12", "Libellé 13", "Libellé 14", "Libellé 15",
+      "Libellé 16", "Libellé 17", "Libellé 18", "Libellé 19", "Libellé 20",
+      "Libellé 21", "Libellé 22", "Libellé 23", "Libellé 24", "Libellé 25",
+      "Libellé 26", "Libellé 27", "Libellé 28", "Libellé 29", "Libellé 30",
+      "Libellé 31", "Libellé 32", "Libellé 33", "Libellé 34", "Libellé 35",
+      "Libellé 36", "Libellé 37", "Libellé 38", "Libellé 39", "Libellé 40",
+      "Libellé 41", "Libellé 42", "Libellé 43", "Libellé 44", "Libellé 45",
+      "Libellé 46", "Libellé 47", "Libellé 48", "Libellé 49", "Libellé 50"
+    ];
+
+    // On sélectionne le <tbody> où insérer les lignes
     const tableBody = document.getElementById("tableBody");
+
+    // Générer 50 lignes dans le tableau
     for (let i = 1; i <= 50; i++) {
       const row = document.createElement("tr");
 
-      // Colonne de l'intitulé
+      // Colonne pour le libellé personnalisé
       const cell1 = document.createElement("td");
-      cell1.textContent = "Test " + i;  // Tu pourras modifier ces intitulés par la suite
+      // Utilise le libellé du tableau customLabels, en vérifiant s'il existe, sinon utilise "Test " + i
+      cell1.textContent = customLabels[i - 1] || "Test " + i;
       row.appendChild(cell1);
 
-      // Colonne avec l'input type month
+      // Colonne pour le champ de sélection du mois (calendrier)
       const cell2 = document.createElement("td");
       const inputMonth = document.createElement("input");
-      inputMonth.type = "month";  // Ce champ permet de sélectionner le mois et l'année
-      // Optionnel : définir une valeur par défaut
+      inputMonth.type = "month"; // Ce champ ouvre un calendrier pour choisir le mois et l'année
+      // Tu peux définir une valeur par défaut si besoin :
       // inputMonth.value = "2023-01";
       cell2.appendChild(inputMonth);
       row.appendChild(cell2);
 
+      // Ajouter la ligne au <tbody>
       tableBody.appendChild(row);
     }
 
