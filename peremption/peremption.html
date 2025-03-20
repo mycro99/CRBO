@@ -112,7 +112,7 @@
 <body>
   <div id="pdfContent">
     <h1>Check Péremption - CS Oupeye ©</h1>
-
+    
     <!-- Informations de base -->
     <div class="form-row">
       <div>
@@ -136,8 +136,8 @@
         <input type="number" id="kilometrage" placeholder="Ex : 12345">
       </div>
     </div>
-
-    <!-- Tableau de test -->
+    
+    <!-- Tableau de vérification (50 entrées générées dynamiquement) -->
     <h2>Tableau de vérification</h2>
     <table>
       <thead>
@@ -146,18 +146,11 @@
           <th>Date (mois/année)</th>
         </tr>
       </thead>
-      <tbody>
-        <tr>
-          <td>Test 1</td>
-            <td><input type="month" id="monthTest1" value="2023-01"></td>
-        </tr>
-        <tr>
-          <td>Test 2</td>
-            <td><input type="month" id="monthTest2" value="2023-02"></td>
-        </tr>
+      <tbody id="tableBody">
+        <!-- Les 50 lignes seront insérées ici par JavaScript -->
       </tbody>
     </table>
-
+    
     <!-- Zone de signature tactile -->
     <h2>Signature</h2>
     <div class="signature-container">
@@ -165,7 +158,7 @@
       <br>
       <button onclick="clearSignature('signaturePad')">Effacer la signature</button>
     </div>
-
+    
     <!-- Bouton de génération du PDF -->
     <div class="button-container">
       <button class="pdf-button" onclick="generatePDF()">Générer PDF</button>
@@ -173,7 +166,29 @@
   </div> <!-- Fin de #pdfContent -->
 
   <script>
-    // Génération du PDF
+    // Générer 50 entrées dans le tableau
+    const tableBody = document.getElementById("tableBody");
+    for (let i = 1; i <= 50; i++) {
+      const row = document.createElement("tr");
+
+      // Colonne de l'intitulé
+      const cell1 = document.createElement("td");
+      cell1.textContent = "Test " + i;  // Tu pourras modifier ces intitulés par la suite
+      row.appendChild(cell1);
+
+      // Colonne avec l'input type month
+      const cell2 = document.createElement("td");
+      const inputMonth = document.createElement("input");
+      inputMonth.type = "month";  // Ce champ permet de sélectionner le mois et l'année
+      // Optionnel : définir une valeur par défaut
+      // inputMonth.value = "2023-01";
+      cell2.appendChild(inputMonth);
+      row.appendChild(cell2);
+
+      tableBody.appendChild(row);
+    }
+
+    // Fonction pour générer le PDF
     function generatePDF() {
       const element = document.getElementById('pdfContent');
       html2canvas(element, { useCORS: true, scale: 2 }).then(canvas => {
@@ -199,7 +214,7 @@
       });
     }
 
-    // Effacer la signature
+    // Fonction pour effacer la signature sur le canvas
     function clearSignature(canvasId) {
       const canvas = document.getElementById(canvasId);
       const ctx = canvas.getContext("2d");
@@ -211,11 +226,11 @@
       const canvas = document.getElementById(canvasId);
       const ctx = canvas.getContext("2d");
       let drawing = false;
-      
-      // Ajuste la taille du canvas en fonction de ses dimensions affichées
+
+      // Ajuster la taille du canvas en fonction de ses dimensions affichées
       canvas.width = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
-      
+
       canvas.addEventListener("mousedown", function(e) {
         drawing = true;
         const rect = canvas.getBoundingClientRect();
@@ -235,7 +250,7 @@
       canvas.addEventListener("mouseout", function() {
         drawing = false;
       });
-      
+
       canvas.addEventListener("touchstart", function(e) {
         e.preventDefault();
         drawing = true;
