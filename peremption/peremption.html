@@ -125,7 +125,7 @@
 </head>
 <body>
   <div id="pdfContent">
-    <h1>Check Péremption - CS Oupeye ©</h1>
+    <h1>Check Péremption - CS Oupeye&reg;</h1>
     
     <!-- Informations de base -->
     <div class="form-row">
@@ -299,6 +299,16 @@
         tableBody.appendChild(kataRow);
       }
     });
+
+    // Insertion de la ligne "OXYGENE" en rouge juste avant l'ajout des lignes B5/B10.
+    const oxygeneRow = document.createElement("tr");
+    const oxygeneCell = document.createElement("td");
+    oxygeneCell.colSpan = 2;
+    oxygeneCell.style.fontWeight = "bold";
+    oxygeneCell.style.color = "var(--instruction-color)";
+    oxygeneCell.textContent = "OXYGENE";
+    oxygeneRow.appendChild(oxygeneCell);
+    tableBody.appendChild(oxygeneRow);
 
     // Ajout de 4 lignes supplémentaires pour B5 et B10 à la fin du tableau.
     const extraLabels = ["B5 haut", "B5 bas", "B10 gauche", "B10 droite"];
