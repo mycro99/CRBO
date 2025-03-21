@@ -7,7 +7,7 @@
   <style>
     :root {
       --primary-color: #dc3545;
-      --text-color: #fff;
+      --text-color: #000; /* Texte en noir */
       --bg-color: #f5f5f5;
       --border-radius: 6px;
     }
@@ -30,15 +30,16 @@
       object-fit: cover;
       opacity: 0.5;
     }
-    /* Overlay pour le texte */
+    /* Overlay pour le texte en surimpression */
     .overlay {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       text-align: center;
-      color: var(--primary-color);
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+      color: var(--text-color);
+      /* Suppression de l'ombre pour un texte net */
+      text-shadow: none;
     }
     .overlay h1 {
       font-size: 3em;
