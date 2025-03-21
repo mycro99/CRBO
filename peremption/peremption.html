@@ -10,6 +10,7 @@
       --secondary-color: #6c757d;
       --bg-color: #f5f5f5;
       --text-color: #333;
+      --instruction-color: red; /* Couleur rouge pour les instructions */
       --border-radius: 6px;
       --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
@@ -137,7 +138,7 @@
       </div>
     </div>
     
-    <!-- Instructions extérieures (non intégrées dans le tableau) -->
+    <!-- Instructions extérieures -->
     <div class="instructions" style="margin-bottom:20px;">
       <p style="font-weight: bold;">Merci de compléter, chaque fois, avec la date de péremption la plus proche</p>
     </div>
@@ -201,7 +202,7 @@
       "2 perfs NACL",
       "2 perfs eau stérile",
       "1 kit brulure",
-      // Après 28 lignes, insérer "SAC" (ce sera inséré après le 28ᵉ élément)
+      // Insertion automatique : après le 28ème libellé, on insère la ligne SAC.
       "1 patch DEA supplémentaire",
       "1 DEA + 1 patch DEA",
       "2 filtres REA",
@@ -219,7 +220,7 @@
       "2 compresses 10x20",
       "15 flapules LP",
       "1 velpo 15cm",
-      // Après 47 lignes, insérer la ligne sur le kit KATA
+      // Insertion automatique : après le 47ème libellé, on insère la ligne kit KATA.
       "2 velpo 10cm",
       "2 velpo 7cm",
       "Kit KATA (à vérifier, mais pas de date)",
@@ -238,6 +239,7 @@
     const armoireCell = document.createElement("td");
     armoireCell.colSpan = 2;
     armoireCell.style.fontWeight = "bold";
+    armoireCell.style.color = "var(--instruction-color)";
     armoireCell.textContent = "ARMOIRE";
     armoireRow.appendChild(armoireCell);
     tableBody.appendChild(armoireRow);
@@ -260,23 +262,25 @@
 
       tableBody.appendChild(row);
 
-      // Insertion de "SAC" après le 28ᵉ libellé (index 27)
+      // Insertion de "SAC" après le 28ème libellé (index 27)
       if(index === 27) {
         const sacRow = document.createElement("tr");
         const sacCell = document.createElement("td");
         sacCell.colSpan = 2;
         sacCell.style.fontWeight = "bold";
+        sacCell.style.color = "var(--instruction-color)";
         sacCell.textContent = "SAC";
         sacRow.appendChild(sacCell);
         tableBody.appendChild(sacRow);
       }
 
-      // Insertion de la ligne kit KATA après le 47ᵉ libellé (index 46)
+      // Insertion de la ligne kit KATA après le 47ème libellé (index 46)
       if(index === 46) {
         const kataRow = document.createElement("tr");
         const kataCell = document.createElement("td");
         kataCell.colSpan = 2;
         kataCell.style.fontWeight = "bold";
+        kataCell.style.color = "var(--instruction-color)";
         kataCell.textContent = "Si sac scellé, indiquer la date du scellé sur la date du kit KATA";
         kataRow.appendChild(kataCell);
         tableBody.appendChild(kataRow);
