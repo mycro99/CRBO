@@ -29,15 +29,16 @@
       color: var(--primary-color);
       margin-bottom: 20px;
     }
-    ul {
-      list-style: none;
-      padding: 0;
+    /* Grille à deux colonnes pour les boutons */
+    .button-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
     }
-    li {
-      margin: 15px 0;
-    }
-    a.button {
-      display: inline-block;
+    .button-grid a.button {
+      flex: 1 1 calc(50% - 20px);
+      max-width: calc(50% - 20px);
       padding: 12px 24px;
       font-size: 16px;
       background-color: var(--primary-color);
@@ -46,8 +47,9 @@
       border-radius: var(--border-radius);
       box-shadow: var(--box-shadow);
       transition: background-color 0.3s;
+      text-align: center;
     }
-    a.button:hover {
+    .button-grid a.button:hover {
       background-color: #c82333;
     }
   </style>
@@ -56,12 +58,12 @@
   <div class="container">
     <h1>Portail des Checks - CS Oupeye&reg;</h1>
     <h1>Bienvenue et bonne journée.</h1>
-    <ul>
-      <li><a href="ambu/ambu.html" class="button">Check Ambulance</a></li>
-      <li><a href="tpmr/tpmr.html" class="button">Check TPMR</a></li>
-      <li><a href="peremption/peremption.html" class="button">Check Peremption</a></li>
-      <li><a href="fit/fit.html" class="button">Check Fit</a></li>
-    </ul>
+    <div class="button-grid">
+      <a href="ambu/ambu.html" class="button">Check Ambulance</a>
+      <a href="peremption/peremption.html" class="button">Check Péremption</a>
+      <a href="tpmr/tpmr.html" class="button">Check TPMR</a>
+      <a href="fit/fit.html" class="button">Check Fit</a>
+    </div>
   </div>
 </body>
 </html>
