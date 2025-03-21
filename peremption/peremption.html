@@ -31,18 +31,6 @@
     h1 {
       margin-bottom: 20px;
     }
-    .instructions {
-      margin-bottom: 20px;
-      padding: 10px;
-      border: 1px solid var(--primary-color);
-      border-radius: var(--border-radius);
-      background-color: #fff;
-      box-shadow: var(--box-shadow);
-    }
-    .instructions p {
-      margin: 5px 0;
-      font-weight: bold;
-    }
     .form-row {
       display: flex;
       flex-wrap: wrap;
@@ -149,12 +137,9 @@
       </div>
     </div>
     
-    <!-- Section des instructions (commentaires) en gras -->
-    <div class="instructions">
-      <p>Merci de compléter, chaque fois, avec la date de péremption la plus proche</p>
-      <p>Indiquer qu'on est dans les armoires</p>
-      <p>Indiquer qu'on est dans le sac :</p>
-      <p>Si sac scellé, indiquer la date du scellé sur la date du kit KATA</p>
+    <!-- Instructions extérieures (non intégrées dans le tableau) -->
+    <div class="instructions" style="margin-bottom:20px;">
+      <p style="font-weight: bold;">Merci de compléter, chaque fois, avec la date de péremption la plus proche</p>
     </div>
     
     <!-- Tableau de vérification -->
@@ -186,7 +171,7 @@
   </div> <!-- Fin de #pdfContent -->
 
   <script>
-    // Tableau des libellés personnalisés pour le check péremption (les vérifications réelles)
+    // Tableau des libellés personnalisés pour le check péremption.
     const customLabels = [
       "3 sondes d'aspiration rouge",
       "3 sondes d'aspiration verte",
@@ -216,6 +201,7 @@
       "2 perfs NACL",
       "2 perfs eau stérile",
       "1 kit brulure",
+      // Après 28 lignes, insérer "SAC" (ce sera inséré après le 28ᵉ élément)
       "1 patch DEA supplémentaire",
       "1 DEA + 1 patch DEA",
       "2 filtres REA",
@@ -233,6 +219,7 @@
       "2 compresses 10x20",
       "15 flapules LP",
       "1 velpo 15cm",
+      // Après 47 lignes, insérer la ligne sur le kit KATA
       "2 velpo 10cm",
       "2 velpo 7cm",
       "Kit KATA (à vérifier, mais pas de date)",
@@ -246,8 +233,17 @@
 
     const tableBody = document.getElementById("tableBody");
 
-    // Génération dynamique des lignes du tableau en fonction du tableau customLabels.
-    customLabels.forEach(label => {
+    // Insérer la ligne "ARMOIRE" en haut du tableau (après le header)
+    const armoireRow = document.createElement("tr");
+    const armoireCell = document.createElement("td");
+    armoireCell.colSpan = 2;
+    armoireCell.style.fontWeight = "bold";
+    armoireCell.textContent = "ARMOIRE";
+    armoireRow.appendChild(armoireCell);
+    tableBody.appendChild(armoireRow);
+
+    // Génération dynamique des lignes du tableau en fonction de customLabels.
+    customLabels.forEach((label, index) => {
       const row = document.createElement("tr");
 
       // Colonne du libellé personnalisé
@@ -258,11 +254,33 @@
       // Colonne avec le champ de sélection du mois
       const cell2 = document.createElement("td");
       const inputMonth = document.createElement("input");
-      inputMonth.type = "month";  // Ce champ ouvre un calendrier pour choisir le mois et l'année
+      inputMonth.type = "month";  // Permet de choisir le mois et l'année
       cell2.appendChild(inputMonth);
       row.appendChild(cell2);
 
       tableBody.appendChild(row);
+
+      // Insertion de "SAC" après le 28ᵉ libellé (index 27)
+      if(index === 27) {
+        const sacRow = document.createElement("tr");
+        const sacCell = document.createElement("td");
+        sacCell.colSpan = 2;
+        sacCell.style.fontWeight = "bold";
+        sacCell.textContent = "SAC";
+        sacRow.appendChild(sacCell);
+        tableBody.appendChild(sacRow);
+      }
+
+      // Insertion de la ligne kit KATA après le 47ᵉ libellé (index 46)
+      if(index === 46) {
+        const kataRow = document.createElement("tr");
+        const kataCell = document.createElement("td");
+        kataCell.colSpan = 2;
+        kataCell.style.fontWeight = "bold";
+        kataCell.textContent = "Si sac scellé, indiquer la date du scellé sur la date du kit KATA";
+        kataRow.appendChild(kataCell);
+        tableBody.appendChild(kataRow);
+      }
     });
 
     // Fonction pour générer le PDF
