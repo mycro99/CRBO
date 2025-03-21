@@ -170,122 +170,84 @@
       <button class="pdf-button" onclick="generatePDF()">Générer PDF</button>
     </div>
   </div> <!-- Fin de #pdfContent -->
+<script>
+  const customLabels = [
+  "3 sondes d'aspiration rouge",
+  "3 sondes d'aspiration verte",
+  // ... (autres libellés)
+  "2 kits voies périphériques"
+];
 
-  <script>
-    // Tableau des libellés personnalisés pour le check péremption.
-    const customLabels = [
-      "3 sondes d'aspiration rouge",
-      "3 sondes d'aspiration verte",
-      "3 sondes d'aspiration noire",
-      "3 masques 100% adulte",
-      "2 lunettes adulte",
-      "1 aerosol adulte",
-      "3 masques 100% pédia",
-      "2 lunettes pédia",
-      "1 aerosol pédia",
-      "2 filtres REA",
-      "1 patch DEA",
-      "4 canules adulte",
-      "2 sacs d'aspiration",
-      "2 tuyaux d'aspiration",
-      "2 crevettes",
-      "10 compresses 5x5",
-      "10 compresses 7.5x7.5",
-      "10 compresses 10x10",
-      "10 compresses 10x20",
-      "2 velpo 5cm",
-      "3 velpo 7cm",
-      "3 velpo 10cm",
-      "4 velpo 15cm",
-      "15 flapules LP",
-      "6 eaux",
-      "2 perfs NACL",
-      "2 perfs eau stérile",
-      "1 kit brulure",
-      // Insertion automatique : après le 28ème libellé, on insère la ligne SAC.
-      "1 patch DEA supplémentaire",
-      "1 DEA + 1 patch DEA",
-      "2 filtres REA",
-      "Canules adulte",
-      "Sondes d'aspiration adulte",
-      "1 filtre REA",
-      "Canules pédia",
-      "Sonde d'aspiration pédia",
-      "2 masques 100% adulte",
-      "2 lunettes adulte",
-      "2 masques 100% pédia",
-      "2 lunettes pédia",
-      "10 compresses 7.5x7.5",
-      "10 compresses 10x10",
-      "2 compresses 10x20",
-      "15 flapules LP",
-      "1 velpo 15cm",
-      // Insertion automatique : après le 47ème libellé, on insère la ligne kit KATA.
-      "2 velpo 10cm",
-      "2 velpo 7cm",
-      "Kit KATA (à vérifier, mais pas de date)",
-      "2 perfs NACL",
-      "2 trousses de perf",
-      "5 isobétadines",
-      "5 clorixidrines",
-      "1 kit accouchement",
-      "2 kits voies périphériques"
-    ];
+const tableBody = document.getElementById("tableBody");
 
-    const tableBody = document.getElementById("tableBody");
+// Insérer la ligne "ARMOIRE" en haut du tableau (après le header)
+const armoireRow = document.createElement("tr");
+const armoireCell = document.createElement("td");
+armoireCell.colSpan = 2;
+armoireCell.style.fontWeight = "bold";
+armoireCell.style.color = "var(--instruction-color)";
+armoireCell.textContent = "ARMOIRE";
+armoireRow.appendChild(armoireCell);
+tableBody.appendChild(armoireRow);
 
-    // Insérer la ligne "ARMOIRE" en haut du tableau (après le header)
-    const armoireRow = document.createElement("tr");
-    const armoireCell = document.createElement("td");
-    armoireCell.colSpan = 2;
-    armoireCell.style.fontWeight = "bold";
-    armoireCell.style.color = "var(--instruction-color)";
-    armoireCell.textContent = "ARMOIRE";
-    armoireRow.appendChild(armoireCell);
-    tableBody.appendChild(armoireRow);
+// Génération dynamique des lignes du tableau en fonction de customLabels.
+customLabels.forEach((label, index) => {
+  const row = document.createElement("tr");
 
-    // Génération dynamique des lignes du tableau en fonction de customLabels.
-    customLabels.forEach((label, index) => {
-      const row = document.createElement("tr");
+  // Colonne du libellé personnalisé
+  const cell1 = document.createElement("td");
+  cell1.textContent = label;
+  row.appendChild(cell1);
 
-      // Colonne du libellé personnalisé
-      const cell1 = document.createElement("td");
-      cell1.textContent = label;
-      row.appendChild(cell1);
+  // Colonne avec le champ de sélection du mois
+  const cell2 = document.createElement("td");
+  const inputMonth = document.createElement("input");
+  inputMonth.type = "month";  // Permet de choisir le mois et l'année
+  cell2.appendChild(inputMonth);
+  row.appendChild(cell2);
 
-      // Colonne avec le champ de sélection du mois
-      const cell2 = document.createElement("td");
-      const inputMonth = document.createElement("input");
-      inputMonth.type = "month";  // Permet de choisir le mois et l'année
-      cell2.appendChild(inputMonth);
-      row.appendChild(cell2);
+  tableBody.appendChild(row);
 
-      tableBody.appendChild(row);
+  // Insertion de "SAC" après le 28ème libellé (index 27)
+  if (index === 27) {
+    const sacRow = document.createElement("tr");
+    const sacCell = document.createElement("td");
+    sacCell.colSpan = 2;
+    sacCell.style.fontWeight = "bold";
+    sacCell.style.color = "var(--instruction-color)";
+    sacCell.textContent = "SAC";
+    sacRow.appendChild(sacCell);
+    tableBody.appendChild(sacRow);
+  }
 
-      // Insertion de "SAC" après le 28ème libellé (index 27)
-      if(index === 27) {
-        const sacRow = document.createElement("tr");
-        const sacCell = document.createElement("td");
-        sacCell.colSpan = 2;
-        sacCell.style.fontWeight = "bold";
-        sacCell.style.color = "var(--instruction-color)";
-        sacCell.textContent = "SAC";
-        sacRow.appendChild(sacCell);
-        tableBody.appendChild(sacRow);
-      }
+  // Insertion de la ligne kit KATA après le 47ème libellé (index 46)
+  if (index === 46) {
+    const kataRow = document.createElement("tr");
+    const kataCell = document.createElement("td");
+    kataCell.colSpan = 2;
+    kataCell.style.fontWeight = "bold";
+    kataCell.style.color = "var(--instruction-color)";
+    kataCell.textContent = "Si sac complément scellé, indiquer la date du scellé sur la date du kit KATA";
+    kataRow.appendChild(kataCell);
+    tableBody.appendChild(kataRow);
+  }
+});
 
-      // Insertion de la ligne kit KATA après le 47ème libellé (index 46)
-      if(index === 46) {
-        const kataRow = document.createElement("tr");
-        const kataCell = document.createElement("td");
-        kataCell.colSpan = 2;
-        kataCell.style.fontWeight = "bold";
-        kataCell.style.color = "var(--instruction-color)";
-        kataCell.textContent = "Si sac complément scellé, indiquer la date du scellé sur la date du kit KATA";
-        kataRow.appendChild(kataCell);
-        tableBody.appendChild(kataRow);
-      }
-    });
+// Ajout de 4 lignes supplémentaires pour B5 et B10.
+const extraLabels = ["B5 haut", "B5 bas", "B10 gauche", "B10 droite"];
+extraLabels.forEach(label => {
+  const row = document.createElement("tr");
+  const cell1 = document.createElement("td");
+  cell1.textContent = label;
+  row.appendChild(cell1);
+  const cell2 = document.createElement("td");
+  const inputMonth = document.createElement("input");
+  inputMonth.type = "month";
+  cell2.appendChild(inputMonth);
+  row.appendChild(cell2);
+  tableBody.appendChild(row);
+});
+
 
     // Fonction pour générer le PDF
     function generatePDF() {
