@@ -31,6 +31,18 @@
     h1 {
       margin-bottom: 20px;
     }
+    .instructions {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid var(--primary-color);
+      border-radius: var(--border-radius);
+      background-color: #fff;
+      box-shadow: var(--box-shadow);
+    }
+    .instructions p {
+      margin: 5px 0;
+      font-weight: bold;
+    }
     .form-row {
       display: flex;
       flex-wrap: wrap;
@@ -137,6 +149,14 @@
       </div>
     </div>
     
+    <!-- Section des instructions (commentaires) en gras -->
+    <div class="instructions">
+      <p>Merci de compléter, chaque fois, avec la date de péremption la plus proche</p>
+      <p>Indiquer qu'on est dans les armoires</p>
+      <p>Indiquer qu'on est dans le sac :</p>
+      <p>Si sac scellé, indiquer la date du scellé sur la date du kit KATA</p>
+    </div>
+    
     <!-- Tableau de vérification -->
     <h2>Tableau de vérification</h2>
     <table>
@@ -166,11 +186,8 @@
   </div> <!-- Fin de #pdfContent -->
 
   <script>
-    // Tableau des libellés personnalisés pour le check péremption.
-    // Les messages que tu souhaites afficher apparaîtront ici dans l'ordre.
+    // Tableau des libellés personnalisés pour le check péremption (les vérifications réelles)
     const customLabels = [
-      "Merci de compléter, chaque fois, avec la date de péremption la plus proche",
-      "Indiquer qu'on est dans les armoires",
       "3 sondes d'aspiration rouge",
       "3 sondes d'aspiration verte",
       "3 sondes d'aspiration noire",
@@ -199,7 +216,6 @@
       "2 perfs NACL",
       "2 perfs eau stérile",
       "1 kit brulure",
-      "Indiquer qu'on est dans le sac :",
       "1 patch DEA supplémentaire",
       "1 DEA + 1 patch DEA",
       "2 filtres REA",
@@ -219,7 +235,6 @@
       "1 velpo 15cm",
       "2 velpo 10cm",
       "2 velpo 7cm",
-      "Si sac scellé, indiquer la date du scellé sur la date du kit KATA",
       "Kit KATA (à vérifier, mais pas de date)",
       "2 perfs NACL",
       "2 trousses de perf",
