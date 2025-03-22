@@ -33,19 +33,19 @@
     .columns {
       display: flex;
       justify-content: center;
-      gap: 60px; /* Espace plus grand entre les colonnes */
+      gap: 60px;
     }
     /* Chaque colonne */
     .column {
       display: flex;
       flex-direction: column;
-      gap: 30px; /* Espace entre les boutons de chaque colonne */
-      width: 250px; /* Largeur augmentée pour des boutons plus grands */
+      gap: 30px;
+      width: 250px;
     }
     a.button {
       display: inline-block;
-      padding: 16px 32px; /* Boutons plus grands grâce à un padding augmenté */
-      font-size: 18px;    /* Texte en plus grande taille */
+      padding: 16px 32px;
+      font-size: 18px;
       background-color: var(--primary-color);
       color: #fff;
       text-decoration: none;
@@ -74,5 +74,27 @@
       </div>
     </div>
   </div>
+
+  <script>
+    // Intercepte le clic sur chaque bouton et vérifie la disponibilité de la page cible.
+    document.querySelectorAll("a.button").forEach(link => {
+      link.addEventListener("click", function(e) {
+        e.preventDefault();
+        const href = this.getAttribute("href");
+        // On effectue une requête HEAD pour vérifier si la page est disponible.
+        fetch(href, { method: "HEAD" })
+          .then(response => {
+            if(response.ok) {
+              window.location.href = href;
+            } else {
+              window.location.href = "nowork/notwork.html";
+            }
+          })
+          .catch(error => {
+            window.location.href = "nowork/notwork.html";
+          });
+      });
+    });
+  </script>
 </body>
 </html>
