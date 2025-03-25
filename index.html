@@ -12,6 +12,8 @@
       --text-color: #333;
       --border-radius: 6px;
       --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      --button-width: 250px;
+      --button-gap: 60px;
     }
     body {
       font-family: 'Roboto', sans-serif;
@@ -29,18 +31,19 @@
       color: var(--primary-color);
       margin-bottom: 20px;
     }
-    /* Conteneur des colonnes */
+    /* Conteneur des colonnes pour les boutons existants */
     .columns {
       display: flex;
       justify-content: center;
-      gap: 60px;
+      gap: var(--button-gap);
+      margin-bottom: 40px; /* Espace avant le bouton Inventaire */
     }
     /* Chaque colonne */
     .column {
       display: flex;
       flex-direction: column;
       gap: 30px;
-      width: 250px;
+      width: var(--button-width);
     }
     a.button {
       display: inline-block;
@@ -57,13 +60,20 @@
     a.button:hover {
       background-color: #c82333;
     }
-    /* Nouveau style pour le bouton Inventaire */
+    /* Style spécifique pour le bouton Inventaire */
     a.button.inventaire {
       background-color: #28a745;
       color: #fff;
     }
     a.button.inventaire:hover {
       background-color: #218838;
+    }
+    /* Conteneur du bouton Inventaire centré et étendu sur deux boutons */
+    .inventaire-container {
+      text-align: center;
+    }
+    .inventaire-container a.button.inventaire {
+      width: calc(2 * var(--button-width) + var(--button-gap));
     }
   </style>
 </head>
@@ -80,14 +90,14 @@
         <a href="peremption/peremption.html" class="button">Check Péremption</a>
         <a href="fit/fit.html" class="button">Check Fit</a>
       </div>
-      <div class="column">
-        <a href="inventaire/inventaire.html" class="button inventaire">Check Inventaire</a>
-      </div>
+    </div>
+    <div class="inventaire-container">
+      <a href="inventaire/inventaire.html" class="button inventaire">Check Inventaire</a>
     </div>
   </div>
 
   <script>
-    // Intercepte le clic sur chaque bouton et vérifie la disponibilité de la page cible.
+    // Interception du clic sur chaque bouton pour vérifier la disponibilité de la page cible
     document.querySelectorAll("a.button").forEach(link => {
       link.addEventListener("click", function(e) {
         e.preventDefault();
@@ -102,7 +112,7 @@
         }
         
         const href = this.getAttribute("href");
-        // On effectue une requête HEAD pour vérifier si la page est disponible.
+        // Vérification de la disponibilité de la page via une requête HEAD
         fetch(href, { method: "HEAD" })
           .then(response => {
             if(response.ok) {
