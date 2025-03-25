@@ -1,0 +1,2146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Inventaire réserve - CS Oupeye ©</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <!-- Inclusion de QuaggaJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+  <!-- Inclusion de jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Inclusion de html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --primary-color: #dc3545;
+      --secondary-color: #6c757d;
+      --bg-color: #f5f5f5;
+      --text-color: red; /* Texte global en rouge */
+      --border-radius: 6px;
+      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+    /* Conteneur principal */
+    #pdfContent {
+      max-width: 900px;
+      margin: auto;
+    }
+    h1, h2 {
+      text-align: center;
+      color: var(--primary-color);
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #fff;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      overflow: visible;
+      box-shadow: var(--box-shadow);
+    }
+    th, td {
+      border: 1px solid var(--secondary-color);
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: var(--primary-color);
+      color: #fff;
+      font-weight: 500;
+    }
+    /* Les 4 premières colonnes du tableau en noir */
+    .inventory-table tbody td:nth-child(1),
+    .inventory-table tbody td:nth-child(2),
+    .inventory-table tbody td:nth-child(3),
+    .inventory-table tbody td:nth-child(4) {
+      color: black;
+    }
+    .pdf-button {
+      display: inline-block;
+      padding: 8px 16px;
+      font-size: 14px;
+      background-color: var(--primary-color);
+      color: #fff;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      box-shadow: var(--box-shadow);
+      margin: 0 10px;
+    }
+    .pdf-button:hover {
+      background-color: #c82333;
+    }
+    /* Boutons de gestion de stock */
+    .stock-button {
+      font-size: 24px;
+      width: 50px;
+      height: 50px;
+      line-height: 50px;
+      text-align: center;
+      margin: 0 5px;
+      background-color: var(--primary-color);
+      color: #fff;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      box-shadow: var(--box-shadow);
+    }
+    .stock-button:hover {
+      background-color: #c82333;
+    }
+    /* Styles pour les modaux */
+    #scannerModal, #recommandationModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+    }
+    #scannerContent {
+      position: relative;
+      margin: 10% auto;
+      width: 80%;
+      max-width: 600px;
+      background: #fff;
+      padding: 20px;
+      color: black;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    /* Remplacement du <video> par une zone interactive pour QuaggaJS */
+    #interactive {
+      width: 100%;
+      height: auto;
+    }
+    /* Modal recommandations : contenu scrollable et fermeture en cliquant à côté */
+    #recommandationContent {
+      position: relative;
+      margin: 10% auto;
+      width: 80%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      background: #fff;
+      padding: 20px;
+      color: black;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    .button-container {
+      text-align: center;
+      margin-top: 30px;
+    }
+    /* Lignes de catégorie */
+    .category-header {
+      background-color: #fff; /* Fond blanc */
+      color: black;
+      cursor: pointer;
+      font-weight: bold;
+      border: 1px solid var(--secondary-color);
+    }
+    /* Panneau de contrôle */
+    .control-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .left-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .control-panel input[type="text"] {
+      padding: 5px;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+    }
+  </style>
+</head>
+<body>
+  <div id="pdfContent">
+    <h1>Inventaire réserve - CS Oupeye ©</h1>
+    
+    <!-- Panneau de contrôle -->
+    <div class="control-panel">
+      <div class="left-controls">
+        <button class="pdf-button" onclick="expandAll()">Tout dérouler</button>
+        <button class="pdf-button" onclick="collapseAll()">Replier</button>
+        <input type="text" id="searchInput" placeholder="Recherche..." onkeyup="searchArticles()">
+        <button class="pdf-button" onclick="showRecommendations()">À recommander</button>
+      </div>
+      <div class="right-controls">
+        <button class="pdf-button" onclick="openScanner()">Scanner</button>
+      </div>
+    </div>
+    
+    <table class="inventory-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Photo</th>
+          <th>Quantité en stock</th>
+          <th>Quantité minimum</th>
+          <th>Gestion</th>
+        </tr>
+      </thead>
+      <tbody id="inventoryTable">
+        <!-- Consommables -->
+        <tr class="category-header" data-category="consommables" onclick="toggleCategory('consommables')">
+          <td colspan="5">Consommables <span id="toggle-consommables" style="float:right;">[+]</span></td>
+        </tr>
+        <!-- Vos articles de Consommables (exemple avec quelques lignes) -->
+        <tr class="article-row consommables" data-id="consommables-1" style="display: none;">
+          <td>Accu-check</td>
+          <td><img src="" alt="Photo Accu-check" width="80"></td>
+          <td id="stock-consommables-1">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-1', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-1', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-2" style="display: none;">
+          <td>Aesculap</td>
+          <td><img src="" alt="Photo Aesculap" width="80"></td>
+          <td id="stock-consommables-2">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-2', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-2', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-3" style="display: none;">
+          <td>Aspivenin</td>
+          <td><img src="" alt="Photo Aspivenin" width="80"></td>
+          <td id="stock-consommables-3">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-3', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-3', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-4" style="display: none;">
+          <td>Ballon réa adulte</td>
+          <td><img src="" alt="Photo Ballon réa adulte" width="80"></td>
+          <td id="stock-consommables-4">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-4', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-4', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-5" style="display: none;">
+          <td>Ballon réa NN</td>
+          <td><img src="" alt="Photo Ballon réa NN" width="80"></td>
+          <td id="stock-consommables-5">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-5', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-5', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-6" style="display: none;">
+          <td>Ballon réa pédia</td>
+          <td><img src="" alt="Photo Ballon réa pédia" width="80"></td>
+          <td id="stock-consommables-6">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-6', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-6', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-7" style="display: none;">
+          <td>Bandage israélien</td>
+          <td><img src="" alt="Photo Bandage israélien" width="80"></td>
+          <td id="stock-consommables-7">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-7', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-7', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-8" style="display: none;">
+          <td>Bandage triangle</td>
+          <td><img src="" alt="Photo Bandage triangle" width="80"></td>
+          <td id="stock-consommables-8">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-8', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-8', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-9" style="display: none;">
+          <td>Bande velpo 15cm</td>
+          <td><img src="" alt="Photo Bande velpo 15cm" width="80"></td>
+          <td id="stock-consommables-9">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-9', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-9', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-10" style="display: none;">
+          <td>Bande velpo 10cm</td>
+          <td><img src="" alt="Photo Bande velpo 10cm" width="80"></td>
+          <td id="stock-consommables-10">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-10', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-10', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-11" style="display: none;">
+          <td>Bande velpo 7cm</td>
+          <td><img src="" alt="Photo Bande velpo 7cm" width="80"></td>
+          <td id="stock-consommables-11">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-11', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-11', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-12" style="display: none;">
+          <td>Bande velpo 5cm</td>
+          <td><img src="" alt="Photo Bande velpo 5cm" width="80"></td>
+          <td id="stock-consommables-12">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-12', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-12', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-13" style="display: none;">
+          <td>Bassin réniforme</td>
+          <td><img src="" alt="Photo Bassin réniforme" width="80"></td>
+          <td id="stock-consommables-13">0</td>
+          <td>50</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-13', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-13', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-14" style="display: none;">
+          <td>Batterie aspo</td>
+          <td><img src="" alt="Photo Batterie aspo" width="80"></td>
+          <td id="stock-consommables-14">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-14', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-14', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-15" style="display: none;">
+          <td>Batterie DEA phillips</td>
+          <td><img src="" alt="Photo Batterie DEA phillips" width="80"></td>
+          <td id="stock-consommables-15">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-15', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-15', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-16" style="display: none;">
+          <td>Brosse à ongles</td>
+          <td><img src="" alt="Photo Brosse à ongles" width="80"></td>
+          <td id="stock-consommables-16">0</td>
+          <td>0</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-16', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-16', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-17" style="display: none;">
+          <td>Canule N°1 (blanche)</td>
+          <td><img src="" alt="Photo Canule N°1 (blanche)" width="80"></td>
+          <td id="stock-consommables-17">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-17', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-17', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-18" style="display: none;">
+          <td>Canule N°2 (verte)</td>
+          <td><img src="" alt="Photo Canule N°2 (verte)" width="80"></td>
+          <td id="stock-consommables-18">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-18', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-18', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-19" style="display: none;">
+          <td>Canule N°3 (jaune)</td>
+          <td><img src="" alt="Photo Canule N°3 (jaune)" width="80"></td>
+          <td id="stock-consommables-19">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-19', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-19', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-20" style="display: none;">
+          <td>Canule N°4 (rouge)</td>
+          <td><img src="" alt="Photo Canule N°4 (rouge)" width="80"></td>
+          <td id="stock-consommables-20">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-20', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-20', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-21" style="display: none;">
+          <td>Canule N°5 (bleu)</td>
+          <td><img src="" alt="Photo Canule N°5 (bleu)" width="80"></td>
+          <td id="stock-consommables-21">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-21', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-21', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-22" style="display: none;">
+          <td>Canule N°6 (orange)</td>
+          <td><img src="" alt="Photo Canule N°6 (orange)" width="80"></td>
+          <td id="stock-consommables-22">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-22', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-22', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-23" style="display: none;">
+          <td>Canule N°7 (noir)</td>
+          <td><img src="" alt="Photo Canule N°7 (noir)" width="80"></td>
+          <td id="stock-consommables-23">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-23', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-23', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-24" style="display: none;">
+          <td>Canule pédia N°00 (bleu)</td>
+          <td><img src="" alt="Photo Canule pédia N°00 (bleu)" width="80"></td>
+          <td id="stock-consommables-24">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-24', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-24', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-25" style="display: none;">
+          <td>Champ stérile</td>
+          <td><img src="" alt="Photo Champ stérile" width="80"></td>
+          <td id="stock-consommables-25">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-25', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-25', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-26" style="display: none;">
+          <td>Clorexidrine</td>
+          <td><img src="" alt="Photo Clorexidrine" width="80"></td>
+          <td id="stock-consommables-26">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-26', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-26', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-27" style="display: none;">
+          <td>Coffee creamer</td>
+          <td><img src="" alt="Photo Coffee creamer" width="80"></td>
+          <td id="stock-consommables-27">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-27', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-27', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-28" style="display: none;">
+          <td>Cold pack</td>
+          <td><img src="" alt="Photo Cold pack" width="80"></td>
+          <td id="stock-consommables-28">0</td>
+          <td>15</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-28', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-28', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-29" style="display: none;">
+          <td>Collier cervical adulte</td>
+          <td><img src="" alt="Photo Collier cervical adulte" width="80"></td>
+          <td id="stock-consommables-29">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-29', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-29', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-30" style="display: none;">
+          <td>Collier cervical pédia</td>
+          <td><img src="" alt="Photo Collier cervical pédia" width="80"></td>
+          <td id="stock-consommables-30">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-30', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-30', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-31" style="display: none;">
+          <td>Compresses 10x20</td>
+          <td><img src="" alt="Photo Compresses 10x20" width="80"></td>
+          <td id="stock-consommables-31">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-31', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-31', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-32" style="display: none;">
+          <td>Compresses 10x10</td>
+          <td><img src="" alt="Photo Compresses 10x10" width="80"></td>
+          <td id="stock-consommables-32">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-32', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-32', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-33" style="display: none;">
+          <td>Compresses 7.5x7.5</td>
+          <td><img src="" alt="Photo Compresses 7.5x7.5" width="80"></td>
+          <td id="stock-consommables-33">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-33', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-33', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-34" style="display: none;">
+          <td>Compresses 5x5</td>
+          <td><img src="" alt="Photo Compresses 5x5" width="80"></td>
+          <td id="stock-consommables-34">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-34', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-34', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-35" style="display: none;">
+          <td>Conteneur B2 ambu</td>
+          <td><img src="" alt="Photo Conteneur B2 ambu" width="80"></td>
+          <td id="stock-consommables-35">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-35', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-35', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-36" style="display: none;">
+          <td>Conteneur B2 de poche</td>
+          <td><img src="" alt="Photo Conteneur B2 de poche" width="80"></td>
+          <td id="stock-consommables-36">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-36', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-36', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-37" style="display: none;">
+          <td>Coussin stolenwerk noir</td>
+          <td><img src="" alt="Photo Coussin stolenwerk noir" width="80"></td>
+          <td id="stock-consommables-37">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-37', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-37', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-38" style="display: none;">
+          <td>Coussin stolenwerk orange</td>
+          <td><img src="" alt="Photo Coussin stolenwerk orange" width="80"></td>
+          <td id="stock-consommables-38">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-38', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-38', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-39" style="display: none;">
+          <td>Couverture de survie</td>
+          <td><img src="" alt="Photo Couverture de survie" width="80"></td>
+          <td id="stock-consommables-39">0</td>
+          <td>30</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-39', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-39', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-40" style="display: none;">
+          <td>crevette</td>
+          <td><img src="" alt="Photo crevette" width="80"></td>
+          <td id="stock-consommables-40">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-40', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-40', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-41" style="display: none;">
+          <td>embout thermometre</td>
+          <td><img src="" alt="Photo embout thermometre" width="80"></td>
+          <td id="stock-consommables-41">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-41', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-41', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-42" style="display: none;">
+          <td>essui accouchement</td>
+          <td><img src="" alt="Photo essui accouchement" width="80"></td>
+          <td id="stock-consommables-42">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-42', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-42', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-43" style="display: none;">
+          <td>filtre réa</td>
+          <td><img src="" alt="Photo filtre réa" width="80"></td>
+          <td id="stock-consommables-43">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-43', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-43', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-44" style="display: none;">
+          <td>garrot tourniquet</td>
+          <td><img src="" alt="Photo garrot tourniquet" width="80"></td>
+          <td id="stock-consommables-44">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-44', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-44', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-45" style="display: none;">
+          <td>gluco</td>
+          <td><img src="" alt="Photo gluco" width="80"></td>
+          <td id="stock-consommables-45">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-45', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-45', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-46" style="display: none;">
+          <td>Gants L</td>
+          <td><img src="" alt="Photo Gants L" width="80"></td>
+          <td id="stock-consommables-46">0</td>
+          <td>15</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-46', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-46', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-47" style="display: none;">
+          <td>gants M</td>
+          <td><img src="" alt="Photo gants M" width="80"></td>
+          <td id="stock-consommables-47">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-47', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-47', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-48" style="display: none;">
+          <td>gants S</td>
+          <td><img src="" alt="Photo gants S" width="80"></td>
+          <td id="stock-consommables-48">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-48', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-48', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-49" style="display: none;">
+          <td>gants XL</td>
+          <td><img src="" alt="Photo gants XL" width="80"></td>
+          <td id="stock-consommables-49">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-49', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-49', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-50" style="display: none;">
+          <td>iso-bétadine</td>
+          <td><img src="" alt="Photo iso-bétadine" width="80"></td>
+          <td id="stock-consommables-50">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-50', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-50', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-51" style="display: none;">
+          <td>kit accouchement</td>
+          <td><img src="" alt="Photo kit accouchement" width="80"></td>
+          <td id="stock-consommables-51">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-51', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-51', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-52" style="display: none;">
+          <td>kit injection</td>
+          <td><img src="" alt="Photo kit injection" width="80"></td>
+          <td id="stock-consommables-52">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-52', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-52', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-53" style="display: none;">
+          <td>kit mousse speedblock</td>
+          <td><img src="" alt="Photo kit mousse speedblock" width="80"></td>
+          <td id="stock-consommables-53">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-53', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-53', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-54" style="display: none;">
+          <td>kit VP</td>
+          <td><img src="" alt="Photo kit VP" width="80"></td>
+          <td id="stock-consommables-54">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-54', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-54', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-55" style="display: none;">
+          <td>lampe pupille</td>
+          <td><img src="" alt="Photo lampe pupille" width="80"></td>
+          <td id="stock-consommables-55">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-55', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-55', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-56" style="display: none;">
+          <td>lange adulte</td>
+          <td><img src="" alt="Photo lange adulte" width="80"></td>
+          <td id="stock-consommables-56">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-56', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-56', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-57" style="display: none;">
+          <td>flapule LP</td>
+          <td><img src="" alt="Photo flapule LP" width="80"></td>
+          <td id="stock-consommables-57">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-57', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-57', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-58" style="display: none;">
+          <td>lunettes O² adulte</td>
+          <td><img src="" alt="Photo lunettes O² adulte" width="80"></td>
+          <td id="stock-consommables-58">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-58', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-58', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-59" style="display: none;">
+          <td>lunettes O² pédia</td>
+          <td><img src="" alt="Photo lunettes O² pédia" width="80"></td>
+          <td id="stock-consommables-59">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-59', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-59', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-60" style="display: none;">
+          <td>macaron jaune</td>
+          <td><img src="" alt="Photo macaron jaune" width="80"></td>
+          <td id="stock-consommables-60">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-60', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-60', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-61" style="display: none;">
+          <td>macaron noir</td>
+          <td><img src="" alt="Photo macaron noir" width="80"></td>
+          <td id="stock-consommables-61">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-61', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-61', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-62" style="display: none;">
+          <td>macaron rouge</td>
+          <td><img src="" alt="Photo macaron rouge" width="80"></td>
+          <td id="stock-consommables-62">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-62', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-62', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-63" style="display: none;">
+          <td>masque 100% adulte</td>
+          <td><img src="" alt="Photo masque 100% adulte" width="80"></td>
+          <td id="stock-consommables-63">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-63', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-63', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-64" style="display: none;">
+          <td>Masque 100% pédia</td>
+          <td><img src="" alt="Photo Masque 100% pédia" width="80"></td>
+          <td id="stock-consommables-64">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-64', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-64', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-65" style="display: none;">
+          <td>masque aerosol adulte</td>
+          <td><img src="" alt="Photo masque aerosol adulte" width="80"></td>
+          <td id="stock-consommables-65">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-65', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-65', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-66" style="display: none;">
+          <td>masque aérosol pédia</td>
+          <td><img src="" alt="Photo masque aérosol pédia" width="80"></td>
+          <td id="stock-consommables-66">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-66', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-66', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-67" style="display: none;">
+          <td>masque chir</td>
+          <td><img src="" alt="Photo masque chir" width="80"></td>
+          <td id="stock-consommables-67">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-67', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-67', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-68" style="display: none;">
+          <td>masque ffp2</td>
+          <td><img src="" alt="Photo masque ffp2" width="80"></td>
+          <td id="stock-consommables-68">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-68', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-68', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-69" style="display: none;">
+          <td>mouchoirs</td>
+          <td><img src="" alt="Photo mouchoirs" width="80"></td>
+          <td id="stock-consommables-69">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-69', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-69', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-70" style="display: none;">
+          <td>omnifix</td>
+          <td><img src="" alt="Photo omnifix" width="80"></td>
+          <td id="stock-consommables-70">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-70', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-70', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-71" style="display: none;">
+          <td>Padding</td>
+          <td><img src="" alt="Photo Padding" width="80"></td>
+          <td id="stock-consommables-71">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-71', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-71', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-72" style="display: none;">
+          <td>pansement compressif</td>
+          <td><img src="" alt="Photo pansement compressif" width="80"></td>
+          <td id="stock-consommables-72">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-72', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-72', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-73" style="display: none;">
+          <td>patch DEA Phillips</td>
+          <td><img src="" alt="Photo patch DEA Phillips" width="80"></td>
+          <td id="stock-consommables-73">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-73', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-73', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-74" style="display: none;">
+          <td>perf eau sterile</td>
+          <td><img src="" alt="Photo perf eau sterile" width="80"></td>
+          <td id="stock-consommables-74">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-74', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-74', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-75" style="display: none;">
+          <td>perf NACL</td>
+          <td><img src="" alt="Photo perf NACL" width="80"></td>
+          <td id="stock-consommables-75">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-75', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-75', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-76" style="display: none;">
+          <td>Pile AA</td>
+          <td><img src="" alt="Photo Pile AA" width="80"></td>
+          <td id="stock-consommables-76">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-76', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-76', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-77" style="display: none;">
+          <td>pile AAA</td>
+          <td><img src="" alt="Photo pile AAA" width="80"></td>
+          <td id="stock-consommables-77">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-77', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-77', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-78" style="display: none;">
+          <td>pile cr2032</td>
+          <td><img src="" alt="Photo pile cr2032" width="80"></td>
+          <td id="stock-consommables-78">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-78', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-78', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-79" style="display: none;">
+          <td>pince sat masimo</td>
+          <td><img src="" alt="Photo pince sat masimo" width="80"></td>
+          <td id="stock-consommables-79">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-79', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-79', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-80" style="display: none;">
+          <td>rasoir</td>
+          <td><img src="" alt="Photo rasoir" width="80"></td>
+          <td id="stock-consommables-80">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-80', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-80', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-81" style="display: none;">
+          <td>rubalise</td>
+          <td><img src="" alt="Photo rubalise" width="80"></td>
+          <td id="stock-consommables-81">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-81', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-81', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-82" style="display: none;">
+          <td>sac d'aspi</td>
+          <td><img src="" alt="Photo sac d'aspi" width="80"></td>
+          <td id="stock-consommables-82">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-82', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-82', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-83" style="display: none;">
+          <td>sac vomitoire</td>
+          <td><img src="" alt="Photo sac vomitoire" width="80"></td>
+          <td id="stock-consommables-83">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-83', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-83', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-84" style="display: none;">
+          <td>scotch 3M</td>
+          <td><img src="" alt="Photo scotch 3M" width="80"></td>
+          <td id="stock-consommables-84">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-84', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-84', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-85" style="display: none;">
+          <td>sonde aspi blanche (ch. 12)</td>
+          <td><img src="" alt="Photo sonde aspi blanche (ch. 12)" width="80"></td>
+          <td id="stock-consommables-85">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-85', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-85', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-86" style="display: none;">
+          <td>sonde aspi noir (ch. 10)</td>
+          <td><img src="" alt="Photo sonde aspi noir (ch. 10)" width="80"></td>
+          <td id="stock-consommables-86">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-86', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-86', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-87" style="display: none;">
+          <td>sonde aspi rouge (ch. 18)</td>
+          <td><img src="" alt="Photo sonde aspi rouge (ch. 18)" width="80"></td>
+          <td id="stock-consommables-87">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-87', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-87', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-88" style="display: none;">
+          <td>sonde aspi verte (ch. 14)</td>
+          <td><img src="" alt="Photo sonde aspi verte (ch. 14)" width="80"></td>
+          <td id="stock-consommables-88">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-88', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-88', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-89" style="display: none;">
+          <td>royco</td>
+          <td><img src="" alt="Photo royco" width="80"></td>
+          <td id="stock-consommables-89">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-89', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-89', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-90" style="display: none;">
+          <td>Speedblock</td>
+          <td><img src="" alt="Photo Speedblock" width="80"></td>
+          <td id="stock-consommables-90">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-90', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-90', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-91" style="display: none;">
+          <td>stethoscope</td>
+          <td><img src="" alt="Photo stethoscope" width="80"></td>
+          <td id="stock-consommables-91">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-91', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-91', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-92" style="display: none;">
+          <td>tensiomètre adulte</td>
+          <td><img src="" alt="Photo tensiomètre adulte" width="80"></td>
+          <td id="stock-consommables-92">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-92', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-92', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-93" style="display: none;">
+          <td>tensiomètre baria</td>
+          <td><img src="" alt="Photo tensiomètre baria" width="80"></td>
+          <td id="stock-consommables-93">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-93', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-93', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-94" style="display: none;">
+          <td>tensiometre pédia</td>
+          <td><img src="" alt="Photo tensiometre pédia" width="80"></td>
+          <td id="stock-consommables-94">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-94', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-94', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-95" style="display: none;">
+          <td>Thermomètre</td>
+          <td><img src="" alt="Photo Thermomètre" width="80"></td>
+          <td id="stock-consommables-95">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-95', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-95', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-96" style="display: none;">
+          <td>tigette gluco</td>
+          <td><img src="" alt="Photo tigette gluco" width="80"></td>
+          <td id="stock-consommables-96">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-96', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-96', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-97" style="display: none;">
+          <td>touillette</td>
+          <td><img src="" alt="Photo touillette" width="80"></td>
+          <td id="stock-consommables-97">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-97', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-97', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-98" style="display: none;">
+          <td>trousse robinet perf</td>
+          <td><img src="" alt="Photo trousse robinet perf" width="80"></td>
+          <td id="stock-consommables-98">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-98', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-98', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-99" style="display: none;">
+          <td>tuyau d'aspi</td>
+          <td><img src="" alt="Photo tuyau d'aspi" width="80"></td>
+          <td id="stock-consommables-99">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-99', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-99', -1)">-</button>
+          </td>
+        </tr>
+        <!-- Désinfection -->
+        <tr class="category-header" data-category="desinfection" onclick="toggleCategory('desinfection')">
+          <td colspan="5">Désinfection <span id="toggle-desinfection" style="float:right;">[+]</span></td>
+        </tr>
+        <tr class="article-row desinfection" data-id="desinfection-1" style="display: none;">
+          <td>air citrea</td>
+          <td><img src="" alt="Photo air citrea" width="80"></td>
+          <td id="stock-desinfection-1">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('desinfection-1', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('desinfection-1', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row desinfection" data-id="desinfection-2" style="display: none;">
+          <td>dettol</td>
+          <td><img src="" alt="Photo dettol" width="80"></td>
+          <td id="stock-desinfection-2">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('desinfection-2', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('desinfection-2', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row desinfection" data-id="desinfection-3" style="display: none;">
+          <td>lunette protection</td>
+          <td><img src="" alt="Photo lunette protection" width="80"></td>
+          <td id="stock-desinfection-3">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('desinfection-3', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('desinfection-3', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row desinfection" data-id="desinfection-4" style="display: none;">
+          <td>sterilium gel</td>
+          <td><img src="" alt="Photo sterilium gel" width="80"></td>
+          <td id="stock-desinfection-4">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('desinfection-4', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('desinfection-4', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row desinfection" data-id="desinfection-5" style="display: none;">
+          <td>umonium concentré</td>
+          <td><img src="" alt="Photo umonium concentré" width="80"></td>
+          <td id="stock-desinfection-5">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('desinfection-5', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('desinfection-5', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row desinfection" data-id="desinfection-6" style="display: none;">
+          <td>umonium spray</td>
+          <td><img src="" alt="Photo umonium spray" width="80"></td>
+          <td id="stock-desinfection-6">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('desinfection-6', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('desinfection-6', -1)">-</button>
+          </td>
+        </tr>
+        
+        <!-- Divers -->
+        <tr class="category-header" data-category="divers" onclick="toggleCategory('divers')">
+          <td colspan="5">Divers <span id="toggle-divers" style="float:right;">[+]</span></td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-1" style="display: none;">
+          <td>attelle sam</td>
+          <td><img src="" alt="Photo attelle sam" width="80"></td>
+          <td id="stock-divers-1">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-1', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-1', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-2" style="display: none;">
+          <td>autocollants tpmr</td>
+          <td><img src="" alt="Photo autocollants tpmr" width="80"></td>
+          <td id="stock-divers-2">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-2', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-2', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-3" style="display: none;">
+          <td>cable DEFA</td>
+          <td><img src="" alt="Photo cable DEFA" width="80"></td>
+          <td id="stock-divers-3">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-3', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-3', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-4" style="display: none;">
+          <td>calmiderm</td>
+          <td><img src="" alt="Photo calmiderm" width="80"></td>
+          <td id="stock-divers-4">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-4', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-4', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-5" style="display: none;">
+          <td>carnet kilometrique ambu</td>
+          <td><img src="" alt="Photo carnet kilometrique ambu" width="80"></td>
+          <td id="stock-divers-5">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-5', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-5', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-6" style="display: none;">
+          <td>carnet kilometrique tpmr</td>
+          <td><img src="" alt="Photo carnet kilometrique tpmr" width="80"></td>
+          <td id="stock-divers-6">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-6', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-6', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-7" style="display: none;">
+          <td>Checklist</td>
+          <td><img src="" alt="Photo Checklist" width="80"></td>
+          <td id="stock-divers-7">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-7', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-7', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-8" style="display: none;">
+          <td>constat européen d'accident</td>
+          <td><img src="" alt="Photo constat européen d'accident" width="80"></td>
+          <td id="stock-divers-8">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-8', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-8', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-9" style="display: none;">
+          <td>drapeau CRB</td>
+          <td><img src="" alt="Photo drapeau CRB" width="80"></td>
+          <td id="stock-divers-9">0</td>
+          <td>0</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-9', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-9', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-10" style="display: none;">
+          <td>extrapan</td>
+          <td><img src="" alt="Photo extrapan" width="80"></td>
+          <td id="stock-divers-10">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-10', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-10', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-11" style="display: none;">
+          <td>flamigel</td>
+          <td><img src="" alt="Photo flamigel" width="80"></td>
+          <td id="stock-divers-11">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-11', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-11', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-12" style="display: none;">
+          <td>medica</td>
+          <td><img src="" alt="Photo medica" width="80"></td>
+          <td id="stock-divers-12">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-12', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-12', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-13" style="display: none;">
+          <td>pocket masque</td>
+          <td><img src="" alt="Photo pocket masque" width="80"></td>
+          <td id="stock-divers-13">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-13', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-13', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-14" style="display: none;">
+          <td>rallonge multiprise</td>
+          <td><img src="" alt="Photo rallonge multiprise" width="80"></td>
+          <td id="stock-divers-14">0</td>
+          <td>0</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-14', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-14', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-15" style="display: none;">
+          <td>sangle kaki civiere</td>
+          <td><img src="" alt="Photo sangle kaki civiere" width="80"></td>
+          <td id="stock-divers-15">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-15', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-15', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row divers" data-id="divers-16" style="display: none;">
+          <td>saturomètre masimo</td>
+          <td><img src="" alt="Photo saturomètre masimo" width="80"></td>
+          <td id="stock-divers-16">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('divers-16', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('divers-16', -1)">-</button>
+          </td>
+        </tr>
+        
+        <!-- Entretien -->
+        <tr class="category-header" data-category="entretien" onclick="toggleCategory('entretien')">
+          <td colspan="5">Entretien <span id="toggle-entretien" style="float:right;">[+]</span></td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-1" style="display: none;">
+          <td>adoucissant</td>
+          <td><img src="" alt="Photo adoucissant" width="80"></td>
+          <td id="stock-entretien-1">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-1', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-1', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-2" style="display: none;">
+          <td>bloc wc</td>
+          <td><img src="" alt="Photo bloc wc" width="80"></td>
+          <td id="stock-entretien-2">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-2', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-2', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-3" style="display: none;">
+          <td>degraissant pro</td>
+          <td><img src="" alt="Photo degraissant pro" width="80"></td>
+          <td id="stock-entretien-3">0</td>
+          <td>1</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-3', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-3', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-4" style="display: none;">
+          <td>degivrage vitre</td>
+          <td><img src="" alt="Photo degivrage vitre" width="80"></td>
+          <td id="stock-entretien-4">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-4', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-4', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-5" style="display: none;">
+          <td>désodorisant</td>
+          <td><img src="" alt="Photo désodorisant" width="80"></td>
+          <td id="stock-entretien-5">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-5', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-5', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-6" style="display: none;">
+          <td>destop</td>
+          <td><img src="" alt="Photo destop" width="80"></td>
+          <td id="stock-entretien-6">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-6', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-6', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-7" style="display: none;">
+          <td>eponge</td>
+          <td><img src="" alt="Photo eponge" width="80"></td>
+          <td id="stock-entretien-7">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-7', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-7', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-8" style="display: none;">
+          <td>gel wc</td>
+          <td><img src="" alt="Photo gel wc" width="80"></td>
+          <td id="stock-entretien-8">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-8', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-8', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-9" style="display: none;">
+          <td>javel</td>
+          <td><img src="" alt="Photo javel" width="80"></td>
+          <td id="stock-entretien-9">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-9', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-9', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-10" style="display: none;">
+          <td>lessive liquide</td>
+          <td><img src="" alt="Photo lessive liquide" width="80"></td>
+          <td id="stock-entretien-10">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-10', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-10', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-11" style="display: none;">
+          <td>liquide vaisselle</td>
+          <td><img src="" alt="Photo liquide vaisselle" width="80"></td>
+          <td id="stock-entretien-11">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-11', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-11', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-12" style="display: none;">
+          <td>nettoyant sol</td>
+          <td><img src="" alt="Photo nettoyant sol" width="80"></td>
+          <td id="stock-entretien-12">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-12', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-12', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-13" style="display: none;">
+          <td>nettoyant vitre</td>
+          <td><img src="" alt="Photo nettoyant vitre" width="80"></td>
+          <td id="stock-entretien-13">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-13', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-13', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-14" style="display: none;">
+          <td>papier tork</td>
+          <td><img src="" alt="Photo papier tork" width="80"></td>
+          <td id="stock-entretien-14">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-14', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-14', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-15" style="display: none;">
+          <td>papier UU</td>
+          <td><img src="" alt="Photo papier UU" width="80"></td>
+          <td id="stock-entretien-15">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-15', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-15', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-16" style="display: none;">
+          <td>papier wc</td>
+          <td><img src="" alt="Photo papier wc" width="80"></td>
+          <td id="stock-entretien-16">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-16', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-16', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-17" style="display: none;">
+          <td>sac ling contaminé rouge</td>
+          <td><img src="" alt="Photo sac ling contaminé rouge" width="80"></td>
+          <td id="stock-entretien-17">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-17', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-17', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-18" style="display: none;">
+          <td>sac ling contaminé jaune</td>
+          <td><img src="" alt="Photo sac ling contaminé jaune" width="80"></td>
+          <td id="stock-entretien-18">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-18', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-18', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-19" style="display: none;">
+          <td>sac pmc</td>
+          <td><img src="" alt="Photo sac pmc" width="80"></td>
+          <td id="stock-entretien-19">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-19', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-19', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-20" style="display: none;">
+          <td>sac poubelle ambu</td>
+          <td><img src="" alt="Photo sac poubelle ambu" width="80"></td>
+          <td id="stock-entretien-20">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-20', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-20', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-21" style="display: none;">
+          <td>sac poubelle noir</td>
+          <td><img src="" alt="Photo sac poubelle noir" width="80"></td>
+          <td id="stock-entretien-21">0</td>
+          <td>5</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-21', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-21', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-22" style="display: none;">
+          <td>savon main</td>
+          <td><img src="" alt="Photo savon main" width="80"></td>
+          <td id="stock-entretien-22">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-22', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-22', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row entretien" data-id="entretien-23" style="display: none;">
+          <td>torchon</td>
+          <td><img src="" alt="Photo torchon" width="80"></td>
+          <td id="stock-entretien-23">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('entretien-23', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('entretien-23', -1)">-</button>
+          </td>
+        </tr>
+        
+        <!-- Garage -->
+        <tr class="category-header" data-category="garage" onclick="toggleCategory('garage')">
+          <td colspan="5">Garage <span id="toggle-garage" style="float:right;">[+]</span></td>
+        </tr>
+        <tr class="article-row garage" data-id="garage-1" style="display: none;">
+          <td>ad blue</td>
+          <td><img src="" alt="Photo ad blue" width="80"></td>
+          <td id="stock-garage-1">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('garage-1', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('garage-1', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row garage" data-id="garage-2" style="display: none;">
+          <td>allèse UU</td>
+          <td><img src="" alt="Photo allèse UU" width="80"></td>
+          <td id="stock-garage-2">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('garage-2', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('garage-2', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row garage" data-id="garage-3" style="display: none;">
+          <td>bouteilles d'eau</td>
+          <td><img src="" alt="Photo bouteilles d'eau" width="80"></td>
+          <td id="stock-garage-3">0</td>
+          <td>30</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('garage-3', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('garage-3', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row garage" data-id="garage-4" style="display: none;">
+          <td>casque sécu secouriste</td>
+          <td><img src="" alt="Photo casque sécu secouriste" width="80"></td>
+          <td id="stock-garage-4">0</td>
+          <td>10</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('garage-4', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('garage-4', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row garage" data-id="garage-5" style="display: none;">
+          <td>couverture UU</td>
+          <td><img src="" alt="Photo couverture UU" width="80"></td>
+          <td id="stock-garage-5">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('garage-5', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('garage-5', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row garage" data-id="garage-6" style="display: none;">
+          <td>lave glace été</td>
+          <td><img src="" alt="Photo lave glace été" width="80"></td>
+          <td id="stock-garage-6">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('garage-6', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('garage-6', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row garage" data-id="garage-7" style="display: none;">
+          <td>lave glace hiver</td>
+          <td><img src="" alt="Photo lave glace hiver" width="80"></td>
+          <td id="stock-garage-7">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('garage-7', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('garage-7', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row garage" data-id="garage-8" style="display: none;">
+          <td>salopettes protection UU</td>
+          <td><img src="" alt="Photo salopettes protection UU" width="80"></td>
+          <td id="stock-garage-8">0</td>
+          <td>50</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('garage-8', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('garage-8', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row garage" data-id="garage-9" style="display: none;">
+          <td>shampoing carrosserie</td>
+          <td><img src="" alt="Photo shampoing carrosserie" width="80"></td>
+          <td id="stock-garage-9">0</td>
+          <td>3</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('garage-9', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('garage-9', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row garage" data-id="garage-10" style="display: none;">
+          <td>tablier protection MRSA jaune</td>
+          <td><img src="" alt="Photo tablier protection MRSA jaune" width="80"></td>
+          <td id="stock-garage-10">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('garage-10', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('garage-10', -1)">-</button>
+          </td>
+        </tr>
+        
+        <!-- Tenues secouriste (vides) -->
+        <tr class="category-header" data-category="tenues-secouriste" onclick="toggleCategory('tenues-secouriste')">
+          <td colspan="5">Tenues secouriste <span id="toggle-tenues-secouriste" style="float:right;">[+]</span></td>
+        </tr>
+        <!-- Tenues ambu (vides) -->
+        <tr class="category-header" data-category="tenues-ambu" onclick="toggleCategory('tenues-ambu')">
+          <td colspan="5">Tenues ambu <span id="toggle-tenues-ambu" style="float:right;">[+]</span></td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <!-- Bouton Générer PDF en bas du document -->
+    <div class="button-container">
+      <button class="pdf-button" onclick="generatePDF()">Générer le PDF</button>
+    </div>
+    
+    <!-- Modal pour le scanner -->
+    <div id="scannerModal">
+      <div id="scannerContent">
+        <h2>Scanner le code-barres</h2>
+        <!-- Zone interactive pour QuaggaJS -->
+        <div id="interactive"></div>
+        <br>
+        <button class="pdf-button" onclick="closeScanner()">Fermer</button>
+      </div>
+    </div>
+    
+    <!-- Modal pour les recommandations (scrollable et fermeture en cliquant à côté) -->
+    <div id="recommandationModal">
+      <div id="recommandationContent">
+        <h2>Articles à recommander</h2>
+        <div id="recommendationList"></div>
+        <br>
+        <button class="pdf-button" onclick="closeRecommendations()">Fermer</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Mise à jour de la quantité en stock
+    function updateStock(articleId, change) {
+      var stockElem = document.getElementById('stock-' + articleId);
+      var currentStock = parseInt(stockElem.textContent);
+      currentStock += change;
+      if (currentStock < 0) currentStock = 0;
+      stockElem.textContent = currentStock;
+    }
+    
+    // Bascule l'affichage d'une catégorie
+    function toggleCategory(category) {
+      var rows = document.getElementsByClassName(category);
+      var toggleSpan = document.getElementById("toggle-" + category);
+      for (var i = 0; i < rows.length; i++) {
+        rows[i].style.display = (rows[i].style.display === "none") ? "" : "none";
+      }
+      toggleSpan.textContent = (toggleSpan.textContent === "[+]") ? "[-]" : "[+]";
+    }
+    
+    // Étend toutes les catégories
+    function expandAll() {
+      var articleRows = document.querySelectorAll(".article-row");
+      articleRows.forEach(function(row) {
+        row.style.display = "";
+      });
+      var toggleSpans = document.querySelectorAll('[id^="toggle-"]');
+      toggleSpans.forEach(function(span) {
+        span.textContent = "[-]";
+      });
+    }
+    
+    // Replie toutes les catégories
+    function collapseAll() {
+      var articleRows = document.querySelectorAll(".article-row");
+      articleRows.forEach(function(row) {
+        row.style.display = "none";
+      });
+      var toggleSpans = document.querySelectorAll('[id^="toggle-"]');
+      toggleSpans.forEach(function(span) {
+        span.textContent = "[+]";
+      });
+    }
+    
+    // Filtre les articles selon le texte recherché
+    function searchArticles() {
+      var filter = document.getElementById("searchInput").value.toUpperCase();
+      var articleRows = document.querySelectorAll(".article-row");
+      articleRows.forEach(function(row) {
+        var cell = row.cells[0];
+        if (cell) {
+          var txtValue = cell.textContent || cell.innerText;
+          row.style.display = (txtValue.toUpperCase().indexOf(filter) > -1) ? "" : "none";
+        }
+      });
+      var categoryHeaders = document.querySelectorAll(".category-header");
+      categoryHeaders.forEach(function(header) {
+        var category = header.getAttribute("data-category");
+        var rows = document.querySelectorAll(".article-row." + category);
+        var anyVisible = false;
+        rows.forEach(function(row) {
+          if (row.style.display !== "none") {
+            anyVisible = true;
+          }
+        });
+        header.style.display = anyVisible ? "" : "none";
+      });
+    }
+    
+    // Affiche le popup des articles à recommander (scrollable)
+    function showRecommendations() {
+      var articleRows = document.querySelectorAll(".article-row");
+      var recommendations = [];
+      articleRows.forEach(function(row) {
+        var cells = row.getElementsByTagName("td");
+        if(cells.length >= 4) {
+          var nom = cells[0].innerText;
+          var stock = parseInt(cells[2].innerText);
+          var min = parseInt(cells[3].innerText);
+          if(stock <= min) {
+            recommendations.push(nom + " (Stock: " + stock + " / Min: " + min + ")");
+          }
+        }
+      });
+      var recommendationList = document.getElementById("recommendationList");
+      if(recommendations.length === 0) {
+        recommendationList.innerHTML = "<p>Aucun article à recommander.</p>";
+      } else {
+        var htmlList = "<ul>";
+        recommendations.forEach(function(item) {
+          htmlList += "<li>" + item + "</li>";
+        });
+        htmlList += "</ul>";
+        recommendationList.innerHTML = htmlList;
+      }
+      document.getElementById("recommandationModal").style.display = "block";
+    }
+    
+    function closeRecommendations() {
+      document.getElementById("recommandationModal").style.display = "none";
+    }
+    
+    // Ferme le modal recommandations en cliquant à côté du contenu
+    document.getElementById("recommandationModal").addEventListener("click", function(e) {
+      if(e.target === this) {
+        closeRecommendations();
+      }
+    });
+
+// gestion scanner avec table de convertions
+const articlesMapping = {
+  // Consommables: 1001-1099
+  "6038": "consommables-1",   // Accu-check
+  "1002": "consommables-2",   // Aesculap
+  "1003": "consommables-3",   // Aspivenin
+  "1004": "consommables-4",   // Ballon réa adulte
+  "1005": "consommables-5",   // Ballon réa NN
+  "1006": "consommables-6",   // Ballon réa pédia
+  "1007": "consommables-7",   // Bandage israélien
+  "1008": "consommables-8",   // Bandage triangle
+  "1009": "consommables-9",   // Bande velpo 15cm
+  "1010": "consommables-10",  // Bande velpo 10cm
+  "1011": "consommables-11",  // Bande velpo 7cm
+  "1012": "consommables-12",  // Bande velpo 5cm
+  "1013": "consommables-13",  // Bassin réniforme
+  "1014": "consommables-14",  // Batterie aspo
+  "1015": "consommables-15",  // Batterie DEA phillips
+  "1016": "consommables-16",  // Brosse à ongles
+  "1017": "consommables-17",  // Canule N°1 (blanche)
+  "1018": "consommables-18",  // Canule N°2 (verte)
+  "1019": "consommables-19",  // Canule N°3 (jaune)
+  "1020": "consommables-20",  // Canule N°4 (rouge)
+  "1021": "consommables-21",  // Canule N°5 (bleu)
+  "1022": "consommables-22",  // Canule N°6 (orange)
+  "1023": "consommables-23",  // Canule N°7 (noir)
+  "1024": "consommables-24",  // Canule pédia N°00 (bleu)
+  "1025": "consommables-25",  // Champ stérile
+  "1026": "consommables-26",  // Clorexidrine
+  "1027": "consommables-27",  // Coffee creamer
+  "1028": "consommables-28",  // Cold pack
+  "1029": "consommables-29",  // Collier cervical adulte
+  "1030": "consommables-30",  // Collier cervical pédia
+  "1031": "consommables-31",  // Compresses 10x20
+  "1032": "consommables-32",  // Compresses 10x10
+  "1033": "consommables-33",  // Compresses 7.5x7.5
+  "1034": "consommables-34",  // Compresses 5x5
+  "1035": "consommables-35",  // Conteneur B2 ambu
+  "1036": "consommables-36",  // Conteneur B2 de poche
+  "1037": "consommables-37",  // Coussin stolenwerk noir
+  "1038": "consommables-38",  // Coussin stolenwerk orange
+  "1039": "consommables-39",  // Couverture de survie
+  "1040": "consommables-40",  // crevette
+  "1041": "consommables-41",  // embout thermometre
+  "1042": "consommables-42",  // essui accouchement
+  "1043": "consommables-43",  // filtre réa
+  "1044": "consommables-44",  // garrot tourniquet
+  "1045": "consommables-45",  // gluco
+  "1046": "consommables-46",  // Gants L
+  "1047": "consommables-47",  // gants M
+  "1048": "consommables-48",  // gants S
+  "1049": "consommables-49",  // gants XL
+  "1050": "consommables-50",  // iso-bétadine
+  "1051": "consommables-51",  // kit accouchement
+  "1052": "consommables-52",  // kit injection
+  "1053": "consommables-53",  // kit mousse speedblock
+  "1054": "consommables-54",  // kit VP
+  "1055": "consommables-55",  // lampe pupille
+  "1056": "consommables-56",  // lange adulte
+  "1057": "consommables-57",  // flapule LP
+  "1058": "consommables-58",  // lunettes O² adulte
+  "1059": "consommables-59",  // lunettes O² pédia
+  "1060": "consommables-60",  // macaron jaune
+  "1061": "consommables-61",  // macaron noir
+  "1062": "consommables-62",  // macaron rouge
+  "1063": "consommables-63",  // masque 100% adulte
+  "1064": "consommables-64",  // Masque 100% pédia
+  "1065": "consommables-65",  // masque aerosol adulte
+  "1066": "consommables-66",  // masque aérosol pédia
+  "1067": "consommables-67",  // masque chir
+  "1068": "consommables-68",  // masque ffp2
+  "1069": "consommables-69",  // mouchoirs
+  "1070": "consommables-70",  // omnifix
+  "1071": "consommables-71",  // Padding
+  "1072": "consommables-72",  // pansement compressif
+  "1073": "consommables-73",  // patch DEA Phillips
+  "1074": "consommables-74",  // perf eau sterile
+  "1075": "consommables-75",  // perf NACL
+  "1076": "consommables-76",  // Pile AA
+  "1077": "consommables-77",  // pile AAA
+  "1078": "consommables-78",  // pile cr2032
+  "1079": "consommables-79",  // pince sat masimo
+  "1080": "consommables-80",  // rasoir
+  "1081": "consommables-81",  // rubalise
+  "1082": "consommables-82",  // sac d'aspi
+  "1083": "consommables-83",  // sac vomitoire
+  "1084": "consommables-84",  // scotch 3M
+  "1085": "consommables-85",  // sonde aspi blanche (ch. 12)
+  "1086": "consommables-86",  // sonde aspi noir (ch. 10)
+  "1087": "consommables-87",  // sonde aspi rouge (ch. 18)
+  "1088": "consommables-88",  // sonde aspi verte (ch. 14)
+  "1089": "consommables-89",  // royco
+  "1090": "consommables-90",  // Speedblock
+  "1091": "consommables-91",  // stethoscope
+  "1092": "consommables-92",  // tensiomètre adulte
+  "1093": "consommables-93",  // tensiomètre baria
+  "1094": "consommables-94",  // tensiometre pédia
+  "1095": "consommables-95",  // Thermomètre
+  "1096": "consommables-96",  // tigette gluco
+  "1097": "consommables-97",  // touillette
+  "1098": "consommables-98",  // trousse robinet perf
+  "1099": "consommables-99",  // tuyau d'aspi
+
+  // Désinfection: 2001-2006
+  "2001": "desinfection-1", // air citrea
+  "2002": "desinfection-2", // dettol
+  "2003": "desinfection-3", // lunette protection
+  "2004": "desinfection-4", // sterilium gel
+  "2005": "desinfection-5", // umonium concentré
+  "2006": "desinfection-6", // umonium spray
+
+  // Divers: 3001-3016
+  "3001": "divers-1",  // attelle sam
+  "3002": "divers-2",  // autocollants tpmr
+  "3003": "divers-3",  // cable DEFA
+  "3004": "divers-4",  // calmiderm
+  "3005": "divers-5",  // carnet kilometrique ambu
+  "3006": "divers-6",  // carnet kilometrique tpmr
+  "3007": "divers-7",  // Checklist
+  "3008": "divers-8",  // constat européen d'accident
+  "3009": "divers-9",  // drapeau CRB
+  "3010": "divers-10", // extrapan
+  "3011": "divers-11", // flamigel
+  "3012": "divers-12", // medica
+  "3013": "divers-13", // pocket masque
+  "3014": "divers-14", // rallonge multiprise
+  "3015": "divers-15", // sangle kaki civiere
+  "3016": "divers-16", // saturomètre masimo
+
+  // Entretien: 4001-4023
+  "4001": "entretien-1",  // adoucissant
+  "4002": "entretien-2",  // bloc wc
+  "4003": "entretien-3",  // degraissant pro
+  "4004": "entretien-4",  // degivrage vitre
+  "4005": "entretien-5",  // désodorisant
+  "4006": "entretien-6",  // destop
+  "4007": "entretien-7",  // eponge
+  "4008": "entretien-8",  // gel wc
+  "4009": "entretien-9",  // javel
+  "4010": "entretien-10", // lessive liquide
+  "4011": "entretien-11", // liquide vaisselle
+  "4012": "entretien-12", // nettoyant sol
+  "4013": "entretien-13", // nettoyant vitre
+  "4014": "entretien-14", // papier tork
+  "4015": "entretien-15", // papier UU
+  "4016": "entretien-16", // papier wc
+  "4017": "entretien-17", // sac ling contaminé rouge
+  "4018": "entretien-18", // sac ling contaminé jaune
+  "4019": "entretien-19", // sac pmc
+  "4020": "entretien-20", // sac poubelle ambu
+  "4021": "entretien-21", // sac poubelle noir
+  "4022": "entretien-22", // savon main
+  "4023": "entretien-23", // torchon
+
+  // Garage: 5001-5010
+  "5001": "garage-1",  // ad blue
+  "5002": "garage-2",  // allèse UU
+  "5003": "garage-3",  // bouteilles d'eau
+  "5004": "garage-4",  // casque sécu secouriste
+  "5005": "garage-5",  // couverture UU
+  "5006": "garage-6",  // lave glace été
+  "5007": "garage-7",  // lave glace hiver
+  "5008": "garage-8",  // salopettes protection UU
+  "5009": "garage-9",  // shampoing carrosserie
+  "5010": "garage-10"  // tablier protection MRSA jaune
+};
+   
+    // Gestion du scanner avec QuaggaJS
+    function openScanner() {
+      document.getElementById('scannerModal').style.display = 'block';
+      // Initialisation de QuaggaJS
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#interactive'),
+          constraints: {
+            width: 640,
+            height: 480,
+            facingMode: "environment"
+          }
+        },
+        decoder: {
+          readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader"]
+        }
+      }, function(err) {
+        if(err) {
+          console.error(err);
+          return;
+        }
+        Quagga.start();
+      });
+      
+      Quagga.onDetected(function(result) {
+        var code = result.codeResult.code;
+        console.log("Code détecté: " + code);
+        // Ici, vous pouvez ajouter une logique pour utiliser le code détecté (par exemple, rechercher l'article)
+        closeScanner(); // Ferme le scanner après détection
+      });
+    }
+    
+    function closeScanner() {
+      document.getElementById('scannerModal').style.display = 'none';
+      Quagga.stop();
+    }
+    
+    // Génère un PDF de l'intégralité du contenu
+    function generatePDF() {
+      const element = document.getElementById('pdfContent');
+      html2canvas(element, { useCORS: true, scale: 1, allowTaint: true }).then(canvas => {
+        const imgData = canvas.toDataURL("image/jpeg", 0.7);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgWidth = pageWidth;
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        pdf.save("inventaire_reserve.pdf");
+      });
+    }
+  </script>
+</body>
+</html>
