@@ -4,12 +4,6 @@
   <meta charset="UTF-8">
   <title>Inventaire réserve - CS Oupeye ©</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-  <!-- Inclusion de QuaggaJS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-  <!-- Inclusion de jsPDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- Inclusion de html2canvas -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     :root {
       --primary-color: #dc3545;
@@ -120,11 +114,6 @@
       border-radius: var(--border-radius);
       box-shadow: var(--box-shadow);
     }
-    /* Remplacement du <video> par une zone interactive pour QuaggaJS */
-    #interactive {
-      width: 100%;
-      height: auto;
-    }
     /* Modal recommandations : contenu scrollable et fermeture en cliquant à côté */
     #recommandationContent {
       position: relative;
@@ -145,7 +134,7 @@
     }
     /* Lignes de catégorie */
     .category-header {
-      background-color: #fff; /* Fond blanc */
+      background-color: #fff;
       color: black;
       cursor: pointer;
       font-weight: bold;
@@ -202,7 +191,8 @@
         <tr class="category-header" data-category="consommables" onclick="toggleCategory('consommables')">
           <td colspan="5">Consommables <span id="toggle-consommables" style="float:right;">[+]</span></td>
         </tr>
-        <!-- Vos articles de Consommables (exemple avec quelques lignes) -->
+        <!-- Articles de Consommables (en ordre alphabétique) -->
+        <!-- Chaque ligne est masquée par défaut -->
         <tr class="article-row consommables" data-id="consommables-1" style="display: none;">
           <td>Accu-check</td>
           <td><img src="" alt="Photo Accu-check" width="80"></td>
@@ -1193,6 +1183,7 @@
             <button class="stock-button" onclick="updateStock('consommables-99', -1)">-</button>
           </td>
         </tr>
+        
         <!-- Désinfection -->
         <tr class="category-header" data-category="desinfection" onclick="toggleCategory('desinfection')">
           <td colspan="5">Désinfection <span id="toggle-desinfection" style="float:right;">[+]</span></td>
@@ -1598,8 +1589,8 @@
           </td>
         </tr>
         <tr class="article-row entretien" data-id="entretien-18" style="display: none;">
-          <td>sac ling contaminé jaune</td>
-          <td><img src="" alt="Photo sac ling contaminé jaune" width="80"></td>
+          <td>sac linge contaminé jaune</td>
+          <td><img src="" alt="Photo sac linge contaminé jaune" width="80"></td>
           <td id="stock-entretien-18">0</td>
           <td>2</td>
           <td>
@@ -1762,15 +1753,6 @@
             <button class="stock-button" onclick="updateStock('garage-10', -1)">-</button>
           </td>
         </tr>
-        
-        <!-- Tenues secouriste (vides) -->
-        <tr class="category-header" data-category="tenues-secouriste" onclick="toggleCategory('tenues-secouriste')">
-          <td colspan="5">Tenues secouriste <span id="toggle-tenues-secouriste" style="float:right;">[+]</span></td>
-        </tr>
-        <!-- Tenues ambu (vides) -->
-        <tr class="category-header" data-category="tenues-ambu" onclick="toggleCategory('tenues-ambu')">
-          <td colspan="5">Tenues ambu <span id="toggle-tenues-ambu" style="float:right;">[+]</span></td>
-        </tr>
       </tbody>
     </table>
     
@@ -1783,8 +1765,7 @@
     <div id="scannerModal">
       <div id="scannerContent">
         <h2>Scanner le code-barres</h2>
-        <!-- Zone interactive pour QuaggaJS -->
-        <div id="interactive"></div>
+        <video id="video" width="100%" autoplay></video>
         <br>
         <button class="pdf-button" onclick="closeScanner()">Fermer</button>
       </div>
@@ -1796,11 +1777,17 @@
         <h2>Articles à recommander</h2>
         <div id="recommendationList"></div>
         <br>
+        <!-- Bouton pour générer le PDF de la liste des articles à recommander -->
+        <button class="pdf-button" onclick="generatePDFRecommendations()">Générer le PDF</button>
         <button class="pdf-button" onclick="closeRecommendations()">Fermer</button>
       </div>
     </div>
   </div>
   
+  <!-- Inclusion de jsPDF depuis CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Inclusion de html2canvas depuis CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
     // Mise à jour de la quantité en stock
     function updateStock(articleId, change) {
@@ -1909,211 +1896,30 @@
         closeRecommendations();
       }
     });
-
-// gestion scanner avec table de convertions
-const articlesMapping = {
-  // Consommables: 1001-1099
-  "4015630006038": "consommables-1",   // Accu-check
-  "1002": "consommables-2",   // Aesculap
-  "1003": "consommables-3",   // Aspivenin
-  "1004": "consommables-4",   // Ballon réa adulte
-  "1005": "consommables-5",   // Ballon réa NN
-  "1006": "consommables-6",   // Ballon réa pédia
-  "1007": "consommables-7",   // Bandage israélien
-  "1008": "consommables-8",   // Bandage triangle
-  "1009": "consommables-9",   // Bande velpo 15cm
-  "1010": "consommables-10",  // Bande velpo 10cm
-  "1011": "consommables-11",  // Bande velpo 7cm
-  "1012": "consommables-12",  // Bande velpo 5cm
-  "1013": "consommables-13",  // Bassin réniforme
-  "1014": "consommables-14",  // Batterie aspo
-  "1015": "consommables-15",  // Batterie DEA phillips
-  "1016": "consommables-16",  // Brosse à ongles
-  "1017": "consommables-17",  // Canule N°1 (blanche)
-  "1018": "consommables-18",  // Canule N°2 (verte)
-  "1019": "consommables-19",  // Canule N°3 (jaune)
-  "1020": "consommables-20",  // Canule N°4 (rouge)
-  "1021": "consommables-21",  // Canule N°5 (bleu)
-  "1022": "consommables-22",  // Canule N°6 (orange)
-  "1023": "consommables-23",  // Canule N°7 (noir)
-  "1024": "consommables-24",  // Canule pédia N°00 (bleu)
-  "1025": "consommables-25",  // Champ stérile
-  "1026": "consommables-26",  // Clorexidrine
-  "1027": "consommables-27",  // Coffee creamer
-  "1028": "consommables-28",  // Cold pack
-  "1029": "consommables-29",  // Collier cervical adulte
-  "1030": "consommables-30",  // Collier cervical pédia
-  "1031": "consommables-31",  // Compresses 10x20
-  "1032": "consommables-32",  // Compresses 10x10
-  "1033": "consommables-33",  // Compresses 7.5x7.5
-  "1034": "consommables-34",  // Compresses 5x5
-  "1035": "consommables-35",  // Conteneur B2 ambu
-  "1036": "consommables-36",  // Conteneur B2 de poche
-  "1037": "consommables-37",  // Coussin stolenwerk noir
-  "1038": "consommables-38",  // Coussin stolenwerk orange
-  "1039": "consommables-39",  // Couverture de survie
-  "1040": "consommables-40",  // crevette
-  "1041": "consommables-41",  // embout thermometre
-  "1042": "consommables-42",  // essui accouchement
-  "1043": "consommables-43",  // filtre réa
-  "1044": "consommables-44",  // garrot tourniquet
-  "1045": "consommables-45",  // gluco
-  "1046": "consommables-46",  // Gants L
-  "1047": "consommables-47",  // gants M
-  "1048": "consommables-48",  // gants S
-  "1049": "consommables-49",  // gants XL
-  "1050": "consommables-50",  // iso-bétadine
-  "1051": "consommables-51",  // kit accouchement
-  "1052": "consommables-52",  // kit injection
-  "1053": "consommables-53",  // kit mousse speedblock
-  "1054": "consommables-54",  // kit VP
-  "1055": "consommables-55",  // lampe pupille
-  "1056": "consommables-56",  // lange adulte
-  "1057": "consommables-57",  // flapule LP
-  "1058": "consommables-58",  // lunettes O² adulte
-  "1059": "consommables-59",  // lunettes O² pédia
-  "1060": "consommables-60",  // macaron jaune
-  "1061": "consommables-61",  // macaron noir
-  "1062": "consommables-62",  // macaron rouge
-  "1063": "consommables-63",  // masque 100% adulte
-  "1064": "consommables-64",  // Masque 100% pédia
-  "1065": "consommables-65",  // masque aerosol adulte
-  "1066": "consommables-66",  // masque aérosol pédia
-  "1067": "consommables-67",  // masque chir
-  "1068": "consommables-68",  // masque ffp2
-  "1069": "consommables-69",  // mouchoirs
-  "1070": "consommables-70",  // omnifix
-  "1071": "consommables-71",  // Padding
-  "1072": "consommables-72",  // pansement compressif
-  "1073": "consommables-73",  // patch DEA Phillips
-  "1074": "consommables-74",  // perf eau sterile
-  "1075": "consommables-75",  // perf NACL
-  "1076": "consommables-76",  // Pile AA
-  "1077": "consommables-77",  // pile AAA
-  "1078": "consommables-78",  // pile cr2032
-  "1079": "consommables-79",  // pince sat masimo
-  "1080": "consommables-80",  // rasoir
-  "1081": "consommables-81",  // rubalise
-  "1082": "consommables-82",  // sac d'aspi
-  "1083": "consommables-83",  // sac vomitoire
-  "1084": "consommables-84",  // scotch 3M
-  "1085": "consommables-85",  // sonde aspi blanche (ch. 12)
-  "1086": "consommables-86",  // sonde aspi noir (ch. 10)
-  "1087": "consommables-87",  // sonde aspi rouge (ch. 18)
-  "1088": "consommables-88",  // sonde aspi verte (ch. 14)
-  "1089": "consommables-89",  // royco
-  "1090": "consommables-90",  // Speedblock
-  "1091": "consommables-91",  // stethoscope
-  "1092": "consommables-92",  // tensiomètre adulte
-  "1093": "consommables-93",  // tensiomètre baria
-  "1094": "consommables-94",  // tensiometre pédia
-  "1095": "consommables-95",  // Thermomètre
-  "1096": "consommables-96",  // tigette gluco
-  "1097": "consommables-97",  // touillette
-  "1098": "consommables-98",  // trousse robinet perf
-  "1099": "consommables-99",  // tuyau d'aspi
-
-  // Désinfection: 2001-2006
-  "2001": "desinfection-1", // air citrea
-  "2002": "desinfection-2", // dettol
-  "2003": "desinfection-3", // lunette protection
-  "2004": "desinfection-4", // sterilium gel
-  "2005": "desinfection-5", // umonium concentré
-  "2006": "desinfection-6", // umonium spray
-
-  // Divers: 3001-3016
-  "3001": "divers-1",  // attelle sam
-  "3002": "divers-2",  // autocollants tpmr
-  "3003": "divers-3",  // cable DEFA
-  "3004": "divers-4",  // calmiderm
-  "3005": "divers-5",  // carnet kilometrique ambu
-  "3006": "divers-6",  // carnet kilometrique tpmr
-  "3007": "divers-7",  // Checklist
-  "3008": "divers-8",  // constat européen d'accident
-  "3009": "divers-9",  // drapeau CRB
-  "3010": "divers-10", // extrapan
-  "3011": "divers-11", // flamigel
-  "3012": "divers-12", // medica
-  "3013": "divers-13", // pocket masque
-  "3014": "divers-14", // rallonge multiprise
-  "3015": "divers-15", // sangle kaki civiere
-  "3016": "divers-16", // saturomètre masimo
-
-  // Entretien: 4001-4023
-  "4001": "entretien-1",  // adoucissant
-  "4002": "entretien-2",  // bloc wc
-  "4003": "entretien-3",  // degraissant pro
-  "4004": "entretien-4",  // degivrage vitre
-  "4005": "entretien-5",  // désodorisant
-  "4006": "entretien-6",  // destop
-  "4007": "entretien-7",  // eponge
-  "4008": "entretien-8",  // gel wc
-  "4009": "entretien-9",  // javel
-  "4010": "entretien-10", // lessive liquide
-  "4011": "entretien-11", // liquide vaisselle
-  "4012": "entretien-12", // nettoyant sol
-  "4013": "entretien-13", // nettoyant vitre
-  "4014": "entretien-14", // papier tork
-  "4015": "entretien-15", // papier UU
-  "4016": "entretien-16", // papier wc
-  "4017": "entretien-17", // sac ling contaminé rouge
-  "4018": "entretien-18", // sac ling contaminé jaune
-  "4019": "entretien-19", // sac pmc
-  "4020": "entretien-20", // sac poubelle ambu
-  "4021": "entretien-21", // sac poubelle noir
-  "4022": "entretien-22", // savon main
-  "4023": "entretien-23", // torchon
-
-  // Garage: 5001-5010
-  "5001": "garage-1",  // ad blue
-  "5002": "garage-2",  // allèse UU
-  "5003": "garage-3",  // bouteilles d'eau
-  "5004": "garage-4",  // casque sécu secouriste
-  "5005": "garage-5",  // couverture UU
-  "5006": "garage-6",  // lave glace été
-  "5007": "garage-7",  // lave glace hiver
-  "5008": "garage-8",  // salopettes protection UU
-  "5009": "garage-9",  // shampoing carrosserie
-  "5010": "garage-10"  // tablier protection MRSA jaune
-    });
-   
-    // Gestion du scanner avec QuaggaJS
+    
+    // Gestion du scanner
+    let videoStream = null;
     function openScanner() {
       document.getElementById('scannerModal').style.display = 'block';
-      // Initialisation de QuaggaJS
-      Quagga.init({
-        inputStream: {
-          name: "Live",
-          type: "LiveStream",
-          target: document.querySelector('#interactive'),
-          constraints: {
-            width: 640,
-            height: 480,
-            facingMode: "environment"
-          }
-        },
-        decoder: {
-          readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader"]
-        }
-      }, function(err) {
-        if(err) {
-          console.error(err);
-          return;
-        }
-        Quagga.start();
-      });
-      
-      Quagga.onDetected(function(result) {
-        var code = result.codeResult.code;
-        console.log("Code détecté: " + code);
-        // Ici, vous pouvez ajouter une logique pour utiliser le code détecté (par exemple, rechercher l'article)
-        closeScanner(); // Ferme le scanner après détection
-      });
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+          .then(function(stream) {
+            videoStream = stream;
+            var video = document.getElementById('video');
+            video.srcObject = stream;
+            video.play();
+          })
+          .catch(function(err) {
+            console.error("Erreur d'accès à la caméra: " + err);
+          });
+      }
     }
-    
     function closeScanner() {
       document.getElementById('scannerModal').style.display = 'none';
-      Quagga.stop();
+      if (videoStream) {
+        let tracks = videoStream.getTracks();
+        tracks.forEach(track => track.stop());
+      }
     }
     
     // Génère un PDF de l'intégralité du contenu
@@ -2139,6 +1945,32 @@ const articlesMapping = {
           heightLeft -= pageHeight;
         }
         pdf.save("inventaire_reserve.pdf");
+      });
+    }
+    
+    // Fonction pour générer le PDF de la pop-up "À recommander"
+    function generatePDFRecommendations() {
+      const element = document.getElementById('recommandationContent');
+      html2canvas(element, { useCORS: true, scale: 1, allowTaint: true }).then(canvas => {
+        const imgData = canvas.toDataURL("image/jpeg", 0.7);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgWidth = pageWidth;
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        pdf.save("articles_a_recommander.pdf");
       });
     }
   </script>
