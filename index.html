@@ -57,6 +57,14 @@
     a.button:hover {
       background-color: #c82333;
     }
+    /* Nouveau style pour le bouton Inventaire */
+    a.button.inventaire {
+      background-color: #28a745;
+      color: #fff;
+    }
+    a.button.inventaire:hover {
+      background-color: #218838;
+    }
   </style>
 </head>
 <body>
@@ -72,6 +80,9 @@
         <a href="peremption/peremption.html" class="button">Check Péremption</a>
         <a href="fit/fit.html" class="button">Check Fit</a>
       </div>
+      <div class="column">
+        <a href="main/inventaire/inventaire.html" class="button inventaire">Check Inventaire</a>
+      </div>
     </div>
   </div>
 
@@ -80,6 +91,16 @@
     document.querySelectorAll("a.button").forEach(link => {
       link.addEventListener("click", function(e) {
         e.preventDefault();
+        
+        // Si c'est le bouton Inventaire, demander le code PIN
+        if(this.classList.contains('inventaire')) {
+          var pin = prompt("Veuillez entrer le code PIN:");
+          if(pin !== "5891") {
+            alert("Code PIN incorrect.");
+            return;
+          }
+        }
+        
         const href = this.getAttribute("href");
         // On effectue une requête HEAD pour vérifier si la page est disponible.
         fetch(href, { method: "HEAD" })
