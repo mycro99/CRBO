@@ -1,1 +1,121 @@
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Staff</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #dc3545;
+      --secondary-color: #6c757d;
+      --bg-color: #f5f5f5;
+      --text-color: #333;
+      --border-radius: 6px;
+      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      --button-width: 250px;
+      --button-gap: 60px;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      text-align: center;
+    }
+    h1 {
+      color: var(--primary-color);
+      margin-bottom: 20px;
+    }
+    /* Conteneur des colonnes pour les boutons existants */
+    .columns {
+      display: flex;
+      justify-content: center;
+      gap: var(--button-gap);
+      margin-bottom: 40px; /* Espace avant le bouton Inventaire */
+    }
+    /* Chaque colonne */
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      width: var(--button-width);
+    }
+    a.button {
+      display: inline-block;
+      padding: 16px 32px;
+      font-size: 18px;
+      background-color: var(--primary-color);
+      color: #fff;
+      text-decoration: none;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      transition: background-color 0.3s;
+      text-align: center;
+    }
+    a.button:hover {
+      background-color: #c82333;
+    }
+    /* Style spécifique pour le bouton Inventaire */
+    a.button.inventaire {
+      background-color: #28a745;
+      color: #fff;
+    }
+    a.button.inventaire:hover {
+      background-color: #218838;
+    }
+    /* Conteneur du bouton Inventaire centré et étendu sur deux boutons */
+    .inventaire-container {
+      text-align: center;
+    }
+    .inventaire-container a.button.inventaire {
+      width: calc(2 * var(--button-width) + var(--button-gap));
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="inventaire-container">
+      <a href="inventaire/inventaire.html" class="button inventaire">Check Inventaire</a>
+      <a href="listing.html" class="button inventaire">Listing volontaire</a>
+    </div>
+  </div>
+
+  <script>
+    // Interception du clic sur chaque bouton pour vérifier la disponibilité de la page cible
+    document.querySelectorAll("a.button").forEach(link => {
+      link.addEventListener("click", function(e) {
+        e.preventDefault();
+        
+        // Si c'est le bouton Inventaire, demander le code PIN
+        if(this.classList.contains('inventaire')) {
+          var pin = prompt("Veuillez entrer le code PIN:");
+          if(pin !== "9851") {
+            alert("Code PIN incorrect.");
+            return;
+          }
+        }
+        
+        const href = this.getAttribute("href");
+        // Vérification de la disponibilité de la page via une requête HEAD
+        fetch(href, { method: "HEAD" })
+          .then(response => {
+            if(response.ok) {
+              window.location.href = href;
+            } else {
+              window.location.href = "nowork/notwork.html";
+            }
+          })
+          .catch(error => {
+            window.location.href = "nowork/notwork.html";
+          });
+      });
+    });
+  </script>
+</body>
+</html>
