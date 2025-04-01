@@ -7,10 +7,10 @@
   <style>
     body {
       font-family: 'Roboto', sans-serif;
-      margin: 20px;
       background-color: #f5f5f5;
       color: #333;
       text-align: center;
+      margin: 20px;
     }
     .container {
       max-width: 800px;
@@ -20,21 +20,27 @@
       border-radius: 6px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    img.document {
-      max-width: 100%;
-      height: auto;
+    h1 {
+      margin-bottom: 20px;
+      color: #dc3545;
+    }
+    iframe {
+      width: 100%;
+      height: 500px;
       border: 1px solid #ccc;
       border-radius: 4px;
-      margin-bottom: 20px;
     }
     button.print-button {
-      padding: 10px 20px;
+      margin-top: 20px;
+      padding: 12px 24px;
       background-color: #dc3545;
       color: #fff;
       border: none;
       border-radius: 4px;
       font-size: 1rem;
       cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: background-color 0.3s ease;
     }
     button.print-button:hover {
       background-color: #c82333;
@@ -43,10 +49,26 @@
 </head>
 <body>
   <div class="container">
-    <h1>Feuille de route 105</h1>
-    <iframe src="pdf/105.pdf" title="Document PDF"></iframe>
+    <h1>Imprimer le Document PDF</h1>
+    <!-- Affichage du PDF dans un iframe -->
+    <iframe id="pdfIframe" src="pdf/105.pdf" title="Document PDF"></iframe>
     <br>
-    <button class="print-button" onclick="window.print()">Imprimer</button>
+    <!-- Bouton d'impression -->
+    <button class="print-button" onclick="printPDF()">Imprimer ce document</button>
   </div>
+  
+  <script>
+    function printPDF() {
+      var iframe = document.getElementById("pdfIframe");
+      // Vérifier que l'iframe est chargée et accessible
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } else {
+        // En cas de problème, on utilise window.print() pour imprimer la page actuelle
+        window.print();
+      }
+    }
+  </script>
 </body>
 </html>
