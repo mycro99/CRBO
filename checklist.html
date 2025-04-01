@@ -90,10 +90,6 @@
         <a href="peremption/peremption.html" class="button">Check Péremption</a>
         <a href="fit/fit.html" class="button">Check Fit</a>
       </div>
-    </div>
-    <div class="inventaire-container">
-      <a href="inventaire/inventaire.html" class="button inventaire">Check Inventaire</a>
-    </div>
   </div>
 
   <script>
@@ -102,14 +98,6 @@
       link.addEventListener("click", function(e) {
         e.preventDefault();
         
-        // Si c'est le bouton Inventaire, demander le code PIN
-        if(this.classList.contains('inventaire')) {
-          var pin = prompt("Veuillez entrer le code PIN:");
-          if(pin !== "9851") {
-            alert("Code PIN incorrect.");
-            return;
-          }
-        }
         
         const href = this.getAttribute("href");
         // Vérification de la disponibilité de la page via une requête HEAD
