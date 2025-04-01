@@ -95,12 +95,24 @@
     </div>
   </div>
   <script>
+    // Liste des mots de passe autorisés pour accéder au bouton staff
+    const allowedStaffPasswords = ["pierre.maloir", "kevin.leruth", "wendy.buntinx", "benoit.dejonge", "maxime.gerday", "gregoire.biernaux"]; 
+
     // Interception du clic sur chaque bouton pour vérifier la disponibilité de la page cible
     document.querySelectorAll("a.button").forEach(link => {
       link.addEventListener("click", function(e) {
         e.preventDefault();
-
         const href = this.getAttribute("href");
+
+        // Si le bouton cliqué est "staff", demander le mot de passe
+        if (this.classList.contains("staff")) {
+          const pwd = prompt("Entrez le mot de passe pour accéder au staff:");
+          if (!allowedStaffPasswords.includes(pwd)) {
+            alert("Mot de passe incorrect !");
+            return;
+          }
+        }
+        
         // Vérification de la disponibilité de la page via une requête HEAD
         fetch(href, { method: "HEAD" })
           .then(response => {
