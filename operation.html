@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Portail Doc. Opérationnel - CS Oupeye</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #dc3545;
+      --secondary-color: #007bff;
+      --bg-color: #f5f5f5;
+      --text-color: #333;
+      --border-radius: 6px;
+      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      --button-width: 250px;
+      --button-height: 80px;
+      --button-gap: 30px;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      margin: auto;
+      text-align: center;
+      background-color: #fff;
+      padding: 40px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    h1 {
+      color: var(--primary-color);
+      margin-bottom: 40px;
+      font-size: 2.5rem;
+    }
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(var(--button-width), 1fr));
+      gap: var(--button-gap);
+      justify-items: center;
+    }
+    a.button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--button-width);
+      height: var(--button-height);
+      font-size: 1.2rem;
+      font-weight: 500;
+      background-color: var(--primary-color);
+      color: #fff;
+      text-decoration: none;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      transition: background-color 0.3s;
+    }
+    a.button:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Documents Opérationnels</h1>
+    <div class="grid-container">
+      <!-- Bouton vers le document de permutation -->
+      <a href="permutation.html" class="button">Permutation</a>
+      <!-- Boutons supplémentaires : à compléter avec vos futurs documents -->
+      <a href="document2.html" class="button">Document 2</a>
+      <a href="document3.html" class="button">Document 3</a>
+      <a href="document4.html" class="button">Document 4</a>
+      <!-- Ajoutez autant de boutons que nécessaire -->
+    </div>
+  </div>
+</body>
+</html>
