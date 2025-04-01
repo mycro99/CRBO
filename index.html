@@ -81,5 +81,28 @@
       <a href="checklist.html" class="button checklist">Portail de Checklist</a>
     </div>
   </div>
+  <script>
+    // Interception du clic sur chaque bouton pour vérifier la disponibilité de la page cible
+    document.querySelectorAll("a.button").forEach(link => {
+      link.addEventListener("click", function(e) {
+        e.preventDefault();
+        
+        
+        const href = this.getAttribute("href");
+        // Vérification de la disponibilité de la page via une requête HEAD
+        fetch(href, { method: "HEAD" })
+          .then(response => {
+            if(response.ok) {
+              window.location.href = href;
+            } else {
+              window.location.href = "nowork/notwork.html";
+            }
+          })
+          .catch(error => {
+            window.location.href = "nowork/notwork.html";
+          });
+      });
+    });
+  </script>
 </body>
 </html>
