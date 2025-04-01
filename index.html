@@ -6,8 +6,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary-color: #dc3545;
-      --secondary-color: #007bff;
+      --primary-color: #dc3545; /* Rouge */
+      --secondary-color: #007bff; /* Bleu */
+      --success-color: #28a745; /* Vert */
       --bg-color: #f5f5f5;
       --text-color: #333;
       --border-radius: 6px;
@@ -46,6 +47,7 @@
       display: flex;
       justify-content: center;
       gap: var(--button-gap);
+      margin-bottom: 40px;
     }
     a.button {
       display: flex;
@@ -55,21 +57,29 @@
       height: var(--button-height);
       font-size: 1.5rem;
       font-weight: 500;
-      background-color: var(--primary-color);
       color: #fff;
       text-decoration: none;
       border-radius: var(--border-radius);
       box-shadow: var(--box-shadow);
       transition: background-color 0.3s;
     }
-    a.button:hover {
-      background-color: #c82333;
+    a.button.doc {
+      background-color: var(--secondary-color); /* Bleu */
+    }
+    a.button.doc:hover {
+      background-color: #0069d9;
     }
     a.button.checklist {
-      background-color: var(--secondary-color);
+      background-color: var(--primary-color); /* Rouge */
     }
     a.button.checklist:hover {
-      background-color: #0069d9;
+      background-color: #c82333;
+    }
+    a.button.staff {
+      background-color: var(--success-color); /* Vert */
+    }
+    a.button.staff:hover {
+      background-color: #218838;
     }
   </style>
 </head>
@@ -77,8 +87,10 @@
   <div class="container">
     <h1>CS Oupeye&reg;</h1>
     <div class="button-container">
-      <a href="operation.html" class="button">Doc. Opérationnel</a>
+      <a href="operation.html" class="button doc">Doc. Opérationnel</a>
       <a href="checklist.html" class="button checklist">Portail de Checklist</a>
+    </div>
+    <div class="button-container" style="justify-content: center;">
       <a href="staff.html" class="button staff">Staff</a>
     </div>
   </div>
@@ -87,8 +99,7 @@
     document.querySelectorAll("a.button").forEach(link => {
       link.addEventListener("click", function(e) {
         e.preventDefault();
-        
-        
+
         const href = this.getAttribute("href");
         // Vérification de la disponibilité de la page via une requête HEAD
         fetch(href, { method: "HEAD" })
