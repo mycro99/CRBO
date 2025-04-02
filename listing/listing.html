@@ -121,11 +121,11 @@
     /* Réduction des largeurs pour les colonnes Brevets et N° badge */
     #volunteerTable th:nth-child(5),
     #volunteerTable td:nth-child(5) {
-      min-width: 150px; /* Colonne Brevets réduite */
+      min-width: 100px; /* Colonne Brevets réduite */
     }
     #volunteerTable th:nth-child(6),
     #volunteerTable td:nth-child(6) {
-      min-width: 120px; /* Colonne N° badge réduite */
+      min-width: 80px; /* Colonne N° badge réduite */
     }
     /* Conserver une largeur suffisante pour la colonne Email */
     #volunteerTable th:nth-child(3),
@@ -331,9 +331,6 @@
             <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="OUI" ${vol.fbse === "OUI" ? "checked" : ""}> OUI</label>
           </td>
           <td>
-            <input type="checkbox" class="vol-actif" ${vol.actif ? "checked" : ""}>
-          </td>
-          <td>
             <input type="checkbox" class="vol-permis" ${vol.permis ? "checked" : ""}>
           </td>
           <td>
@@ -344,6 +341,9 @@
               <input type="radio" name="medicale_${index}" class="vol-med" value="OUI" ${vol.selection_medicale.value === "OUI" ? "checked" : ""}> OUI
             </label><br>
             <input type="date" class="vol-med-date" value="${vol.selection_medicale.date}" style="${vol.selection_medicale.value === 'OUI' ? '' : 'display:none;'}">
+          </td>
+          <td>
+            <input type="checkbox" class="vol-actif" ${vol.actif ? "checked" : ""}>
           </td>
           <td>
             <button class="delete-btn">Supprimer</button>
