@@ -2,438 +2,93 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>commande de tenues - CS Oupeye&reg;</title>
-  <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+  <title>Affichage complet du PDF avec PDF.js</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.6.172/pdf.min.js"></script>
   <style>
-    :root {
-      --primary-color: #dc3545;
-      --secondary-color: #6c757d;
-      --bg-color: #f5f5f5;
-      --text-color: #333;
-      --border-radius: 6px;
-      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
     body {
       font-family: 'Roboto', sans-serif;
-      margin: 0;
-      padding: 20px;
-      background-color: var(--bg-color);
-      color: var(--text-color);
+      background-color: #f5f5f5;
+      text-align: center;
+      margin: 20px;
     }
-    /* Conteneur du contenu à exporter */
-    #pdfContent {
-      max-width: 900px;
+    .container {
+      max-width: 800px;
       margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    h1, h2 {
-      text-align: center;
-      color: var(--primary-color);
-    }
-    h1 {
+    canvas.pdf-page {
+      width: 100%;
       margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
-    .form-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .form-row div {
-      flex: 1;
-      min-width: 150px;
-    }
-    .form-row label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 500;
-    }
-    .form-row input {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid var(--secondary-color);
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      background-color: #fff;
-      border: 1px solid var(--secondary-color);
-      border-radius: var(--border-radius);
-      overflow: visible;
-      box-shadow: var(--box-shadow);
-    }
-    th, td {
-      border: 1px solid var(--secondary-color);
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background-color: var(--primary-color);
-      color: #fff;
-      font-weight: 500;
-    }
-    .signature-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-around;
-      align-items: flex-start;
-      gap: 20px;
-      margin-top: 20px;
-    }
-    .signature-box {
-      flex: 1;
-      text-align: center;
-      min-width: 280px;
-    }
-    .signature-box canvas {
-      display: block;
-      margin: 0 auto 10px auto;
-    }
-    /* Zone de signature avec cadre visible */
-    .signature-pad {
-      box-sizing: border-box;
-      border: 1px solid var(--secondary-color);
-      background-color: #fff;
-      width: 100%;
-      max-width: 400px;
-      height: 100px;
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
-    }
-    .pdf-button {
-      display: inline-block;
+    button.print-button {
       padding: 12px 24px;
-      font-size: 16px;
-      background-color: var(--primary-color);
+      background-color: #dc3545;
       color: #fff;
       border: none;
-      border-radius: var(--border-radius);
+      border-radius: 4px;
+      font-size: 1rem;
       cursor: pointer;
-      box-shadow: var(--box-shadow);
-      margin: 0 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: background-color 0.3s ease;
     }
-    .pdf-button:hover {
+    button.print-button:hover {
       background-color: #c82333;
-    }
-    .button-container {
-      text-align: center;
-      margin-top: 30px;
-    }
-    /* Bloc de rappel surligné avec le message ATTENTION intégré */
-    .reminder {
-      text-align: center;
-      font-weight: bold;
-      background-color: #ffff99;
-      padding: 10px;
-      border: 1px solid var(--primary-color);
-      border-radius: var(--border-radius);
-      margin: 20px 0;
-    }
-    @media print {
-      .button-container { display: none; }
     }
   </style>
 </head>
 <body>
-  <div id="pdfContent">
-    <h1>commande de tenues - CS Oupeye&reg;</h1>
-
-    <div class="form-row">
-      <div>
-        <label for="nom">Nom :</label>
-        <input type="text" id="nom" name="nom">
-      </div>
-      <div>
-        <label for="date">Date :</label>
-        <input type="date" id="date" name="date">
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Article</th>
-          <th>Nombre</th>
-          <th>Taille</th>
-          <th>Type</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Veste -->
-        <tr>
-          <td>veste</td>
-          <td><input type="text" name="nombre_veste"></td>
-          <td>
-            <select name="taille_veste">
-              <option value="S">S</option>
-              <option value="M">M</option>
-              <option value="L">L</option>
-              <option value="XL">XL</option>
-              <option value="2XL">2XL</option>
-              <option value="3XL">3XL</option>
-              <option value="4XL">4XL</option>
-              <option value="5XL">5XL</option>
-            </select>
-          </td>
-          <td>
-            <select name="type_veste">
-              <option value="ambulance">ambulance</option>
-              <option value="secouriste">secouriste</option>
-            </select>
-          </td>
-        </tr>
-        <!-- Bodywear -->
-        <tr>
-          <td>bodywear</td>
-          <td><input type="text" name="nombre_bodywear"></td>
-          <td>
-            <select name="taille_bodywear">
-              <option value="S">S</option>
-              <option value="M">M</option>
-              <option value="L">L</option>
-              <option value="XL">XL</option>
-              <option value="2XL">2XL</option>
-              <option value="3XL">3XL</option>
-              <option value="4XL">4XL</option>
-              <option value="5XL">5XL</option>
-            </select>
-          </td>
-          <td>
-            <select name="type_bodywear">
-              <option value="ambulance">ambulance</option>
-              <option value="secouriste">secouriste</option>
-            </select>
-          </td>
-        </tr>
-        <!-- Soft-sheel -->
-        <tr>
-          <td>soft-sheel</td>
-          <td><input type="text" name="nombre_softsheel"></td>
-          <td>
-            <select name="taille_softsheel">
-              <option value="S">S</option>
-              <option value="M">M</option>
-              <option value="L">L</option>
-              <option value="XL">XL</option>
-              <option value="2XL">2XL</option>
-              <option value="3XL">3XL</option>
-              <option value="4XL">4XL</option>
-              <option value="5XL">5XL</option>
-            </select>
-          </td>
-          <td>
-            <select name="type_softsheel">
-              <option value="ambulance">ambulance</option>
-              <option value="secouriste">secouriste</option>
-            </select>
-          </td>
-        </tr>
-        <!-- Polo/Tshirt -->
-        <tr>
-          <td>polo/tshirt</td>
-          <td><input type="text" name="nombre_polotshirt"></td>
-          <td>
-            <select name="taille_polotshirt">
-              <option value="S">S</option>
-              <option value="M">M</option>
-              <option value="L">L</option>
-              <option value="XL">XL</option>
-              <option value="2XL">2XL</option>
-              <option value="3XL">3XL</option>
-              <option value="4XL">4XL</option>
-              <option value="5XL">5XL</option>
-            </select>
-          </td>
-          <td>
-            <select name="type_polotshirt">
-              <option value="ambulance">ambulance</option>
-              <option value="secouriste">secouriste</option>
-            </select>
-          </td>
-        </tr>
-        <!-- Pantalon -->
-        <tr>
-          <td>pantalon</td>
-          <td><input type="text" name="nombre_pantalon"></td>
-          <td>
-            <select name="taille_pantalon">
-              <option value="34">34</option>
-              <option value="36">36</option>
-              <option value="38">38</option>
-              <option value="40">40</option>
-              <option value="42">42</option>
-              <option value="44">44</option>
-              <option value="46">46</option>
-              <option value="48">48</option>
-              <option value="50">50</option>
-              <option value="52">52</option>
-              <option value="54">54</option>
-              <option value="56">56</option>
-              <option value="58">58</option>
-            </select>
-          </td>
-          <td>
-            <select name="type_pantalon">
-              <option value="ambulance">ambulance</option>
-              <option value="secouriste">secouriste</option>
-            </select>
-          </td>
-        </tr>
-        <!-- Chaussures -->
-        <tr>
-          <td>chaussures</td>
-          <td><input type="text" name="nombre_chaussures"></td>
-          <td>
-            <select name="taille_chaussures">
-              <option value="36">36</option>
-              <option value="37">37</option>
-              <option value="38">38</option>
-              <option value="39">39</option>
-              <option value="40">40</option>
-              <option value="41">41</option>
-              <option value="42">42</option>
-              <option value="43">43</option>
-              <option value="44">44</option>
-              <option value="45">45</option>
-              <option value="46">46</option>
-            </select>
-          </td>
-          <td>
-            <select name="type_chaussures">
-              <option value="Haix">HAIX</option>
-              <option value="secouriste">secouriste</option>
-            </select>
-          </td>
-        </tr>
-        <!-- Caducée -->
-        <tr>
-          <td>caducée</td>
-          <td><input type="text" name="nombre_caducee"></td>
-          <td>
-            <select name="taille_caducee">
-              <option value="Grand">Grand</option>
-              <option value="Petit">Petit</option>
-            </select>
-          </td>
-          <td>
-            <select name="type_caducee">
-              <option value="ATNUP">ATNUP</option>
-              <option value="AMU">AMU</option>
-            </select>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="signature-container">
-      <div class="signature-box">
-        <p>Signature :</p>
-        <canvas id="signatureCanvas" class="signature-pad"></canvas>
-        <button type="button" onclick="clearSignature()" class="pdf-button">Effacer signature</button>
-      </div>
-    </div>
-
-    <!-- Bloc de rappel intégré avec le message ATTENTION -->
-    <div class="reminder">
-      <p style="margin: 0;">!!! ATTENTION !!!</p>
-      <p style="margin: 0;">
-        Pour rappel, les tenues restent la propriété de la Croix-Rouge de Belgique. Merci d'envoyer ce document à 
-        <a href="mailto:logistique.cs.oupeye@croix-rouge.be">logistique.cs.oupeye@croix-rouge.be</a>
-      </p>
-    </div>
-
-    <div class="button-container">
-      <button type="button" onclick="generatePDF()" class="pdf-button">Générer PDF et partager</button>
-    </div>
+  <div class="container" id="pdf-container">
+    <h1>Affichage complet du PDF</h1>
+    <!-- Les pages du PDF seront insérées ici -->
+    <button class="print-button" onclick="window.print()">Imprimer ce document</button>
   </div>
-
-  <!-- Inclusion des bibliothèques jsPDF et html2canvas -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
+  
   <script>
-    // Code de capture de signature
-    const canvas = document.getElementById('signatureCanvas');
-    const ctx = canvas.getContext('2d');
-    let drawing = false;
-    let lastX = 0;
-    let lastY = 0;
-
-    // Redimensionnement du canvas en utilisant ses dimensions réelles
-    function resizeCanvas() {
-      const width = canvas.offsetWidth;
-      const height = canvas.offsetHeight;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      canvas.style.width = width + "px";
-      canvas.style.height = height + "px";
-      // Réinitialiser la transformation avant d'appliquer le scale
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(dpr, dpr);
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    function startPosition(e) {
-      drawing = true;
-      const rect = canvas.getBoundingClientRect();
-      lastX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      lastY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-    }
-
-    function finishedPosition() {
-      drawing = false;
-      ctx.beginPath();
-    }
-
-    function draw(e) {
-      if (!drawing) return;
-      e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-      ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = '#000';
-      ctx.beginPath();
-      ctx.moveTo(lastX, lastY);
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      lastX = x;
-      lastY = y;
-    }
-
-    canvas.addEventListener('mousedown', startPosition);
-    canvas.addEventListener('touchstart', startPosition);
-    canvas.addEventListener('mouseup', finishedPosition);
-    canvas.addEventListener('touchend', finishedPosition);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('touchmove', draw);
-
-    function clearSignature() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    // Génération du PDF en JPEG avec une résolution maximale (scale: 2)
-    function generatePDF() {
-      const buttons = document.querySelectorAll('.button-container, .pdf-button');
-      buttons.forEach(btn => btn.style.display = 'none');
-
-      html2canvas(document.getElementById('pdfContent'), { scale: 2 }).then(canvas => {
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save('commande_tenues.pdf');
-        buttons.forEach(btn => btn.style.display = 'inline-block');
-      });
-    }
+    // Chemin vers le fichier PDF (ajustez-le selon votre structure de dossiers)
+    const url = 'pdf/mon_document.pdf';
+    
+    // Configuration de PDF.js : on définit l'emplacement du worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.6.172/pdf.worker.min.js';
+    
+    // Charge le document PDF
+    pdfjsLib.getDocument(url).promise.then(pdfDoc => {
+      const container = document.getElementById('pdf-container');
+      
+      // Pour chaque page du PDF, créer un canvas et l'afficher
+      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+        pdfDoc.getPage(pageNum).then(page => {
+          // Ajuster le scale selon vos préférences
+          const scale = 1.5;
+          const viewport = page.getViewport({ scale });
+          
+          // Création du canvas pour cette page
+          const canvas = document.createElement('canvas');
+          canvas.className = 'pdf-page';
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const context = canvas.getContext('2d');
+          
+          // Prépare le contexte de rendu
+          const renderContext = {
+            canvasContext: context,
+            viewport: viewport
+          };
+          
+          // Rendu de la page dans le canvas
+          page.render(renderContext);
+          
+          // Ajout du canvas au container, avant le bouton d'impression
+          container.insertBefore(canvas, container.lastElementChild);
+        });
+      }
+    }).catch(error => {
+      console.error("Erreur lors du chargement du PDF :", error);
+    });
   </script>
 </body>
 </html>
