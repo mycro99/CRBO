@@ -274,9 +274,10 @@
               <option value="58">58</option>
             </select>
             <select name="longueur_pantalon">
-              <option value="court">court</option>option>
-              <option value="moyen">moyen</option>option>
-              <option value="long">long</option>option>
+              <option value="court">court</option>
+              <option value="moyen">moyen</option>
+              <option value="long">long</option>
+            </select>
           </td>
           <td>
             <select name="type_pantalon">
@@ -330,6 +331,17 @@
         </tr>
       </tbody>
     </table>
+
+    <!-- Nouveau champ avec boutons radio -->
+    <div class="form-row">
+      <div>
+        <label>Type de commande :</label>
+        <input type="radio" id="nouveau" name="commande_type" value="nouveau">
+        <label for="nouveau">Nouveau</label>
+        <input type="radio" id="echange" name="commande_type" value="echange">
+        <label for="echange">Échange</label>
+      </div>
+    </div>
 
     <div class="signature-container">
       <div class="signature-box">
