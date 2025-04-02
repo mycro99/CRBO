@@ -280,13 +280,14 @@
     </table>
   </div>
 
-  <!-- Script module combinant Firebase, Firestore et votre code de listing -->
+  <!-- Script module combinant Firebase, Firestore et le code de listing -->
   <script type="module">
-    // --- Initialisation de Firebase ---
+    // Importation des modules Firebase nécessaires
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-analytics.js";
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
-    
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
+
+    // Configuration Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
       authDomain: "listing-44b2b.firebaseapp.com",
@@ -296,61 +297,94 @@
       appId: "1:310030019842:web:c8a50b61f3dfbcb867e61b",
       measurementId: "G-419VVR3NHE"
     };
-    
+
+    // Initialisation de Firebase, Analytics et Firestore
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
-    const db = getFirestore(app); // Initialisation de Firestore
+    const db = getFirestore(app);
 
-    // --- Code de gestion du listing ---
+    // Tableau qui contiendra les volontaires chargés depuis Firestore
     let volunteers = [];
-    let rowCounter = 0; // Utilisé pour les groupes radio
 
-    // Charge les données depuis le localStorage et reconstruit le tableau
-    function loadVolunteers() {
-      const data = localStorage.getItem("volunteersData");
-      if (data) {
-        volunteers = JSON.parse(data);
-        rowCounter = volunteers.length;
-      } else {
-        // Exemple initial
-        volunteers = [{
-          nom: "Dupont",
-          prenom: "Jean",
-          email: "jean.dupont@example.com",
-          tel: "0123456789",
-          brevets: { BEPS: true, Secouriste: true, Atnup: false, Amu: false, VIR: false },
-          badgeAMU: "",
-          badgeATNUP: "",
-          fbse: "NON",
-          actif: true,
-          permis: true,
-          selection_medicale: { value: "NON", date: "" }
-        }];
-        rowCounter = 1;
-      }
+    // Charge les volontaires depuis Firestore et construit le tableau
+    async function loadVolunteersFromFirestore() {
+      volunteers = [];
+      const querySnapshot = await getDocs(collection(db, "volunteers"));
+      querySnapshot.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+        data.docId = docSnapshot.id; // Stocke l'ID du document pour les mises à jour/suppressions
+        volunteers.push(data);
+      });
       buildTable();
     }
 
-    // Sauvegarde dans le localStorage
-    function saveVolunteers() {
-      localStorage.setItem("volunteersData", JSON.stringify(volunteers));
-    }
+    // Ajoute un nouveau volontaire dans Firestore et met à jour le tableau local
+    async function addVolunteer(event) {
+      event.preventDefault();
+      const newVol = {
+        nom: document.getElementById("newNom").value,
+        prenom: document.getElementById("newPrenom").value,
+        email: document.getElementById("newEmail").value,
+        tel: document.getElementById("newTel").value,
+        brevets: {
+          BEPS: document.getElementById("newBrevets_BEPS").checked,
+          Secouriste: document.getElementById("newBrevets_Secouriste").checked,
+          Atnup: document.getElementById("newBrevets_Atnup").checked,
+          Amu: document.getElementById("newBrevets_Amu").checked,
+          VIR: document.getElementById("newBrevets_VIR").checked
+        },
+        badgeAMU: document.getElementById("newBadgeAMU").value,
+        badgeATNUP: document.getElementById("newBadgeATNUP").value,
+        fbse: document.querySelector('input[name="newFbse"]:checked').value,
+        actif: document.getElementById("newActif").checked,
+        permis: document.getElementById("newPermis").checked,
+        selection_medicale: {
+          value: document.querySelector('input[name="newMedicale"]:checked').value,
+          date: document.getElementById("newMedicaleDate").value
+        }
+      };
 
-    // Fonction pour sauvegarder un volontaire dans Firestore
-    async function saveVolunteerToFirestore(volunteer) {
       try {
-        const docRef = await addDoc(collection(db, "volunteers"), volunteer);
-        console.log("Document ajouté avec l'ID :", docRef.id);
+        const docRef = await addDoc(collection(db, "volunteers"), newVol);
+        newVol.docId = docRef.id; // Enregistre l'ID retourné
+        volunteers.push(newVol);
+        buildTable();
+        document.getElementById("addForm").reset();
       } catch (e) {
-        console.error("Erreur lors de l'ajout du document :", e);
+        console.error("Erreur lors de l'ajout du volontaire :", e);
       }
     }
 
-    // Construit le tableau à partir des données
+    // Met à jour un volontaire dans Firestore (excluant le docId)
+    async function updateVolunteerInFirestore(volunteer) {
+      if (volunteer.docId) {
+        const { docId, ...volData } = volunteer;
+        try {
+          await updateDoc(doc(db, "volunteers", volunteer.docId), volData);
+          console.log("Volontaire mis à jour :", volunteer.docId);
+        } catch (e) {
+          console.error("Erreur lors de la mise à jour du volontaire :", e);
+        }
+      }
+    }
+
+    // Supprime un volontaire dans Firestore et le retire du tableau local
+    async function deleteVolunteer(index) {
+      const volunteer = volunteers[index];
+      if (volunteer.docId) {
+        try {
+          await deleteDoc(doc(db, "volunteers", volunteer.docId));
+          console.log("Volontaire supprimé :", volunteer.docId);
+        } catch (e) {
+          console.error("Erreur lors de la suppression du volontaire :", e);
+        }
+      }
+      volunteers.splice(index, 1);
+      buildTable();
+    }
+
+    // Construit le tableau HTML à partir du tableau volunteers
     function buildTable() {
-      // Trier par ordre alphabétique sur le champ "nom"
-      volunteers.sort((a, b) => a.nom.toLowerCase().localeCompare(b.nom.toLowerCase()));
-      
       const tbody = document.getElementById("volunteerTableBody");
       tbody.innerHTML = "";
       volunteers.forEach((vol, index) => {
@@ -404,86 +438,91 @@
         tbody.appendChild(row);
       });
       attachTableEventListeners();
-      saveVolunteers();
     }
 
-    // Ajoute les écouteurs sur les inputs pour mettre à jour les données
+    // Attache les écouteurs d'événements aux inputs pour mettre à jour les données dans Firestore
     function attachTableEventListeners() {
       document.querySelectorAll("#volunteerTableBody tr").forEach(row => {
         const index = row.getAttribute("data-index");
-        // Champs texte
+        const volunteer = volunteers[index];
+
+        // Champs texte (nom, prénom, email, téléphone)
         row.querySelectorAll(".vol-nom, .vol-prenom, .vol-email, .vol-tel").forEach(input => {
           input.addEventListener("input", function() {
             const field = this.classList.contains("vol-nom") ? "nom" :
                           this.classList.contains("vol-prenom") ? "prenom" :
                           this.classList.contains("vol-email") ? "email" : "tel";
-            volunteers[index][field] = this.value;
-            saveVolunteers();
+            volunteer[field] = this.value;
+            updateVolunteerInFirestore(volunteer);
           });
         });
-        // Brevets
+
+        // Brevets (checkboxes)
         row.querySelectorAll(".vol-brevet").forEach(checkbox => {
           checkbox.addEventListener("change", function() {
             const subfield = this.getAttribute("data-field");
-            volunteers[index].brevets[subfield] = this.checked;
-            saveVolunteers();
+            volunteer.brevets[subfield] = this.checked;
+            updateVolunteerInFirestore(volunteer);
           });
         });
-        // Badge AMU
-        row.querySelectorAll(".vol-badge-amu").forEach(input => {
+
+        // Badge AMU et ATNUP (inputs)
+        row.querySelectorAll(".vol-badge-amu, .vol-badge-atnup").forEach(input => {
           input.addEventListener("input", function() {
-            volunteers[index].badgeAMU = this.value;
-            saveVolunteers();
+            if (this.classList.contains("vol-badge-amu")) {
+              volunteer.badgeAMU = this.value;
+            } else {
+              volunteer.badgeATNUP = this.value;
+            }
+            updateVolunteerInFirestore(volunteer);
           });
         });
-        // Badge ATNUP
-        row.querySelectorAll(".vol-badge-atnup").forEach(input => {
-          input.addEventListener("input", function() {
-            volunteers[index].badgeATNUP = this.value;
-            saveVolunteers();
-          });
-        });
-        // FBSE
+
+        // FBSE (radios)
         row.querySelectorAll(".vol-fbse").forEach(radio => {
           radio.addEventListener("change", function() {
             if (this.checked) {
-              volunteers[index].fbse = this.value;
-              saveVolunteers();
+              volunteer.fbse = this.value;
+              updateVolunteerInFirestore(volunteer);
             }
           });
         });
-        // Actif
+
+        // Actif (checkbox)
         row.querySelector(".vol-actif").addEventListener("change", function() {
-          volunteers[index].actif = this.checked;
+          volunteer.actif = this.checked;
           row.classList.toggle("inactive", !this.checked);
-          saveVolunteers();
+          updateVolunteerInFirestore(volunteer);
         });
-        // Permis
+
+        // Permis (checkbox)
         row.querySelector(".vol-permis").addEventListener("change", function() {
-          volunteers[index].permis = this.checked;
-          saveVolunteers();
+          volunteer.permis = this.checked;
+          updateVolunteerInFirestore(volunteer);
         });
-        // Sélection Médicale
+
+        // Sélection Médicale (radios et date)
         row.querySelectorAll(".vol-med").forEach(radio => {
           radio.addEventListener("change", function() {
             if (this.checked) {
-              volunteers[index].selection_medicale.value = this.value;
+              volunteer.selection_medicale.value = this.value;
               const dateInput = row.querySelector(".vol-med-date");
               if (this.value === "OUI") {
                 dateInput.style.display = "block";
               } else {
                 dateInput.style.display = "none";
-                volunteers[index].selection_medicale.date = "";
+                volunteer.selection_medicale.date = "";
                 dateInput.value = "";
               }
-              saveVolunteers();
+              updateVolunteerInFirestore(volunteer);
             }
           });
         });
         row.querySelector(".vol-med-date").addEventListener("change", function() {
-          volunteers[index].selection_medicale.date = this.value;
-          saveVolunteers();
+          volunteer.selection_medicale.date = this.value;
+          updateVolunteerInFirestore(volunteer);
         });
+
         // Bouton Supprimer
         row.querySelector(".delete-btn").addEventListener("click", function() {
           deleteVolunteer(index);
@@ -491,52 +530,13 @@
       });
     }
 
-    // Fonction pour ajouter un nouveau volontaire via le formulaire
-    function addVolunteer(event) {
-      event.preventDefault();
-      const newVol = {
-        nom: document.getElementById("newNom").value,
-        prenom: document.getElementById("newPrenom").value,
-        email: document.getElementById("newEmail").value,
-        tel: document.getElementById("newTel").value,
-        brevets: {
-          BEPS: document.getElementById("newBrevets_BEPS").checked,
-          Secouriste: document.getElementById("newBrevets_Secouriste").checked,
-          Atnup: document.getElementById("newBrevets_Atnup").checked,
-          Amu: document.getElementById("newBrevets_Amu").checked,
-          VIR: document.getElementById("newBrevets_VIR").checked
-        },
-        badgeAMU: document.getElementById("newBadgeAMU").value,
-        badgeATNUP: document.getElementById("newBadgeATNUP").value,
-        fbse: document.querySelector('input[name="newFbse"]:checked').value,
-        actif: document.getElementById("newActif").checked,
-        permis: document.getElementById("newPermis").checked,
-        selection_medicale: {
-          value: document.querySelector('input[name="newMedicale"]:checked').value,
-          date: document.getElementById("newMedicaleDate").value
-        }
-      };
-      volunteers.push(newVol);
-      buildTable();
-      document.getElementById("addForm").reset();
-      
-      // Sauvegarder dans Firestore
-      saveVolunteerToFirestore(newVol);
-    }
-
-    // Supprime un volontaire
-    function deleteVolunteer(index) {
-      volunteers.splice(index, 1);
-      buildTable();
-    }
-
-    // Affichage/masquage du formulaire d'ajout
+    // Gestion de l'affichage/masquage du formulaire d'ajout
     function toggleAddForm() {
       const container = document.getElementById("addFormContainer");
       container.style.display = (container.style.display === "none" || container.style.display === "") ? "block" : "none";
     }
 
-    // Filtre le tableau en temps réel
+    // Filtrage en temps réel du tableau
     document.getElementById("searchInput").addEventListener("keyup", function() {
       const filter = this.value.toLowerCase();
       document.querySelectorAll("#volunteerTable tbody tr").forEach(row => {
@@ -556,9 +556,9 @@
       });
     });
 
-    // Charger les volontaires au chargement de la page
-    window.addEventListener("load", loadVolunteers);
-    // Lier la soumission du formulaire
+    // Chargement initial des volontaires depuis Firestore
+    window.addEventListener("load", loadVolunteersFromFirestore);
+    // Lier la soumission du formulaire d'ajout
     document.getElementById("addForm").addEventListener("submit", addVolunteer);
   </script>
 </body>
