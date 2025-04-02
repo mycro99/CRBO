@@ -22,9 +22,9 @@
     }
     /* Conteneur principal */
     #content {
-      max-width: 1200px; /* Pour accueillir les colonnes larges */
+      max-width: 1200px;
       margin: auto;
-      overflow-x: auto; /* Défilement horizontal si nécessaire */
+      overflow-x: auto;
     }
     h1, h2 {
       text-align: center;
@@ -103,6 +103,10 @@
       box-shadow: var(--box-shadow);
       table-layout: auto;
     }
+    /* On ajoute un colgroup pour permettre le redimensionnement manuel */
+    colgroup col {
+      width: auto;
+    }
     th, td {
       padding: 12px;
       text-align: left;
@@ -113,7 +117,7 @@
       background-color: var(--primary-color);
       color: #fff;
       font-weight: 500;
-      position: relative; /* Pour le handle de redimensionnement */
+      position: relative; /* Pour le handle */
     }
     tr:nth-child(even) {
       background-color: #f9f9f9;
@@ -121,23 +125,23 @@
     /* Largeur minimale pour certaines colonnes */
     #volunteerTable th:nth-child(3),
     #volunteerTable td:nth-child(3) {
-      min-width: 250px; /* Email */
+      min-width: 250px;
     }
     #volunteerTable th:nth-child(5),
     #volunteerTable td:nth-child(5) {
-      min-width: 250px; /* Brevets */
+      min-width: 250px;
     }
-    /* Style pour la nouvelle colonne N° badge */
+    /* Nouvelle colonne N° badge */
     #volunteerTable th:nth-child(6),
     #volunteerTable td:nth-child(6) {
       min-width: 200px;
     }
-    /* Style pour une ligne inactive */
+    /* Ligne inactive */
     .inactive {
       background-color: #e0e0e0 !important;
       color: #777;
     }
-    /* Styles pour les inputs du tableau (édition) */
+    /* Inputs du tableau */
     .table-input {
       width: 100%;
       border: 1px solid var(--secondary-color);
@@ -224,7 +228,6 @@
           <label>Actif :</label>
           <input type="checkbox" id="newActif" checked>
         </div>
-        <!-- Nouveau groupe pour les numéros de badge -->
         <div class="form-group">
           <label>N° badge :</label>
           <div>
@@ -240,6 +243,20 @@
 
     <!-- Tableau des volontaires -->
     <table id="volunteerTable">
+      <!-- Ajout du colgroup pour le redimensionnement -->
+      <colgroup>
+        <col style="width: auto;">
+        <col style="width: auto;">
+        <col style="width: auto;">
+        <col style="width: auto;">
+        <col style="width: auto;">
+        <col style="width: auto;"> <!-- N° badge -->
+        <col style="width: auto;">
+        <col style="width: auto;">
+        <col style="width: auto;">
+        <col style="width: auto;">
+        <col style="width: auto;">
+      </colgroup>
       <thead>
         <tr>
           <th>Nom</th>
@@ -247,7 +264,7 @@
           <th>Email</th>
           <th>Téléphone</th>
           <th>Brevets</th>
-          <th>N° badge</th> <!-- Nouvelle colonne -->
+          <th>N° badge</th>
           <th>FBSE</th>
           <th>Actif</th>
           <th>Permis</th>
@@ -273,7 +290,7 @@
         volunteers = JSON.parse(data);
         rowCounter = volunteers.length;
       } else {
-        // Exemple initial si aucun enregistrement n'existe
+        // Exemple initial
         volunteers = [{
           nom: "Dupont",
           prenom: "Jean",
@@ -292,12 +309,12 @@
       buildTable();
     }
 
-    // Sauvegarde le tableau des volontaires dans le localStorage
+    // Sauvegarde dans le localStorage
     function saveVolunteers() {
       localStorage.setItem("volunteersData", JSON.stringify(volunteers));
     }
 
-    // Construit le tableau à partir des données
+    // Construit le tableau
     function buildTable() {
       const tbody = document.getElementById("volunteerTableBody");
       tbody.innerHTML = "";
@@ -356,7 +373,7 @@
       addResizers();
     }
 
-    // Ajoute des écouteurs sur les inputs du tableau pour mettre à jour les données
+    // Ajoute des écouteurs sur les inputs du tableau
     function attachTableEventListeners() {
       document.querySelectorAll("#volunteerTableBody tr").forEach(row => {
         const index = row.getAttribute("data-index");
@@ -378,14 +395,14 @@
             saveVolunteers();
           });
         });
-        // N° badge (AMU)
+        // Badge AMU
         row.querySelectorAll(".vol-badge-amu").forEach(input => {
           input.addEventListener("input", function() {
             volunteers[index].badgeAMU = this.value;
             saveVolunteers();
           });
         });
-        // N° badge (ATNUP)
+        // Badge ATNUP
         row.querySelectorAll(".vol-badge-atnup").forEach(input => {
           input.addEventListener("input", function() {
             volunteers[index].badgeATNUP = this.value;
@@ -440,7 +457,46 @@
       });
     }
 
-    // Fonction pour ajouter un nouveau volontaire depuis le formulaire
+    // Ajoute des handles de redimensionnement dans les th via le <colgroup>
+    function addResizers() {
+      const ths = document.querySelectorAll("#volunteerTable th");
+      const colgroup = document.querySelector("#volunteerTable colgroup");
+      ths.forEach((th, index) => {
+        // Supprime d'éventuels anciens handles
+        const oldResizer = th.querySelector(".resizer");
+        if (oldResizer) {
+          oldResizer.remove();
+        }
+        // Crée le handle
+        const resizer = document.createElement("div");
+        resizer.className = "resizer";
+        th.appendChild(resizer);
+        resizer.addEventListener("mousedown", (e) => initResize(e, index));
+      });
+    }
+
+    let currentCol, startX, startWidth;
+    function initResize(e, colIndex) {
+      // Récupère la colonne correspondante dans le colgroup
+      const colgroup = document.querySelector("#volunteerTable colgroup");
+      currentCol = colgroup.children[colIndex];
+      startX = e.clientX;
+      startWidth = currentCol.offsetWidth;
+      document.addEventListener("mousemove", resizeColumn);
+      document.addEventListener("mouseup", stopResize);
+    }
+    function resizeColumn(e) {
+      if (!currentCol) return;
+      const newWidth = startWidth + (e.clientX - startX);
+      currentCol.style.width = newWidth + "px";
+    }
+    function stopResize(e) {
+      document.removeEventListener("mousemove", resizeColumn);
+      document.removeEventListener("mouseup", stopResize);
+      currentCol = null;
+    }
+
+    // Ajoute un nouveau volontaire depuis le formulaire
     function addVolunteer(event) {
       event.preventDefault();
       const newVol = {
@@ -498,42 +554,6 @@
         dateField.style.display = (this.value === "OUI") ? "block" : "none";
       });
     });
-
-    // ---------------------------
-    // Redimensionnement manuel des colonnes
-    // ---------------------------
-    function addResizers() {
-      const ths = document.querySelectorAll("#volunteerTable th");
-      ths.forEach(th => {
-        const oldResizer = th.querySelector(".resizer");
-        if (oldResizer) {
-          oldResizer.remove();
-        }
-        const resizer = document.createElement("div");
-        resizer.className = "resizer";
-        th.appendChild(resizer);
-        resizer.addEventListener("mousedown", initResize);
-      });
-    }
-
-    let currentTh, startX, startWidth;
-    function initResize(e) {
-      currentTh = e.target.parentElement;
-      startX = e.clientX;
-      startWidth = currentTh.offsetWidth;
-      document.addEventListener("mousemove", resizeColumn);
-      document.addEventListener("mouseup", stopResize);
-    }
-    function resizeColumn(e) {
-      if (!currentTh) return;
-      const newWidth = startWidth + (e.clientX - startX);
-      currentTh.style.width = newWidth + "px";
-    }
-    function stopResize(e) {
-      document.removeEventListener("mousemove", resizeColumn);
-      document.removeEventListener("mouseup", stopResize);
-      currentTh = null;
-    }
 
     // Charger les volontaires au chargement de la page
     window.addEventListener("load", loadVolunteers);
