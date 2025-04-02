@@ -191,7 +191,7 @@
 
     <!-- Bouton pour afficher/masquer le formulaire d'ajout -->
     <div id="addFormToggle">
-      <button onclick="toggleAddForm()" class="pdf-button">Ajouter un Volontaire</button>
+      <button class="pdf-button">Ajouter un Volontaire</button>
     </div>
 
     <!-- Formulaire d'ajout de volontaire (caché par défaut) -->
@@ -243,7 +243,7 @@
           <label>Actif :</label>
           <input type="checkbox" id="newActif" checked>
         </div>
-        <!-- Nouveau groupe pour les numéros de badge -->
+        <!-- Groupe pour les numéros de badge -->
         <div class="form-group">
           <label>N° badge :</label>
           <div>
@@ -280,7 +280,7 @@
     </table>
   </div>
 
-  <!-- Script module combinant Firebase, Firestore et le code de listing -->
+  <!-- Script module intégrant Firebase, Firestore et la gestion du listing -->
   <script type="module">
     // Importation des modules Firebase nécessaires
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
@@ -303,7 +303,7 @@
     const analytics = getAnalytics(app);
     const db = getFirestore(app);
 
-    // Tableau qui contiendra les volontaires chargés depuis Firestore
+    // Liste locale des volontaires
     let volunteers = [];
 
     // Charge les volontaires depuis Firestore et construit le tableau
@@ -312,13 +312,13 @@
       const querySnapshot = await getDocs(collection(db, "volunteers"));
       querySnapshot.forEach((docSnapshot) => {
         const data = docSnapshot.data();
-        data.docId = docSnapshot.id; // Stocke l'ID du document pour les mises à jour/suppressions
+        data.docId = docSnapshot.id;
         volunteers.push(data);
       });
       buildTable();
     }
 
-    // Ajoute un nouveau volontaire dans Firestore et met à jour le tableau local
+    // Fonction d'ajout d'un volontaire
     async function addVolunteer(event) {
       event.preventDefault();
       const newVol = {
@@ -346,7 +346,7 @@
 
       try {
         const docRef = await addDoc(collection(db, "volunteers"), newVol);
-        newVol.docId = docRef.id; // Enregistre l'ID retourné
+        newVol.docId = docRef.id;
         volunteers.push(newVol);
         buildTable();
         document.getElementById("addForm").reset();
@@ -355,7 +355,7 @@
       }
     }
 
-    // Met à jour un volontaire dans Firestore (excluant le docId)
+    // Met à jour un volontaire dans Firestore
     async function updateVolunteerInFirestore(volunteer) {
       if (volunteer.docId) {
         const { docId, ...volData } = volunteer;
@@ -368,7 +368,7 @@
       }
     }
 
-    // Supprime un volontaire dans Firestore et le retire du tableau local
+    // Supprime un volontaire dans Firestore et de la liste locale
     async function deleteVolunteer(index) {
       const volunteer = volunteers[index];
       if (volunteer.docId) {
@@ -383,7 +383,7 @@
       buildTable();
     }
 
-    // Construit le tableau HTML à partir du tableau volunteers
+    // Construit le tableau HTML à partir de la liste des volontaires
     function buildTable() {
       const tbody = document.getElementById("volunteerTableBody");
       tbody.innerHTML = "";
@@ -440,13 +440,13 @@
       attachTableEventListeners();
     }
 
-    // Attache les écouteurs d'événements aux inputs pour mettre à jour les données dans Firestore
+    // Attache les écouteurs d'événements pour mettre à jour Firestore en temps réel
     function attachTableEventListeners() {
       document.querySelectorAll("#volunteerTableBody tr").forEach(row => {
         const index = row.getAttribute("data-index");
         const volunteer = volunteers[index];
 
-        // Champs texte (nom, prénom, email, téléphone)
+        // Mises à jour pour les champs texte (nom, prénom, email, téléphone)
         row.querySelectorAll(".vol-nom, .vol-prenom, .vol-email, .vol-tel").forEach(input => {
           input.addEventListener("input", function() {
             const field = this.classList.contains("vol-nom") ? "nom" :
@@ -457,7 +457,7 @@
           });
         });
 
-        // Brevets (checkboxes)
+        // Mises à jour pour les brevets
         row.querySelectorAll(".vol-brevet").forEach(checkbox => {
           checkbox.addEventListener("change", function() {
             const subfield = this.getAttribute("data-field");
@@ -466,7 +466,7 @@
           });
         });
 
-        // Badge AMU et ATNUP (inputs)
+        // Mises à jour pour les badges
         row.querySelectorAll(".vol-badge-amu, .vol-badge-atnup").forEach(input => {
           input.addEventListener("input", function() {
             if (this.classList.contains("vol-badge-amu")) {
@@ -478,7 +478,7 @@
           });
         });
 
-        // FBSE (radios)
+        // Mises à jour pour FBSE
         row.querySelectorAll(".vol-fbse").forEach(radio => {
           radio.addEventListener("change", function() {
             if (this.checked) {
@@ -488,20 +488,20 @@
           });
         });
 
-        // Actif (checkbox)
+        // Mises à jour pour l'état actif
         row.querySelector(".vol-actif").addEventListener("change", function() {
           volunteer.actif = this.checked;
           row.classList.toggle("inactive", !this.checked);
           updateVolunteerInFirestore(volunteer);
         });
 
-        // Permis (checkbox)
+        // Mises à jour pour le permis
         row.querySelector(".vol-permis").addEventListener("change", function() {
           volunteer.permis = this.checked;
           updateVolunteerInFirestore(volunteer);
         });
 
-        // Sélection Médicale (radios et date)
+        // Mises à jour pour la sélection médicale (radios et date)
         row.querySelectorAll(".vol-med").forEach(radio => {
           radio.addEventListener("change", function() {
             if (this.checked) {
@@ -523,14 +523,14 @@
           updateVolunteerInFirestore(volunteer);
         });
 
-        // Bouton Supprimer
+        // Suppression
         row.querySelector(".delete-btn").addEventListener("click", function() {
           deleteVolunteer(index);
         });
       });
     }
 
-    // Gestion de l'affichage/masquage du formulaire d'ajout
+    // Affiche ou masque le formulaire d'ajout
     function toggleAddForm() {
       const container = document.getElementById("addFormContainer");
       container.style.display = (container.style.display === "none" || container.style.display === "") ? "block" : "none";
@@ -539,7 +539,7 @@
     // Filtrage en temps réel du tableau
     document.getElementById("searchInput").addEventListener("keyup", function() {
       const filter = this.value.toLowerCase();
-      document.querySelectorAll("#volunteerTable tbody tr").forEach(row => {
+      document.querySelectorAll("#volunteerTableBody tr").forEach(row => {
         let rowValues = "";
         row.querySelectorAll("input").forEach(input => {
           rowValues += input.value.toLowerCase() + " ";
@@ -548,7 +548,7 @@
       });
     });
 
-    // Affichage conditionnel du champ date dans le formulaire d'ajout
+    // Affiche ou masque le champ date selon la sélection médicale
     document.querySelectorAll('input[name="newMedicale"]').forEach(radio => {
       radio.addEventListener("change", function() {
         const dateField = document.getElementById("newMedicaleDate");
@@ -556,12 +556,14 @@
       });
     });
 
-    // Chargement initial des volontaires depuis Firestore
+    // Attache les événements après le chargement du DOM
+    window.addEventListener("DOMContentLoaded", () => {
+      document.querySelector("#addFormToggle button").addEventListener("click", toggleAddForm);
+      document.getElementById("addForm").addEventListener("submit", addVolunteer);
+    });
+
+    // Charge les volontaires depuis Firestore au chargement complet de la page
     window.addEventListener("load", loadVolunteersFromFirestore);
-    // Lier la soumission du formulaire d'ajout
-    document.getElementById("addForm").addEventListener("submit", addVolunteer);
-    window.toggleAddForm = toggleAddForm;
-    window.addVolunteer = addVolunteer;
   </script>
 </body>
 </html>
