@@ -115,18 +115,35 @@
       box-shadow: var(--box-shadow);
     }
     /* Modal recommandations : contenu scrollable et fermeture en cliquant à côté */
-    #recommandationContent {
-      position: relative;
-      margin: 10% auto;
-      width: 80%;
-      max-width: 600px;
-      max-height: 80vh;
-      overflow-y: auto;
-      background: #fff;
-      padding: 20px;
-      color: black;
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
+   /* Modal recommandations */
+#recommandationModal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+}
+
+/* Contenu du modal centré */
+#recommandationContent {
+  position: fixed;             /* Passage de relative à fixed */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 600px;
+  max-height: 90vh;            /* Légèrement augmenté pour plus de confort */
+  overflow-y: auto;
+  background: #fff;
+  padding: 20px;
+  color: black;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}
+
     }
     .button-container {
       text-align: center;
@@ -1959,29 +1976,43 @@
     
     // Fonction pour générer le PDF de la pop-up "À recommander"
     function generatePDFRecommendations() {
-      const element = document.getElementById('recommandationContent');
-      html2canvas(element, { useCORS: true, scale: 1, allowTaint: true }).then(canvas => {
-        const imgData = canvas.toDataURL("image/jpeg", 0.7);
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imgProps = pdf.getImageProperties(imgData);
-        const imgWidth = pageWidth;
-        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-        pdf.save("articles_a_recommander.pdf");
-      });
+  const element = document.getElementById('recommandationContent');
+  // Sauvegarde des styles inline actuels (s'ils existent)
+  const originalMaxHeight = element.style.maxHeight;
+  const originalOverflowY = element.style.overflowY;
+  
+  // Suppression temporaire des contraintes pour capturer tout le contenu
+  element.style.maxHeight = 'none';
+  element.style.overflowY = 'visible';
+  
+  html2canvas(element, { useCORS: true, scale: 2 }).then(canvas => {
+    // Rétablissement des styles d'origine
+    element.style.maxHeight = originalMaxHeight;
+    element.style.overflowY = originalOverflowY;
+    
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgProps = pdf.getImageProperties(imgData);
+    const imgWidth = pageWidth;
+    const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+    
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
     }
+    pdf.save("articles_a_recommander.pdf");
+  });
+}
+
   </script>
 </body>
 </html>
