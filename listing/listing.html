@@ -101,6 +101,7 @@
       border-radius: var(--border-radius);
       overflow: hidden;
       box-shadow: var(--box-shadow);
+      table-layout: auto;
     }
     th, td {
       padding: 12px;
@@ -131,10 +132,9 @@
     #volunteerTable td:nth-child(3) {
       min-width: 250px;
     }
-    
     #volunteerTable th:nth-child(4),
     #volunteerTable td:nth-child(4) {
-      min-width: 100px;
+      min-width: 100px; /* colonne telephone augmenté */
     }
     /* Ligne inactive */
     .inactive {
