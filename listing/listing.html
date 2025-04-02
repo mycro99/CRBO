@@ -22,9 +22,9 @@
     }
     /* Conteneur principal */
     #content {
-      max-width: 1200px; /* Augmenté pour accueillir les colonnes larges */
+      max-width: 1200px; /* Pour accueillir les colonnes larges */
       margin: auto;
-      overflow-x: auto; /* Permet le défilement horizontal si nécessaire */
+      overflow-x: auto; /* Défilement horizontal si nécessaire */
     }
     h1, h2 {
       text-align: center;
@@ -113,7 +113,7 @@
       background-color: var(--primary-color);
       color: #fff;
       font-weight: 500;
-      position: relative; /* Nécessaire pour le handle de redimensionnement */
+      position: relative; /* Pour le handle de redimensionnement */
     }
     tr:nth-child(even) {
       background-color: #f9f9f9;
@@ -121,11 +121,16 @@
     /* Largeur minimale pour certaines colonnes */
     #volunteerTable th:nth-child(3),
     #volunteerTable td:nth-child(3) {
-      min-width: 250px; /* Colonne Email */
+      min-width: 250px; /* Email */
     }
     #volunteerTable th:nth-child(5),
     #volunteerTable td:nth-child(5) {
-      min-width: 250px; /* Colonne Brevets */
+      min-width: 250px; /* Brevets */
+    }
+    /* Style pour la nouvelle colonne N° badge */
+    #volunteerTable th:nth-child(6),
+    #volunteerTable td:nth-child(6) {
+      min-width: 200px;
     }
     /* Style pour une ligne inactive */
     .inactive {
@@ -140,7 +145,7 @@
       padding: 4px;
       box-sizing: border-box;
     }
-    /* Styles pour le handle de redimensionnement */
+    /* Handle de redimensionnement */
     .resizer {
       position: absolute;
       right: 0;
@@ -219,6 +224,16 @@
           <label>Actif :</label>
           <input type="checkbox" id="newActif" checked>
         </div>
+        <!-- Nouveau groupe pour les numéros de badge -->
+        <div class="form-group">
+          <label>N° badge :</label>
+          <div>
+            <label>AMU: <input type="text" id="newBadgeAMU" placeholder="Numéro AMU"></label>
+          </div>
+          <div>
+            <label>ATNUP: <input type="text" id="newBadgeATNUP" placeholder="Numéro ATNUP"></label>
+          </div>
+        </div>
         <button type="submit">Ajouter Volontaire</button>
       </form>
     </div>
@@ -232,6 +247,7 @@
           <th>Email</th>
           <th>Téléphone</th>
           <th>Brevets</th>
+          <th>N° badge</th> <!-- Nouvelle colonne -->
           <th>FBSE</th>
           <th>Actif</th>
           <th>Permis</th>
@@ -264,6 +280,8 @@
           email: "jean.dupont@example.com",
           tel: "0123456789",
           brevets: { BEPS: true, Secouriste: true, Atnup: false, Amu: false, VIR: false },
+          badgeAMU: "",
+          badgeATNUP: "",
           fbse: "NON",
           actif: true,
           permis: true,
@@ -300,6 +318,14 @@
             <label><input type="checkbox" class="vol-brevet" data-field="VIR" ${vol.brevets.VIR ? "checked" : ""}> VIR</label>
           </td>
           <td>
+            <div>
+              <label>AMU: <input type="text" class="table-input vol-badge-amu" value="${vol.badgeAMU || ''}"></label>
+            </div>
+            <div>
+              <label>ATNUP: <input type="text" class="table-input vol-badge-atnup" value="${vol.badgeATNUP || ''}"></label>
+            </div>
+          </td>
+          <td>
             <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="NON" ${vol.fbse === "NON" ? "checked" : ""}> NON</label><br>
             <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="EN COURS" ${vol.fbse === "EN COURS" ? "checked" : ""}> EN COURS</label><br>
             <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="OUI" ${vol.fbse === "OUI" ? "checked" : ""}> OUI</label>
@@ -327,7 +353,6 @@
       });
       attachTableEventListeners();
       saveVolunteers();
-      // Ajoute les handles de redimensionnement aux en-têtes
       addResizers();
     }
 
@@ -350,6 +375,20 @@
           checkbox.addEventListener("change", function() {
             const subfield = this.getAttribute("data-field");
             volunteers[index].brevets[subfield] = this.checked;
+            saveVolunteers();
+          });
+        });
+        // N° badge (AMU)
+        row.querySelectorAll(".vol-badge-amu").forEach(input => {
+          input.addEventListener("input", function() {
+            volunteers[index].badgeAMU = this.value;
+            saveVolunteers();
+          });
+        });
+        // N° badge (ATNUP)
+        row.querySelectorAll(".vol-badge-atnup").forEach(input => {
+          input.addEventListener("input", function() {
+            volunteers[index].badgeATNUP = this.value;
             saveVolunteers();
           });
         });
@@ -416,6 +455,8 @@
           Amu: document.getElementById("newBrevets_Amu").checked,
           VIR: document.getElementById("newBrevets_VIR").checked
         },
+        badgeAMU: document.getElementById("newBadgeAMU").value,
+        badgeATNUP: document.getElementById("newBadgeATNUP").value,
         fbse: document.querySelector('input[name="newFbse"]:checked').value,
         actif: document.getElementById("newActif").checked,
         permis: document.getElementById("newPermis").checked,
@@ -462,15 +503,12 @@
     // Redimensionnement manuel des colonnes
     // ---------------------------
     function addResizers() {
-      // Sélectionne tous les th de l'en-tête
       const ths = document.querySelectorAll("#volunteerTable th");
       ths.forEach(th => {
-        // Supprime d'éventuels anciens handles
         const oldResizer = th.querySelector(".resizer");
         if (oldResizer) {
           oldResizer.remove();
         }
-        // Crée un nouveau handle
         const resizer = document.createElement("div");
         resizer.className = "resizer";
         th.appendChild(resizer);
