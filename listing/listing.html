@@ -118,19 +118,19 @@
     tr:nth-child(even) {
       background-color: #f9f9f9;
     }
-    /* Largeur minimale pour certaines colonnes */
-    #volunteerTable th:nth-child(3),
-    #volunteerTable td:nth-child(3) {
-      min-width: 250px; /* Colonne Email */
-    }
+    /* Réduction des largeurs pour les colonnes Brevets et N° badge */
     #volunteerTable th:nth-child(5),
     #volunteerTable td:nth-child(5) {
-      min-width: 250px; /* Colonne Brevets */
+      min-width: 150px; /* Colonne Brevets réduite */
     }
-    /* Nouvelle colonne N° badge */
     #volunteerTable th:nth-child(6),
     #volunteerTable td:nth-child(6) {
-      min-width: 200px;
+      min-width: 120px; /* Colonne N° badge réduite */
+    }
+    /* Conserver une largeur suffisante pour la colonne Email */
+    #volunteerTable th:nth-child(3),
+    #volunteerTable td:nth-child(3) {
+      min-width: 250px;
     }
     /* Ligne inactive */
     .inactive {
@@ -353,7 +353,6 @@
       });
       attachTableEventListeners();
       saveVolunteers();
-      addResizers();
     }
 
     // Ajoute des écouteurs sur les inputs du tableau pour mettre à jour les données
@@ -498,56 +497,6 @@
         dateField.style.display = (this.value === "OUI") ? "block" : "none";
       });
     });
-
-    // ---------------------------
-    // Redimensionnement manuel des colonnes par glisser-déposer
-    let currentColIndex = null;
-    let startX = 0;
-    let startWidth = 0;
-    function addResizers() {
-      const ths = document.querySelectorAll("#volunteerTable th");
-      ths.forEach((th, index) => {
-        // Supprimer d'anciens handles s'ils existent
-        const oldResizer = th.querySelector(".resizer");
-        if (oldResizer) {
-          oldResizer.remove();
-        }
-        // Créer le handle
-        const resizer = document.createElement("div");
-        resizer.className = "resizer";
-        th.appendChild(resizer);
-        resizer.addEventListener("mousedown", (e) => initResize(e, index));
-      });
-    }
-    function initResize(e, colIndex) {
-      currentColIndex = colIndex;
-      startX = e.clientX;
-      // Récupérer la largeur du th (en pixels)
-      let th = document.querySelectorAll("#volunteerTable th")[colIndex];
-      startWidth = th.offsetWidth;
-      document.addEventListener("mousemove", resizeColumn);
-      document.addEventListener("mouseup", stopResize);
-    }
-    function resizeColumn(e) {
-      if (currentColIndex === null) return;
-      const delta = e.clientX - startX;
-      const newWidth = Math.max(startWidth + delta, 50); // largeur minimale de 50px
-      // Met à jour le th et toutes les cellules de la colonne
-      const table = document.getElementById("volunteerTable");
-      const rows = table.querySelectorAll("tr");
-      rows.forEach(row => {
-        const cell = row.children[currentColIndex];
-        if (cell) {
-          cell.style.width = newWidth + "px";
-        }
-      });
-    }
-    function stopResize() {
-      document.removeEventListener("mousemove", resizeColumn);
-      document.removeEventListener("mouseup", stopResize);
-      currentColIndex = null;
-    }
-    // ---------------------------
 
     // Charger les volontaires au chargement de la page
     window.addEventListener("load", loadVolunteers);
