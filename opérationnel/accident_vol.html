@@ -1,1 +1,71 @@
-
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Accident corporel - Volontaires</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      text-align: center;
+      margin: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #dc3545;
+    }
+    .pdf-viewer {
+      width: 100%;
+      height: 500px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    button.print-button {
+      padding: 12px 24px;
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: background-color 0.3s ease;
+    }
+    button.print-button:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Accident corporel - Volontaires</h1>
+    <iframe id="pdfIframe" class="pdf-viewer" src="pdf/volontaires.pdf" title="Document PDF"></iframe>
+    <button class="print-button" onclick="printPDF()">Imprimer</button>
+  </div>
+  
+  <script>
+    function printPDF() {
+      // Si l'iframe est utilisée :
+      var iframe = document.getElementById("pdfIframe");
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } else {
+        // Sinon, imprimez la page entière
+        window.print();
+      }
+    }
+  </script>
+</body>
+</html>
