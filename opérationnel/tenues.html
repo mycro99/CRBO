@@ -91,7 +91,7 @@
       display: block;
       margin: 0 auto 10px auto;
     }
-    /* Assurer que le cadre est inclus dans les dimensions du canvas */
+    /* Zone de signature avec cadre visible */
     .signature-pad {
       box-sizing: border-box;
       border: 1px solid var(--secondary-color);
@@ -120,6 +120,16 @@
     .button-container {
       text-align: center;
       margin-top: 30px;
+    }
+    /* Bloc de rappel surligné avec le message ATTENTION intégré */
+    .reminder {
+      text-align: center;
+      font-weight: bold;
+      background-color: #ffff99;
+      padding: 10px;
+      border: 1px solid var(--primary-color);
+      border-radius: var(--border-radius);
+      margin: 20px 0;
     }
     @media print {
       .button-container { display: none; }
@@ -325,10 +335,14 @@
       </div>
     </div>
 
-    <p style="text-align: center;">
-      Pour rappel, les tenues restent la propriété de la Croix-Rouge de Belgique. Merci d'envoyer ce document à
-      <a href="mailto:logistique.cs.oupeye@croix-rouge.be">logistique.cs.oupeye@croix-rouge.be</a>
-    </p>
+    <!-- Bloc de rappel intégré avec le message ATTENTION -->
+    <div class="reminder">
+      <p style="margin: 0;">!!! ATTENTION !!!</p>
+      <p style="margin: 0;">
+        Pour rappel, les tenues restent la propriété de la Croix-Rouge de Belgique. Merci d'envoyer ce document à 
+        <a href="mailto:logistique.cs.oupeye@croix-rouge.be">logistique.cs.oupeye@croix-rouge.be</a>
+      </p>
+    </div>
 
     <div class="button-container">
       <button type="button" onclick="generatePDF()" class="pdf-button">Générer PDF et partager</button>
