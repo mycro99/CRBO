@@ -22,9 +22,9 @@
     }
     /* Conteneur principal */
     #content {
-      max-width: 1200px;
+      max-width: 1200px; /* Pour accueillir les colonnes larges */
       margin: auto;
-      overflow-x: auto;
+      overflow-x: auto; /* Défilement horizontal si nécessaire */
     }
     h1, h2 {
       text-align: center;
@@ -101,11 +101,7 @@
       border-radius: var(--border-radius);
       overflow: hidden;
       box-shadow: var(--box-shadow);
-      table-layout: auto;
-    }
-    /* On ajoute un colgroup pour permettre le redimensionnement manuel */
-    colgroup col {
-      width: auto;
+      table-layout: auto; /* Les colonnes s'ajustent automatiquement */
     }
     th, td {
       padding: 12px;
@@ -117,7 +113,7 @@
       background-color: var(--primary-color);
       color: #fff;
       font-weight: 500;
-      position: relative; /* Pour le handle */
+      position: relative; /* Pour le handle de redimensionnement */
     }
     tr:nth-child(even) {
       background-color: #f9f9f9;
@@ -125,11 +121,11 @@
     /* Largeur minimale pour certaines colonnes */
     #volunteerTable th:nth-child(3),
     #volunteerTable td:nth-child(3) {
-      min-width: 250px;
+      min-width: 250px; /* Colonne Email */
     }
     #volunteerTable th:nth-child(5),
     #volunteerTable td:nth-child(5) {
-      min-width: 250px;
+      min-width: 250px; /* Colonne Brevets */
     }
     /* Nouvelle colonne N° badge */
     #volunteerTable th:nth-child(6),
@@ -141,7 +137,7 @@
       background-color: #e0e0e0 !important;
       color: #777;
     }
-    /* Inputs du tableau */
+    /* Styles pour les inputs du tableau (édition) */
     .table-input {
       width: 100%;
       border: 1px solid var(--secondary-color);
@@ -228,6 +224,7 @@
           <label>Actif :</label>
           <input type="checkbox" id="newActif" checked>
         </div>
+        <!-- Nouveau groupe pour les numéros de badge -->
         <div class="form-group">
           <label>N° badge :</label>
           <div>
@@ -243,20 +240,6 @@
 
     <!-- Tableau des volontaires -->
     <table id="volunteerTable">
-      <!-- Ajout du colgroup pour le redimensionnement -->
-      <colgroup>
-        <col style="width: auto;">
-        <col style="width: auto;">
-        <col style="width: auto;">
-        <col style="width: auto;">
-        <col style="width: auto;">
-        <col style="width: auto;"> <!-- N° badge -->
-        <col style="width: auto;">
-        <col style="width: auto;">
-        <col style="width: auto;">
-        <col style="width: auto;">
-        <col style="width: auto;">
-      </colgroup>
       <thead>
         <tr>
           <th>Nom</th>
@@ -314,7 +297,7 @@
       localStorage.setItem("volunteersData", JSON.stringify(volunteers));
     }
 
-    // Construit le tableau
+    // Construit le tableau à partir des données
     function buildTable() {
       const tbody = document.getElementById("volunteerTableBody");
       tbody.innerHTML = "";
@@ -373,7 +356,7 @@
       addResizers();
     }
 
-    // Ajoute des écouteurs sur les inputs du tableau
+    // Ajoute des écouteurs sur les inputs du tableau pour mettre à jour les données
     function attachTableEventListeners() {
       document.querySelectorAll("#volunteerTableBody tr").forEach(row => {
         const index = row.getAttribute("data-index");
@@ -457,46 +440,7 @@
       });
     }
 
-    // Ajoute des handles de redimensionnement dans les th via le <colgroup>
-    function addResizers() {
-      const ths = document.querySelectorAll("#volunteerTable th");
-      const colgroup = document.querySelector("#volunteerTable colgroup");
-      ths.forEach((th, index) => {
-        // Supprime d'éventuels anciens handles
-        const oldResizer = th.querySelector(".resizer");
-        if (oldResizer) {
-          oldResizer.remove();
-        }
-        // Crée le handle
-        const resizer = document.createElement("div");
-        resizer.className = "resizer";
-        th.appendChild(resizer);
-        resizer.addEventListener("mousedown", (e) => initResize(e, index));
-      });
-    }
-
-    let currentCol, startX, startWidth;
-    function initResize(e, colIndex) {
-      // Récupère la colonne correspondante dans le colgroup
-      const colgroup = document.querySelector("#volunteerTable colgroup");
-      currentCol = colgroup.children[colIndex];
-      startX = e.clientX;
-      startWidth = currentCol.offsetWidth;
-      document.addEventListener("mousemove", resizeColumn);
-      document.addEventListener("mouseup", stopResize);
-    }
-    function resizeColumn(e) {
-      if (!currentCol) return;
-      const newWidth = startWidth + (e.clientX - startX);
-      currentCol.style.width = newWidth + "px";
-    }
-    function stopResize(e) {
-      document.removeEventListener("mousemove", resizeColumn);
-      document.removeEventListener("mouseup", stopResize);
-      currentCol = null;
-    }
-
-    // Ajoute un nouveau volontaire depuis le formulaire
+    // Fonction pour ajouter un nouveau volontaire depuis le formulaire
     function addVolunteer(event) {
       event.preventDefault();
       const newVol = {
@@ -554,6 +498,56 @@
         dateField.style.display = (this.value === "OUI") ? "block" : "none";
       });
     });
+
+    // ---------------------------
+    // Redimensionnement manuel des colonnes par glisser-déposer
+    let currentColIndex = null;
+    let startX = 0;
+    let startWidth = 0;
+    function addResizers() {
+      const ths = document.querySelectorAll("#volunteerTable th");
+      ths.forEach((th, index) => {
+        // Supprimer d'anciens handles s'ils existent
+        const oldResizer = th.querySelector(".resizer");
+        if (oldResizer) {
+          oldResizer.remove();
+        }
+        // Créer le handle
+        const resizer = document.createElement("div");
+        resizer.className = "resizer";
+        th.appendChild(resizer);
+        resizer.addEventListener("mousedown", (e) => initResize(e, index));
+      });
+    }
+    function initResize(e, colIndex) {
+      currentColIndex = colIndex;
+      startX = e.clientX;
+      // Récupérer la largeur du th (en pixels)
+      let th = document.querySelectorAll("#volunteerTable th")[colIndex];
+      startWidth = th.offsetWidth;
+      document.addEventListener("mousemove", resizeColumn);
+      document.addEventListener("mouseup", stopResize);
+    }
+    function resizeColumn(e) {
+      if (currentColIndex === null) return;
+      const delta = e.clientX - startX;
+      const newWidth = Math.max(startWidth + delta, 50); // largeur minimale de 50px
+      // Met à jour le th et toutes les cellules de la colonne
+      const table = document.getElementById("volunteerTable");
+      const rows = table.querySelectorAll("tr");
+      rows.forEach(row => {
+        const cell = row.children[currentColIndex];
+        if (cell) {
+          cell.style.width = newWidth + "px";
+        }
+      });
+    }
+    function stopResize() {
+      document.removeEventListener("mousemove", resizeColumn);
+      document.removeEventListener("mouseup", stopResize);
+      currentColIndex = null;
+    }
+    // ---------------------------
 
     // Charger les volontaires au chargement de la page
     window.addEventListener("load", loadVolunteers);
