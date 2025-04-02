@@ -1,1 +1,355 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Listing des Volontaires - Croix-Rouge&reg;</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #dc3545;
+      --secondary-color: #6c757d;
+      --bg-color: #f5f5f5;
+      --text-color: #333;
+      --border-radius: 6px;
+      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+    /* Conteneur principal */
+    #content {
+      max-width: 900px;
+      margin: auto;
+    }
+    h1, h2 {
+      text-align: center;
+      color: var(--primary-color);
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    /* Zone de recherche */
+    #searchContainer {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #searchInput {
+      width: 50%;
+      padding: 8px;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    /* Bouton et conteneur déroulant du formulaire d'ajout */
+    #addFormToggle {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #addFormContainer {
+      display: none;
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      background-color: #fff;
+      box-shadow: var(--box-shadow);
+    }
+    #addFormContainer input[type="text"],
+    #addFormContainer input[type="email"],
+    #addFormContainer input[type="tel"],
+    #addFormContainer input[type="date"] {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    #addFormContainer label {
+      font-weight: 500;
+    }
+    #addFormContainer .form-group {
+      margin-bottom: 15px;
+    }
+    button, .pdf-button, #addFormContainer button {
+      display: inline-block;
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: var(--primary-color);
+      color: #fff;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      box-shadow: var(--box-shadow);
+      margin: 5px 0;
+    }
+    button:hover, .pdf-button:hover, #addFormContainer button:hover {
+      background-color: #c82333;
+    }
+    /* Style du tableau */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #fff;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--box-shadow);
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border: 1px solid var(--secondary-color);
+      vertical-align: top;
+    }
+    th {
+      background-color: var(--primary-color);
+      color: #fff;
+      font-weight: 500;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    /* Style pour une ligne inactive */
+    .inactive {
+      background-color: #e0e0e0 !important;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <div id="content">
+    <h1>Listing des Volontaires - CS Oupeye&reg;</h1>
+
+    <!-- Zone de recherche -->
+    <div id="searchContainer">
+      <input type="text" id="searchInput" placeholder="Rechercher...">
+    </div>
+
+    <!-- Bouton pour afficher/masquer le formulaire d'ajout -->
+    <div id="addFormToggle">
+      <button onclick="toggleAddForm()" class="pdf-button">Ajouter un Volontaire</button>
+    </div>
+
+    <!-- Formulaire d'ajout de volontaire (caché par défaut) -->
+    <div id="addFormContainer">
+      <form id="addForm" onsubmit="addVolunteer(event)">
+        <h2>Ajouter un Volontaire</h2>
+        <div class="form-group">
+          <label for="newNom">Nom :</label>
+          <input type="text" id="newNom" required>
+        </div>
+        <div class="form-group">
+          <label for="newPrenom">Prénom :</label>
+          <input type="text" id="newPrenom" required>
+        </div>
+        <div class="form-group">
+          <label for="newEmail">Email :</label>
+          <input type="email" id="newEmail" required>
+        </div>
+        <div class="form-group">
+          <label for="newTel">Téléphone :</label>
+          <input type="tel" id="newTel" required>
+        </div>
+        <div class="form-group">
+          <label>Brevets :</label>
+          <label><input type="checkbox" id="newBrevets_BEPS"> BEPS</label>
+          <label><input type="checkbox" id="newBrevets_Secouriste"> Secouriste</label>
+          <label><input type="checkbox" id="newBrevets_Atnup"> Atnup</label>
+          <label><input type="checkbox" id="newBrevets_Amu"> Amu</label>
+          <label><input type="checkbox" id="newBrevets_VIR"> VIR</label>
+        </div>
+        <div class="form-group">
+          <label>FBSE :</label>
+          <label><input type="radio" name="newFbse" value="NON" checked> NON</label>
+          <label><input type="radio" name="newFbse" value="EN COURS"> EN COURS</label>
+          <label><input type="radio" name="newFbse" value="OUI"> OUI</label>
+        </div>
+        <div class="form-group">
+          <label>Permis de conduire :</label>
+          <input type="checkbox" id="newPermis" checked>
+        </div>
+        <div class="form-group">
+          <label>Sélection Médicale :</label>
+          <label><input type="radio" name="newMedicale" value="NON" checked> NON</label>
+          <label><input type="radio" name="newMedicale" value="OUI"> OUI</label>
+          <br>
+          <input type="date" id="newMedicaleDate" style="display:none;" placeholder="Date médicale">
+        </div>
+        <div class="form-group">
+          <label>Actif :</label>
+          <input type="checkbox" id="newActif" checked>
+        </div>
+        <button type="submit">Ajouter Volontaire</button>
+      </form>
+    </div>
+
+    <!-- Tableau des volontaires -->
+    <table id="volunteerTable">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Prénom</th>
+          <th>Email</th>
+          <th>Téléphone</th>
+          <th>Brevets</th>
+          <th>FBSE</th>
+          <th>Actif</th>
+          <th>Permis de conduire</th>
+          <th>Sélection médicale</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Exemple de ligne initiale -->
+        <tr>
+          <td>Dupont</td>
+          <td>Jean</td>
+          <td>jean.dupont@example.com</td>
+          <td>0123456789</td>
+          <td>
+            <label><input type="checkbox" checked> BEPS</label><br>
+            <label><input type="checkbox" checked> Secouriste</label><br>
+            <label><input type="checkbox"> Atnup</label><br>
+            <label><input type="checkbox"> Amu</label><br>
+            <label><input type="checkbox"> VIR</label>
+          </td>
+          <td>
+            <label><input type="radio" name="fbse_1" value="NON" checked> NON</label><br>
+            <label><input type="radio" name="fbse_1" value="EN COURS"> EN COURS</label><br>
+            <label><input type="radio" name="fbse_1" value="OUI"> OUI</label>
+          </td>
+          <td>
+            <input type="checkbox" onchange="toggleActive(this)" checked>
+          </td>
+          <td>
+            <input type="checkbox" id="permiscb_1" checked>
+          </td>
+          <td>
+            <label>
+              <input type="radio" name="medicale_1" value="NON" checked> NON
+            </label><br>
+            <label>
+              <input type="radio" name="medicale_1" value="OUI"> OUI
+            </label><br>
+            <input type="date" id="medicaleDate_1" style="display:none;">
+          </td>
+          <td>
+            <button onclick="deleteRow(this)">Supprimer</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    let rowCounter = 2; // Pour générer des noms uniques pour les groupes radio FBSE & médicale
+
+    // Affichage conditionnel du champ date dans le formulaire d'ajout
+    document.querySelectorAll('input[name="newMedicale"]').forEach(radio => {
+      radio.addEventListener("change", function() {
+        const dateField = document.getElementById("newMedicaleDate");
+        dateField.style.display = (this.value === "OUI") ? "block" : "none";
+      });
+    });
+
+    // Fonction pour afficher/masquer le formulaire d'ajout
+    function toggleAddForm() {
+      const container = document.getElementById("addFormContainer");
+      container.style.display = (container.style.display === "none" || container.style.display === "") ? "block" : "none";
+    }
+
+    // Recherche dans le tableau
+    document.getElementById("searchInput").addEventListener("keyup", function() {
+      const filter = this.value.toLowerCase();
+      const rows = document.querySelectorAll("#volunteerTable tbody tr");
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? "" : "none";
+      });
+    });
+
+    // Bascule actif/inactif et application de la classe "inactive"
+    function toggleActive(checkbox) {
+      const row = checkbox.closest("tr");
+      row.classList.toggle("inactive", !checkbox.checked);
+    }
+
+    // Supprimer une ligne du tableau
+    function deleteRow(btn) {
+      const row = btn.closest("tr");
+      row.remove();
+    }
+
+    // Fonction pour ajouter un nouveau volontaire
+    function addVolunteer(event) {
+      event.preventDefault();
+      const nom = document.getElementById("newNom").value;
+      const prenom = document.getElementById("newPrenom").value;
+      const email = document.getElementById("newEmail").value;
+      const tel = document.getElementById("newTel").value;
+      const brevetBEPS = document.getElementById("newBrevets_BEPS").checked;
+      const brevetSecouriste = document.getElementById("newBrevets_Secouriste").checked;
+      const brevetAtnup = document.getElementById("newBrevets_Atnup").checked;
+      const brevetAmu = document.getElementById("newBrevets_Amu").checked;
+      const brevetVIR = document.getElementById("newBrevets_VIR").checked;
+      const fbse = document.querySelector('input[name="newFbse"]:checked').value;
+      const actif = document.getElementById("newActif").checked;
+      const newPermis = document.getElementById("newPermis").checked;
+      const newMedicale = document.querySelector('input[name="newMedicale"]:checked').value;
+      const newMedicaleDate = document.getElementById("newMedicaleDate").value;
+
+      const tableBody = document.querySelector("#volunteerTable tbody");
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${nom}</td>
+        <td>${prenom}</td>
+        <td>${email}</td>
+        <td>${tel}</td>
+        <td>
+          <label><input type="checkbox" ${brevetBEPS ? "checked" : ""}> BEPS</label><br>
+          <label><input type="checkbox" ${brevetSecouriste ? "checked" : ""}> Secouriste</label><br>
+          <label><input type="checkbox" ${brevetAtnup ? "checked" : ""}> Atnup</label><br>
+          <label><input type="checkbox" ${brevetAmu ? "checked" : ""}> Amu</label><br>
+          <label><input type="checkbox" ${brevetVIR ? "checked" : ""}> VIR</label>
+        </td>
+        <td>
+          <label><input type="radio" name="fbse_${rowCounter}" value="NON" ${fbse === "NON" ? "checked" : ""}> NON</label><br>
+          <label><input type="radio" name="fbse_${rowCounter}" value="EN COURS" ${fbse === "EN COURS" ? "checked" : ""}> EN COURS</label><br>
+          <label><input type="radio" name="fbse_${rowCounter}" value="OUI" ${fbse === "OUI" ? "checked" : ""}> OUI</label>
+        </td>
+        <td>
+          <input type="checkbox" onchange="toggleActive(this)" ${actif ? "checked" : ""}>
+        </td>
+        <td>
+          <input type="checkbox" ${newPermis ? "checked" : ""}>
+        </td>
+        <td>
+          <label>
+            <input type="radio" name="selection_medicale_${rowCounter}" value="NON" ${newMedicale === "NON" ? "checked" : ""}> NON
+          </label><br>
+          <label>
+            <input type="radio" name="selection_medicale_${rowCounter}" value="OUI" ${newMedicale === "OUI" ? "checked" : ""}> OUI
+          </label><br>
+          <input type="date" value="${newMedicale === "OUI" ? newMedicaleDate : ""}" style="${newMedicale === "OUI" ? "" : "display:none;"}" onchange="this.dataset.date = this.value">
+        </td>
+        <td>
+          <button onclick="deleteRow(this)">Supprimer</button>
+        </td>
+      `;
+      if (!actif) {
+        row.classList.add("inactive");
+      }
+      tableBody.appendChild(row);
+      rowCounter++;
+      document.getElementById("addForm").reset();
+    }
+  </script>
+</body>
+</html>
 
