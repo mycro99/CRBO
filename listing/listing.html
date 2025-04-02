@@ -302,62 +302,66 @@
     }
 
     // Construit le tableau à partir des données
-    function buildTable() {
-      const tbody = document.getElementById("volunteerTableBody");
-      tbody.innerHTML = "";
-      volunteers.forEach((vol, index) => {
-        const row = document.createElement("tr");
-        row.setAttribute("data-index", index);
-        if (!vol.actif) row.classList.add("inactive");
-        row.innerHTML = `
-          <td><input type="text" class="table-input vol-nom" value="${vol.nom}"></td>
-          <td><input type="text" class="table-input vol-prenom" value="${vol.prenom}"></td>
-          <td><input type="email" class="table-input vol-email" value="${vol.email}"></td>
-          <td><input type="tel" class="table-input vol-tel" value="${vol.tel}"></td>
-          <td>
-            <label><input type="checkbox" class="vol-brevet" data-field="BEPS" ${vol.brevets.BEPS ? "checked" : ""}> BEPS</label><br>
-            <label><input type="checkbox" class="vol-brevet" data-field="Secouriste" ${vol.brevets.Secouriste ? "checked" : ""}> Secouriste</label><br>
-            <label><input type="checkbox" class="vol-brevet" data-field="Atnup" ${vol.brevets.Atnup ? "checked" : ""}> Atnup</label><br>
-            <label><input type="checkbox" class="vol-brevet" data-field="Amu" ${vol.brevets.Amu ? "checked" : ""}> Amu</label><br>
-            <label><input type="checkbox" class="vol-brevet" data-field="VIR" ${vol.brevets.VIR ? "checked" : ""}> VIR</label>
-          </td>
-          <td>
-            <div>
-              <label>AMU: <input type="text" class="table-input vol-badge-amu" value="${vol.badgeAMU || ''}"></label>
-            </div>
-            <div>
-              <label>ATNUP: <input type="text" class="table-input vol-badge-atnup" value="${vol.badgeATNUP || ''}"></label>
-            </div>
-          </td>
-          <td>
-            <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="NON" ${vol.fbse === "NON" ? "checked" : ""}> NON</label><br>
-            <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="EN COURS" ${vol.fbse === "EN COURS" ? "checked" : ""}> EN COURS</label><br>
-            <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="OUI" ${vol.fbse === "OUI" ? "checked" : ""}> OUI</label>
-          </td>
-          <td>
-            <input type="checkbox" class="vol-permis" ${vol.permis ? "checked" : ""}>
-          </td>
-          <td>
-            <label>
-              <input type="radio" name="medicale_${index}" class="vol-med" value="NON" ${vol.selection_medicale.value === "NON" ? "checked" : ""}> NON
-            </label><br>
-            <label>
-              <input type="radio" name="medicale_${index}" class="vol-med" value="OUI" ${vol.selection_medicale.value === "OUI" ? "checked" : ""}> OUI
-            </label><br>
-            <input type="date" class="vol-med-date" value="${vol.selection_medicale.date}" style="${vol.selection_medicale.value === 'OUI' ? '' : 'display:none;'}">
-          </td>
-          <td>
-            <input type="checkbox" class="vol-actif" ${vol.actif ? "checked" : ""}>
-          </td>
-          <td>
-            <button class="delete-btn">Supprimer</button>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
-      attachTableEventListeners();
-      saveVolunteers();
-    }
+   function buildTable() {
+  // Trier le tableau des volontaires par ordre alphabétique (insensible à la casse) sur le champ "nom"
+  volunteers.sort((a, b) => a.nom.toLowerCase().localeCompare(b.nom.toLowerCase()));
+  
+  const tbody = document.getElementById("volunteerTableBody");
+  tbody.innerHTML = "";
+  volunteers.forEach((vol, index) => {
+    const row = document.createElement("tr");
+    row.setAttribute("data-index", index);
+    if (!vol.actif) row.classList.add("inactive");
+    row.innerHTML = `
+      <td><input type="text" class="table-input vol-nom" value="${vol.nom}"></td>
+      <td><input type="text" class="table-input vol-prenom" value="${vol.prenom}"></td>
+      <td><input type="email" class="table-input vol-email" value="${vol.email}"></td>
+      <td><input type="tel" class="table-input vol-tel" value="${vol.tel}"></td>
+      <td>
+        <label><input type="checkbox" class="vol-brevet" data-field="BEPS" ${vol.brevets.BEPS ? "checked" : ""}> BEPS</label><br>
+        <label><input type="checkbox" class="vol-brevet" data-field="Secouriste" ${vol.brevets.Secouriste ? "checked" : ""}> Secouriste</label><br>
+        <label><input type="checkbox" class="vol-brevet" data-field="Atnup" ${vol.brevets.Atnup ? "checked" : ""}> Atnup</label><br>
+        <label><input type="checkbox" class="vol-brevet" data-field="Amu" ${vol.brevets.Amu ? "checked" : ""}> Amu</label><br>
+        <label><input type="checkbox" class="vol-brevet" data-field="VIR" ${vol.brevets.VIR ? "checked" : ""}> VIR</label>
+      </td>
+      <td>
+        <div>
+          <label>AMU: <input type="text" class="table-input vol-badge-amu" value="${vol.badgeAMU || ''}"></label>
+        </div>
+        <div>
+          <label>ATNUP: <input type="text" class="table-input vol-badge-atnup" value="${vol.badgeATNUP || ''}"></label>
+        </div>
+      </td>
+      <td>
+        <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="NON" ${vol.fbse === "NON" ? "checked" : ""}> NON</label><br>
+        <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="EN COURS" ${vol.fbse === "EN COURS" ? "checked" : ""}> EN COURS</label><br>
+        <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="OUI" ${vol.fbse === "OUI" ? "checked" : ""}> OUI</label>
+      </td>
+      <td>
+        <input type="checkbox" class="vol-permis" ${vol.permis ? "checked" : ""}>
+      </td>
+      <td>
+        <label>
+          <input type="radio" name="medicale_${index}" class="vol-med" value="NON" ${vol.selection_medicale.value === "NON" ? "checked" : ""}> NON
+        </label><br>
+        <label>
+          <input type="radio" name="medicale_${index}" class="vol-med" value="OUI" ${vol.selection_medicale.value === "OUI" ? "checked" : ""}> OUI
+        </label><br>
+        <input type="date" class="vol-med-date" value="${vol.selection_medicale.date}" style="${vol.selection_medicale.value === 'OUI' ? '' : 'display:none;'}">
+      </td>
+      <td>
+        <input type="checkbox" class="vol-actif" ${vol.actif ? "checked" : ""}>
+      </td>
+      <td>
+        <button class="delete-btn">Supprimer</button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+  attachTableEventListeners();
+  saveVolunteers();
+}
+
 
     // Ajoute des écouteurs sur les inputs du tableau pour mettre à jour les données
     function attachTableEventListeners() {
