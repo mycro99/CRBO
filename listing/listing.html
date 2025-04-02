@@ -22,8 +22,9 @@
     }
     /* Conteneur principal */
     #content {
-      max-width: 900px;
+      max-width: 1200px; /* Augmenté pour accueillir les colonnes larges */
       margin: auto;
+      overflow-x: auto; /* Permet le défilement horizontal si nécessaire */
     }
     h1, h2 {
       text-align: center;
@@ -100,6 +101,7 @@
       border-radius: var(--border-radius);
       overflow: hidden;
       box-shadow: var(--box-shadow);
+      table-layout: auto;
     }
     th, td {
       padding: 12px;
@@ -115,12 +117,21 @@
     tr:nth-child(even) {
       background-color: #f9f9f9;
     }
+    /* Largeur minimale pour certaines colonnes */
+    #volunteerTable th:nth-child(3),
+    #volunteerTable td:nth-child(3) {
+      min-width: 250px; /* Colonne Email */
+    }
+    #volunteerTable th:nth-child(5),
+    #volunteerTable td:nth-child(5) {
+      min-width: 250px; /* Colonne Brevets */
+    }
     /* Style pour une ligne inactive */
     .inactive {
       background-color: #e0e0e0 !important;
       color: #777;
     }
-    /* Styles pour les inputs du tableau (pour permettre l'édition) */
+    /* Styles pour les inputs du tableau (édition) */
     .table-input {
       width: 100%;
       border: 1px solid var(--secondary-color);
@@ -220,7 +231,7 @@
   </div>
 
   <script>
-    // Structure de données pour un volontaire
+    // Structure de données pour les volontaires
     let volunteers = [];
     let rowCounter = 0; // Utilisé pour les groupes radio
 
@@ -253,7 +264,7 @@
       localStorage.setItem("volunteersData", JSON.stringify(volunteers));
     }
 
-    // Construit le tableau à partir du tableau de volontaires
+    // Construit le tableau à partir des données
     function buildTable() {
       const tbody = document.getElementById("volunteerTableBody");
       tbody.innerHTML = "";
@@ -299,16 +310,15 @@
         `;
         tbody.appendChild(row);
       });
-      // Attacher des écouteurs d'événements pour détecter les modifications dans le tableau
       attachTableEventListeners();
       saveVolunteers();
     }
 
-    // Attache des écouteurs sur les inputs du tableau pour mettre à jour les données
+    // Ajoute des écouteurs sur les inputs du tableau pour mettre à jour les données
     function attachTableEventListeners() {
       document.querySelectorAll("#volunteerTableBody tr").forEach(row => {
         const index = row.getAttribute("data-index");
-        // Pour les champs texte (nom, prenom, email, tel)
+        // Champs texte
         row.querySelectorAll(".vol-nom, .vol-prenom, .vol-email, .vol-tel").forEach(input => {
           input.addEventListener("input", function() {
             const field = this.classList.contains("vol-nom") ? "nom" :
@@ -318,7 +328,7 @@
             saveVolunteers();
           });
         });
-        // Pour les brevets
+        // Brevets
         row.querySelectorAll(".vol-brevet").forEach(checkbox => {
           checkbox.addEventListener("change", function() {
             const subfield = this.getAttribute("data-field");
@@ -326,7 +336,7 @@
             saveVolunteers();
           });
         });
-        // Pour FBSE
+        // FBSE
         row.querySelectorAll(".vol-fbse").forEach(radio => {
           radio.addEventListener("change", function() {
             if (this.checked) {
@@ -335,24 +345,22 @@
             }
           });
         });
-        // Pour Actif
+        // Actif
         row.querySelector(".vol-actif").addEventListener("change", function() {
           volunteers[index].actif = this.checked;
-          // Mettre à jour le style de la ligne
           row.classList.toggle("inactive", !this.checked);
           saveVolunteers();
         });
-        // Pour Permis
+        // Permis
         row.querySelector(".vol-permis").addEventListener("change", function() {
           volunteers[index].permis = this.checked;
           saveVolunteers();
         });
-        // Pour Sélection Médicale
+        // Sélection Médicale
         row.querySelectorAll(".vol-med").forEach(radio => {
           radio.addEventListener("change", function() {
             if (this.checked) {
               volunteers[index].selection_medicale.value = this.value;
-              // Afficher ou masquer le champ date suivant la valeur
               const dateInput = row.querySelector(".vol-med-date");
               if (this.value === "OUI") {
                 dateInput.style.display = "block";
@@ -369,14 +377,14 @@
           volunteers[index].selection_medicale.date = this.value;
           saveVolunteers();
         });
-        // Pour le bouton Supprimer
+        // Bouton Supprimer
         row.querySelector(".delete-btn").addEventListener("click", function() {
           deleteVolunteer(index);
         });
       });
     }
 
-    // Ajoute un nouveau volontaire depuis le formulaire
+    // Fonction pour ajouter un nouveau volontaire depuis le formulaire
     function addVolunteer(event) {
       event.preventDefault();
       const newVol = {
@@ -404,22 +412,22 @@
       document.getElementById("addForm").reset();
     }
 
-    // Supprime un volontaire du tableau
+    // Supprime un volontaire
     function deleteVolunteer(index) {
       volunteers.splice(index, 1);
       buildTable();
     }
 
-    // Fonction pour afficher/masquer le formulaire d'ajout
+    // Affichage/masquage du formulaire d'ajout
     function toggleAddForm() {
       const container = document.getElementById("addFormContainer");
       container.style.display = (container.style.display === "none" || container.style.display === "") ? "block" : "none";
     }
 
-    // Zone de recherche : filtre le tableau en temps réel
+    // Filtre le tableau en temps réel
     document.getElementById("searchInput").addEventListener("keyup", function() {
       const filter = this.value.toLowerCase();
-      document.querySelectorAll("#volunteerTableBody tr").forEach(row => {
+      document.querySelectorAll("#volunteerTable tbody tr").forEach(row => {
         const text = row.textContent.toLowerCase();
         row.style.display = text.includes(filter) ? "" : "none";
       });
