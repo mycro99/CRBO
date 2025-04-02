@@ -2,92 +2,296 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Affichage complet du PDF avec PDF.js</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.6.172/pdf.min.js"></script>
+  <title>Demande de permutation</title>
+  <!-- Importation de la police Roboto -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Bibliothèques pour la capture d'écran et la génération de PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       font-family: 'Roboto', sans-serif;
-      background-color: #f5f5f5;
-      text-align: center;
       margin: 20px;
+      background-color: #f7f7f7;
+      color: #333;
     }
     .container {
-      max-width: 800px;
-      margin: auto;
+      max-width: 900px;
+      margin: 0 auto;
       background: #fff;
-      padding: 20px;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 20px 30px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-radius: 8px;
     }
-    canvas.pdf-page {
-      width: 100%;
+    h1 {
+      text-align: center;
+      color: #d32f2f;
       margin-bottom: 20px;
+    }
+    /* Cadre décoratif */
+    .card {
+      background-color: #fff;
+      border: 2px solid #d32f2f;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    /* Zone date améliorée et centrée */
+    #date-container {
+      text-align: center;
+      width: fit-content;
+      margin: 0 auto;
+    }
+    #date-container label {
+      font-weight: 700;
+      margin-right: 5px;
+      font-size: 1.1rem;
+    }
+    #date-container input[type="date"] {
+      padding: 8px 12px;
       border: 1px solid #ccc;
       border-radius: 4px;
+      font-size: 1rem;
     }
-    button.print-button {
-      padding: 12px 24px;
-      background-color: #dc3545;
+    /* Conteneur des zones de saisie */
+    #form-container {
+      /* On ajoute le cadre .card */
+    }
+    .form-group {
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .form-group label {
+      width: 45%;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .form-group input {
+      width: 45%;
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+    .form-group input:focus {
+      border-color: #d32f2f;
+      outline: none;
+    }
+    /* Mise en forme du conteneur des signatures */
+    #signature-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      align-items: flex-start;
+    }
+    .signature-box {
+      text-align: center;
+      margin: 10px;
+    }
+    .signature-box p {
+      margin-bottom: 5px;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .signature-box canvas {
+      border: 1px solid #000;
+      border-radius: 4px;
+      touch-action: none;
+      background: #fff;
+    }
+    .signature-box button {
+      margin-top: 5px;
+      padding: 5px 10px;
+      border: none;
+      background: #757575;
       color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .signature-box button:hover {
+      background: #616161;
+    }
+    /* Message d'avertissement */
+    #warning-message {
+      text-align: center;
+      margin: 20px 0;
+      padding: 10px;
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      border-radius: 4px;
+      color: #856404;
+      font-weight: bold;
+    }
+    #buttons {
+      text-align: center;
+      margin-top: 20px;
+    }
+    #generate-pdf {
+      background: #d32f2f;
+      color: #fff;
+      padding: 10px 20px;
       border: none;
       border-radius: 4px;
       font-size: 1rem;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      transition: background-color 0.3s ease;
+      transition: background 0.3s ease;
     }
-    button.print-button:hover {
-      background-color: #c82333;
+    #generate-pdf:hover {
+      background: #b71c1c;
     }
   </style>
 </head>
 <body>
-  <div class="container" id="pdf-container">
-    <h1>Affichage complet du PDF</h1>
-    <!-- Les pages du PDF seront insérées ici -->
-    <button class="print-button" onclick="window.print()">Imprimer ce document</button>
+  <div class="container" id="document">
+    <h1>Permutation – CS Oupeye</h1>
+    
+    <!-- Zone date dans un cadre -->
+    <div id="date-container" class="card">
+      <label for="date">Date :</label>
+      <input type="date" id="date">
+    </div>
+    
+    <!-- Formulaire dans un cadre -->
+    <div id="form-container" class="card">
+      <div class="form-group">
+        <label for="employee1">Je soussigné :</label>
+        <input type="text" id="employee1" placeholder="Saisir nom">
+      </div>
+      <div class="form-group">
+        <label for="guard1">Garde échangée :</label>
+        <input type="text" id="guard1" placeholder="Préciser date, heure et vecteur">
+      </div>
+      <div class="form-group">
+        <label for="employee2">Prestera le service de :</label>
+        <input type="text" id="employee2" placeholder="Saisir nom">
+      </div>
+      <div class="form-group">
+        <label for="guard2">Garde échangée :</label>
+        <input type="text" id="guard2" placeholder="Préciser date, heure et vecteur">
+      </div>
+    </div>
+
+    <!-- Signature dans un cadre -->
+    <div id="signature-container" class="card">
+      <div class="signature-box">
+        <p>Je soussigné :</p>
+        <canvas id="signature-pad1" width="350" height="200"></canvas><br>
+        <button id="clear-signature1">Effacer signature</button>
+      </div>
+      <div class="signature-box">
+        <p>Prestera le service de :</p>
+        <canvas id="signature-pad2" width="350" height="200"></canvas><br>
+        <button id="clear-signature2">Effacer signature</button>
+      </div>
+    </div>
+
+    <!-- Message d'avertissement -->
+    <div id="warning-message">
+      !!! ATTENTION !!!<br>
+      La demande sera effective lorsque le référent transport ou le responsable de centre aura validé la demande.
+    </div>
+
+    <div id="buttons">
+      <button id="generate-pdf">Générer PDF</button>
+    </div>
   </div>
-  
+
   <script>
-    // Chemin vers le fichier PDF (ajustez-le selon votre structure de dossiers)
-    const url = 'pdf/mon_document.pdf';
-    
-    // Configuration de PDF.js : on définit l'emplacement du worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.6.172/pdf.worker.min.js';
-    
-    // Charge le document PDF
-    pdfjsLib.getDocument(url).promise.then(pdfDoc => {
-      const container = document.getElementById('pdf-container');
-      
-      // Pour chaque page du PDF, créer un canvas et l'afficher
-      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-        pdfDoc.getPage(pageNum).then(page => {
-          // Ajuster le scale selon vos préférences
-          const scale = 1.5;
-          const viewport = page.getViewport({ scale });
-          
-          // Création du canvas pour cette page
-          const canvas = document.createElement('canvas');
-          canvas.className = 'pdf-page';
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const context = canvas.getContext('2d');
-          
-          // Prépare le contexte de rendu
-          const renderContext = {
-            canvasContext: context,
-            viewport: viewport
-          };
-          
-          // Rendu de la page dans le canvas
-          page.render(renderContext);
-          
-          // Ajout du canvas au container, avant le bouton d'impression
-          container.insertBefore(canvas, container.lastElementChild);
-        });
+    // Affecte la date du jour par défaut au champ de date
+    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+    // Fonction qui configure un pad de signature pour un canvas donné
+    function setupSignaturePad(canvas, clearButton) {
+      const ctx = canvas.getContext('2d');
+      let drawing = false;
+      let currentPos = { x: 0, y: 0 };
+
+      function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        let x, y;
+        if (e.touches) {
+          x = e.touches[0].clientX - rect.left;
+          y = e.touches[0].clientY - rect.top;
+        } else {
+          x = e.clientX - rect.left;
+          y = e.clientY - rect.top;
+        }
+        return { x, y };
       }
-    }).catch(error => {
-      console.error("Erreur lors du chargement du PDF :", error);
+
+      function startDrawing(e) {
+        drawing = true;
+        currentPos = getPos(e);
+      }
+
+      function endDrawing() {
+        drawing = false;
+      }
+
+      function draw(e) {
+        if (!drawing) return;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(currentPos.x, currentPos.y);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        currentPos = pos;
+      }
+
+      // Événements pour la souris
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', endDrawing);
+      canvas.addEventListener('mouseout', endDrawing);
+
+      // Événements tactiles pour mobile
+      canvas.addEventListener('touchstart', startDrawing);
+      canvas.addEventListener('touchmove', function(e) {
+        draw(e);
+        e.preventDefault();
+      });
+      canvas.addEventListener('touchend', endDrawing);
+
+      // Bouton pour effacer le pad
+      clearButton.addEventListener('click', function() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      });
+    }
+
+    // Configuration des deux pads de signature
+    setupSignaturePad(document.getElementById('signature-pad1'), document.getElementById('clear-signature1'));
+    setupSignaturePad(document.getElementById('signature-pad2'), document.getElementById('clear-signature2'));
+
+    // Génération du PDF à partir de la div "document"
+    document.getElementById('generate-pdf').addEventListener('click', function() {
+      html2canvas(document.getElementById('document'), { scale: 2 }).then(function(canvas) {
+        // Capture en format JPEG avec qualité maximale
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+
+        // Utilisation de l'API Web Share si disponible, sinon téléchargement classique
+        const blobPDF = pdf.output('blob');
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blobPDF], 'demande_de_permutation.pdf', { type: 'application/pdf' })] })) {
+          navigator.share({
+            files: [new File([blobPDF], 'demande_de_permutation.pdf', { type: 'application/pdf' })],
+            title: 'Demande de permutation',
+            text: 'Voici le document de demande de permutation.'
+          })
+          .then(() => console.log('Partage réussi'))
+          .catch((error) => console.log('Erreur lors du partage', error));
+        } else {
+          pdf.save("demande_de_permutation.pdf");
+        }
+      });
     });
   </script>
 </body>
