@@ -113,6 +113,7 @@
       background-color: var(--primary-color);
       color: #fff;
       font-weight: 500;
+      position: relative; /* Nécessaire pour le handle de redimensionnement */
     }
     tr:nth-child(even) {
       background-color: #f9f9f9;
@@ -138,6 +139,20 @@
       border-radius: var(--border-radius);
       padding: 4px;
       box-sizing: border-box;
+    }
+    /* Styles pour le handle de redimensionnement */
+    .resizer {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 5px;
+      height: 100%;
+      cursor: col-resize;
+      user-select: none;
+      background-color: transparent;
+    }
+    .resizer:hover {
+      background-color: rgba(0,0,0,0.1);
     }
   </style>
 </head>
@@ -312,6 +327,8 @@
       });
       attachTableEventListeners();
       saveVolunteers();
+      // Ajoute les handles de redimensionnement aux en-têtes
+      addResizers();
     }
 
     // Ajoute des écouteurs sur les inputs du tableau pour mettre à jour les données
@@ -440,6 +457,45 @@
         dateField.style.display = (this.value === "OUI") ? "block" : "none";
       });
     });
+
+    // ---------------------------
+    // Redimensionnement manuel des colonnes
+    // ---------------------------
+    function addResizers() {
+      // Sélectionne tous les th de l'en-tête
+      const ths = document.querySelectorAll("#volunteerTable th");
+      ths.forEach(th => {
+        // Supprime d'éventuels anciens handles
+        const oldResizer = th.querySelector(".resizer");
+        if (oldResizer) {
+          oldResizer.remove();
+        }
+        // Crée un nouveau handle
+        const resizer = document.createElement("div");
+        resizer.className = "resizer";
+        th.appendChild(resizer);
+        resizer.addEventListener("mousedown", initResize);
+      });
+    }
+
+    let currentTh, startX, startWidth;
+    function initResize(e) {
+      currentTh = e.target.parentElement;
+      startX = e.clientX;
+      startWidth = currentTh.offsetWidth;
+      document.addEventListener("mousemove", resizeColumn);
+      document.addEventListener("mouseup", stopResize);
+    }
+    function resizeColumn(e) {
+      if (!currentTh) return;
+      const newWidth = startWidth + (e.clientX - startX);
+      currentTh.style.width = newWidth + "px";
+    }
+    function stopResize(e) {
+      document.removeEventListener("mousemove", resizeColumn);
+      document.removeEventListener("mouseup", stopResize);
+      currentTh = null;
+    }
 
     // Charger les volontaires au chargement de la page
     window.addEventListener("load", loadVolunteers);
