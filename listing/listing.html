@@ -507,12 +507,17 @@
 
     // Filtre le tableau en temps réel
     document.getElementById("searchInput").addEventListener("keyup", function() {
-      const filter = this.value.toLowerCase();
-      document.querySelectorAll("#volunteerTable tbody tr").forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(filter) ? "" : "none";
-      });
+  const filter = this.value.toLowerCase();
+  document.querySelectorAll("#volunteerTable tbody tr").forEach(row => {
+    // Récupère toutes les valeurs des inputs dans la ligne
+    let rowValues = "";
+    row.querySelectorAll("input").forEach(input => {
+      rowValues += input.value.toLowerCase() + " ";
     });
+    // Affiche la ligne si une correspondance est trouvée
+    row.style.display = rowValues.includes(filter) ? "" : "none";
+  });
+});
 
     // Affichage conditionnel du champ date dans le formulaire d'ajout
     document.querySelectorAll('input[name="newMedicale"]').forEach(radio => {
