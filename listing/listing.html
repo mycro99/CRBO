@@ -280,11 +280,12 @@
     </table>
   </div>
 
-  <!-- Script module combinant Firebase et votre code de listing -->
+  <!-- Script module combinant Firebase, Firestore et votre code de listing -->
   <script type="module">
     // --- Initialisation de Firebase ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-analytics.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
     
     const firebaseConfig = {
       apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
@@ -298,7 +299,8 @@
     
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
-    
+    const db = getFirestore(app); // Initialisation de Firestore
+
     // --- Code de gestion du listing ---
     let volunteers = [];
     let rowCounter = 0; // Utilisé pour les groupes radio
@@ -332,6 +334,16 @@
     // Sauvegarde dans le localStorage
     function saveVolunteers() {
       localStorage.setItem("volunteersData", JSON.stringify(volunteers));
+    }
+
+    // Fonction pour sauvegarder un volontaire dans Firestore
+    async function saveVolunteerToFirestore(volunteer) {
+      try {
+        const docRef = await addDoc(collection(db, "volunteers"), volunteer);
+        console.log("Document ajouté avec l'ID :", docRef.id);
+      } catch (e) {
+        console.error("Erreur lors de l'ajout du document :", e);
+      }
     }
 
     // Construit le tableau à partir des données
@@ -507,6 +519,9 @@
       volunteers.push(newVol);
       buildTable();
       document.getElementById("addForm").reset();
+      
+      // Sauvegarder dans Firestore
+      saveVolunteerToFirestore(newVol);
     }
 
     // Supprime un volontaire
@@ -543,7 +558,6 @@
 
     // Charger les volontaires au chargement de la page
     window.addEventListener("load", loadVolunteers);
-
     // Lier la soumission du formulaire
     document.getElementById("addForm").addEventListener("submit", addVolunteer);
   </script>
