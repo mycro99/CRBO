@@ -120,6 +120,14 @@
       background-color: #e0e0e0 !important;
       color: #777;
     }
+    /* Styles pour les inputs du tableau (pour permettre l'édition) */
+    .table-input {
+      width: 100%;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      padding: 4px;
+      box-sizing: border-box;
+    }
   </style>
 </head>
 <body>
@@ -200,55 +208,222 @@
           <th>Brevets</th>
           <th>FBSE</th>
           <th>Actif</th>
-          <th>Permis de conduire</th>
-          <th>Sélection médicale</th>
+          <th>Permis</th>
+          <th>Sélection Médicale</th>
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- Exemple de ligne initiale -->
-        <tr>
-          <td>Dupont</td>
-          <td>Jean</td>
-          <td>jean.dupont@example.com</td>
-          <td>0123456789</td>
-          <td>
-            <label><input type="checkbox" checked> BEPS</label><br>
-            <label><input type="checkbox" checked> Secouriste</label><br>
-            <label><input type="checkbox"> Atnup</label><br>
-            <label><input type="checkbox"> Amu</label><br>
-            <label><input type="checkbox"> VIR</label>
-          </td>
-          <td>
-            <label><input type="radio" name="fbse_1" value="NON" checked> NON</label><br>
-            <label><input type="radio" name="fbse_1" value="EN COURS"> EN COURS</label><br>
-            <label><input type="radio" name="fbse_1" value="OUI"> OUI</label>
-          </td>
-          <td>
-            <input type="checkbox" onchange="toggleActive(this)" checked>
-          </td>
-          <td>
-            <input type="checkbox" id="permiscb_1" checked>
-          </td>
-          <td>
-            <label>
-              <input type="radio" name="medicale_1" value="NON" checked> NON
-            </label><br>
-            <label>
-              <input type="radio" name="medicale_1" value="OUI"> OUI
-            </label><br>
-            <input type="date" id="medicaleDate_1" style="display:none;">
-          </td>
-          <td>
-            <button onclick="deleteRow(this)">Supprimer</button>
-          </td>
-        </tr>
+      <tbody id="volunteerTableBody">
+        <!-- Les lignes seront générées dynamiquement -->
       </tbody>
     </table>
   </div>
 
   <script>
-    let rowCounter = 2; // Pour générer des noms uniques pour les groupes radio FBSE & médicale
+    // Structure de données pour un volontaire
+    let volunteers = [];
+    let rowCounter = 0; // Utilisé pour les groupes radio
+
+    // Charge les données depuis le localStorage et reconstruit le tableau
+    function loadVolunteers() {
+      const data = localStorage.getItem("volunteersData");
+      if (data) {
+        volunteers = JSON.parse(data);
+        rowCounter = volunteers.length;
+      } else {
+        // Exemple initial si aucun enregistrement n'existe
+        volunteers = [{
+          nom: "Dupont",
+          prenom: "Jean",
+          email: "jean.dupont@example.com",
+          tel: "0123456789",
+          brevets: { BEPS: true, Secouriste: true, Atnup: false, Amu: false, VIR: false },
+          fbse: "NON",
+          actif: true,
+          permis: true,
+          selection_medicale: { value: "NON", date: "" }
+        }];
+        rowCounter = 1;
+      }
+      buildTable();
+    }
+
+    // Sauvegarde le tableau des volontaires dans le localStorage
+    function saveVolunteers() {
+      localStorage.setItem("volunteersData", JSON.stringify(volunteers));
+    }
+
+    // Construit le tableau à partir du tableau de volontaires
+    function buildTable() {
+      const tbody = document.getElementById("volunteerTableBody");
+      tbody.innerHTML = "";
+      volunteers.forEach((vol, index) => {
+        const row = document.createElement("tr");
+        row.setAttribute("data-index", index);
+        if (!vol.actif) row.classList.add("inactive");
+        row.innerHTML = `
+          <td><input type="text" class="table-input vol-nom" value="${vol.nom}"></td>
+          <td><input type="text" class="table-input vol-prenom" value="${vol.prenom}"></td>
+          <td><input type="email" class="table-input vol-email" value="${vol.email}"></td>
+          <td><input type="tel" class="table-input vol-tel" value="${vol.tel}"></td>
+          <td>
+            <label><input type="checkbox" class="vol-brevet" data-field="BEPS" ${vol.brevets.BEPS ? "checked" : ""}> BEPS</label><br>
+            <label><input type="checkbox" class="vol-brevet" data-field="Secouriste" ${vol.brevets.Secouriste ? "checked" : ""}> Secouriste</label><br>
+            <label><input type="checkbox" class="vol-brevet" data-field="Atnup" ${vol.brevets.Atnup ? "checked" : ""}> Atnup</label><br>
+            <label><input type="checkbox" class="vol-brevet" data-field="Amu" ${vol.brevets.Amu ? "checked" : ""}> Amu</label><br>
+            <label><input type="checkbox" class="vol-brevet" data-field="VIR" ${vol.brevets.VIR ? "checked" : ""}> VIR</label>
+          </td>
+          <td>
+            <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="NON" ${vol.fbse === "NON" ? "checked" : ""}> NON</label><br>
+            <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="EN COURS" ${vol.fbse === "EN COURS" ? "checked" : ""}> EN COURS</label><br>
+            <label><input type="radio" name="fbse_${index}" class="vol-fbse" value="OUI" ${vol.fbse === "OUI" ? "checked" : ""}> OUI</label>
+          </td>
+          <td>
+            <input type="checkbox" class="vol-actif" ${vol.actif ? "checked" : ""}>
+          </td>
+          <td>
+            <input type="checkbox" class="vol-permis" ${vol.permis ? "checked" : ""}>
+          </td>
+          <td>
+            <label>
+              <input type="radio" name="medicale_${index}" class="vol-med" value="NON" ${vol.selection_medicale.value === "NON" ? "checked" : ""}> NON
+            </label><br>
+            <label>
+              <input type="radio" name="medicale_${index}" class="vol-med" value="OUI" ${vol.selection_medicale.value === "OUI" ? "checked" : ""}> OUI
+            </label><br>
+            <input type="date" class="vol-med-date" value="${vol.selection_medicale.date}" style="${vol.selection_medicale.value === 'OUI' ? '' : 'display:none;'}">
+          </td>
+          <td>
+            <button class="delete-btn">Supprimer</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+      // Attacher des écouteurs d'événements pour détecter les modifications dans le tableau
+      attachTableEventListeners();
+      saveVolunteers();
+    }
+
+    // Attache des écouteurs sur les inputs du tableau pour mettre à jour les données
+    function attachTableEventListeners() {
+      document.querySelectorAll("#volunteerTableBody tr").forEach(row => {
+        const index = row.getAttribute("data-index");
+        // Pour les champs texte (nom, prenom, email, tel)
+        row.querySelectorAll(".vol-nom, .vol-prenom, .vol-email, .vol-tel").forEach(input => {
+          input.addEventListener("input", function() {
+            const field = this.classList.contains("vol-nom") ? "nom" :
+                          this.classList.contains("vol-prenom") ? "prenom" :
+                          this.classList.contains("vol-email") ? "email" : "tel";
+            volunteers[index][field] = this.value;
+            saveVolunteers();
+          });
+        });
+        // Pour les brevets
+        row.querySelectorAll(".vol-brevet").forEach(checkbox => {
+          checkbox.addEventListener("change", function() {
+            const subfield = this.getAttribute("data-field");
+            volunteers[index].brevets[subfield] = this.checked;
+            saveVolunteers();
+          });
+        });
+        // Pour FBSE
+        row.querySelectorAll(".vol-fbse").forEach(radio => {
+          radio.addEventListener("change", function() {
+            if (this.checked) {
+              volunteers[index].fbse = this.value;
+              saveVolunteers();
+            }
+          });
+        });
+        // Pour Actif
+        row.querySelector(".vol-actif").addEventListener("change", function() {
+          volunteers[index].actif = this.checked;
+          // Mettre à jour le style de la ligne
+          row.classList.toggle("inactive", !this.checked);
+          saveVolunteers();
+        });
+        // Pour Permis
+        row.querySelector(".vol-permis").addEventListener("change", function() {
+          volunteers[index].permis = this.checked;
+          saveVolunteers();
+        });
+        // Pour Sélection Médicale
+        row.querySelectorAll(".vol-med").forEach(radio => {
+          radio.addEventListener("change", function() {
+            if (this.checked) {
+              volunteers[index].selection_medicale.value = this.value;
+              // Afficher ou masquer le champ date suivant la valeur
+              const dateInput = row.querySelector(".vol-med-date");
+              if (this.value === "OUI") {
+                dateInput.style.display = "block";
+              } else {
+                dateInput.style.display = "none";
+                volunteers[index].selection_medicale.date = "";
+                dateInput.value = "";
+              }
+              saveVolunteers();
+            }
+          });
+        });
+        row.querySelector(".vol-med-date").addEventListener("change", function() {
+          volunteers[index].selection_medicale.date = this.value;
+          saveVolunteers();
+        });
+        // Pour le bouton Supprimer
+        row.querySelector(".delete-btn").addEventListener("click", function() {
+          deleteVolunteer(index);
+        });
+      });
+    }
+
+    // Ajoute un nouveau volontaire depuis le formulaire
+    function addVolunteer(event) {
+      event.preventDefault();
+      const newVol = {
+        nom: document.getElementById("newNom").value,
+        prenom: document.getElementById("newPrenom").value,
+        email: document.getElementById("newEmail").value,
+        tel: document.getElementById("newTel").value,
+        brevets: {
+          BEPS: document.getElementById("newBrevets_BEPS").checked,
+          Secouriste: document.getElementById("newBrevets_Secouriste").checked,
+          Atnup: document.getElementById("newBrevets_Atnup").checked,
+          Amu: document.getElementById("newBrevets_Amu").checked,
+          VIR: document.getElementById("newBrevets_VIR").checked
+        },
+        fbse: document.querySelector('input[name="newFbse"]:checked').value,
+        actif: document.getElementById("newActif").checked,
+        permis: document.getElementById("newPermis").checked,
+        selection_medicale: {
+          value: document.querySelector('input[name="newMedicale"]:checked').value,
+          date: document.getElementById("newMedicaleDate").value
+        }
+      };
+      volunteers.push(newVol);
+      buildTable();
+      document.getElementById("addForm").reset();
+    }
+
+    // Supprime un volontaire du tableau
+    function deleteVolunteer(index) {
+      volunteers.splice(index, 1);
+      buildTable();
+    }
+
+    // Fonction pour afficher/masquer le formulaire d'ajout
+    function toggleAddForm() {
+      const container = document.getElementById("addFormContainer");
+      container.style.display = (container.style.display === "none" || container.style.display === "") ? "block" : "none";
+    }
+
+    // Zone de recherche : filtre le tableau en temps réel
+    document.getElementById("searchInput").addEventListener("keyup", function() {
+      const filter = this.value.toLowerCase();
+      document.querySelectorAll("#volunteerTableBody tr").forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? "" : "none";
+      });
+    });
 
     // Affichage conditionnel du champ date dans le formulaire d'ajout
     document.querySelectorAll('input[name="newMedicale"]').forEach(radio => {
@@ -258,98 +433,8 @@
       });
     });
 
-    // Fonction pour afficher/masquer le formulaire d'ajout
-    function toggleAddForm() {
-      const container = document.getElementById("addFormContainer");
-      container.style.display = (container.style.display === "none" || container.style.display === "") ? "block" : "none";
-    }
-
-    // Recherche dans le tableau
-    document.getElementById("searchInput").addEventListener("keyup", function() {
-      const filter = this.value.toLowerCase();
-      const rows = document.querySelectorAll("#volunteerTable tbody tr");
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(filter) ? "" : "none";
-      });
-    });
-
-    // Bascule actif/inactif et application de la classe "inactive"
-    function toggleActive(checkbox) {
-      const row = checkbox.closest("tr");
-      row.classList.toggle("inactive", !checkbox.checked);
-    }
-
-    // Supprimer une ligne du tableau
-    function deleteRow(btn) {
-      const row = btn.closest("tr");
-      row.remove();
-    }
-
-    // Fonction pour ajouter un nouveau volontaire
-    function addVolunteer(event) {
-      event.preventDefault();
-      const nom = document.getElementById("newNom").value;
-      const prenom = document.getElementById("newPrenom").value;
-      const email = document.getElementById("newEmail").value;
-      const tel = document.getElementById("newTel").value;
-      const brevetBEPS = document.getElementById("newBrevets_BEPS").checked;
-      const brevetSecouriste = document.getElementById("newBrevets_Secouriste").checked;
-      const brevetAtnup = document.getElementById("newBrevets_Atnup").checked;
-      const brevetAmu = document.getElementById("newBrevets_Amu").checked;
-      const brevetVIR = document.getElementById("newBrevets_VIR").checked;
-      const fbse = document.querySelector('input[name="newFbse"]:checked').value;
-      const actif = document.getElementById("newActif").checked;
-      const newPermis = document.getElementById("newPermis").checked;
-      const newMedicale = document.querySelector('input[name="newMedicale"]:checked').value;
-      const newMedicaleDate = document.getElementById("newMedicaleDate").value;
-
-      const tableBody = document.querySelector("#volunteerTable tbody");
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${nom}</td>
-        <td>${prenom}</td>
-        <td>${email}</td>
-        <td>${tel}</td>
-        <td>
-          <label><input type="checkbox" ${brevetBEPS ? "checked" : ""}> BEPS</label><br>
-          <label><input type="checkbox" ${brevetSecouriste ? "checked" : ""}> Secouriste</label><br>
-          <label><input type="checkbox" ${brevetAtnup ? "checked" : ""}> Atnup</label><br>
-          <label><input type="checkbox" ${brevetAmu ? "checked" : ""}> Amu</label><br>
-          <label><input type="checkbox" ${brevetVIR ? "checked" : ""}> VIR</label>
-        </td>
-        <td>
-          <label><input type="radio" name="fbse_${rowCounter}" value="NON" ${fbse === "NON" ? "checked" : ""}> NON</label><br>
-          <label><input type="radio" name="fbse_${rowCounter}" value="EN COURS" ${fbse === "EN COURS" ? "checked" : ""}> EN COURS</label><br>
-          <label><input type="radio" name="fbse_${rowCounter}" value="OUI" ${fbse === "OUI" ? "checked" : ""}> OUI</label>
-        </td>
-        <td>
-          <input type="checkbox" onchange="toggleActive(this)" ${actif ? "checked" : ""}>
-        </td>
-        <td>
-          <input type="checkbox" ${newPermis ? "checked" : ""}>
-        </td>
-        <td>
-          <label>
-            <input type="radio" name="selection_medicale_${rowCounter}" value="NON" ${newMedicale === "NON" ? "checked" : ""}> NON
-          </label><br>
-          <label>
-            <input type="radio" name="selection_medicale_${rowCounter}" value="OUI" ${newMedicale === "OUI" ? "checked" : ""}> OUI
-          </label><br>
-          <input type="date" value="${newMedicale === "OUI" ? newMedicaleDate : ""}" style="${newMedicale === "OUI" ? "" : "display:none;"}" onchange="this.dataset.date = this.value">
-        </td>
-        <td>
-          <button onclick="deleteRow(this)">Supprimer</button>
-        </td>
-      `;
-      if (!actif) {
-        row.classList.add("inactive");
-      }
-      tableBody.appendChild(row);
-      rowCounter++;
-      document.getElementById("addForm").reset();
-    }
+    // Charger les volontaires au chargement de la page
+    window.addEventListener("load", loadVolunteers);
   </script>
 </body>
 </html>
-
