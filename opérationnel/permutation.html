@@ -2,274 +2,427 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Demande de permutation</title>
-  <!-- Importation de la police Roboto -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-  <!-- Bibliothèques pour la capture d'écran et la génération de PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <title>commande de tenues - CS Oupeye&reg;</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary-color: #dc3545;
+      --secondary-color: #6c757d;
+      --bg-color: #f5f5f5;
+      --text-color: #333;
+      --border-radius: 6px;
+      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
     body {
       font-family: 'Roboto', sans-serif;
-      margin: 20px;
-      background-color: #f7f7f7;
-      color: #333;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
     }
-    .container {
+    /* Conteneur du contenu à exporter */
+    #pdfContent {
       max-width: 900px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 20px 30px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      border-radius: 8px;
+      margin: auto;
+    }
+    h1, h2 {
+      text-align: center;
+      color: var(--primary-color);
     }
     h1 {
-      text-align: center;
-      color: #d32f2f;
       margin-bottom: 20px;
     }
-    /* Cadre décoratif */
-    .card {
-      background-color: #fff;
-      border: 2px solid #d32f2f;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      padding: 15px;
-      margin-bottom: 20px;
-    }
-    /* Zone date améliorée et centrée */
-    #date-container {
-      text-align: center;
-      width: fit-content;
-      margin: 0 auto;
-    }
-    #date-container label {
-      font-weight: 700;
-      margin-right: 5px;
-      font-size: 1.1rem;
-    }
-    #date-container input[type="date"] {
-      padding: 8px 12px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
-    /* Conteneur des zones de saisie */
-    #form-container {
-      /* On ajoute le cadre .card */
-    }
-    .form-group {
-      margin-bottom: 15px;
+    .form-row {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
     }
-    .form-group label {
-      width: 45%;
-      font-weight: 700;
-      font-size: 1.1rem;
+    .form-row div {
+      flex: 1;
+      min-width: 150px;
     }
-    .form-group input {
-      width: 45%;
-      padding: 8px 12px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 1rem;
-      transition: border-color 0.3s;
+    .form-row label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
     }
-    .form-group input:focus {
-      border-color: #d32f2f;
-      outline: none;
+    .form-row input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
     }
-    /* Mise en forme du conteneur des signatures */
-    #signature-container {
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #fff;
+      border: 1px solid var(--secondary-color);
+      border-radius: var(--border-radius);
+      overflow: visible;
+      box-shadow: var(--box-shadow);
+    }
+    th, td {
+      border: 1px solid var(--secondary-color);
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: var(--primary-color);
+      color: #fff;
+      font-weight: 500;
+    }
+    .signature-container {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-around;
       align-items: flex-start;
-    }
-    .signature-box {
-      text-align: center;
-      margin: 10px;
-    }
-    .signature-box p {
-      margin-bottom: 5px;
-      font-weight: 700;
-      font-size: 1.1rem;
-    }
-    .signature-box canvas {
-      border: 1px solid #000;
-      border-radius: 4px;
-      touch-action: none;
-      background: #fff;
-    }
-    .signature-box button {
-      margin-top: 5px;
-      padding: 5px 10px;
-      border: none;
-      background: #757575;
-      color: #fff;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .signature-box button:hover {
-      background: #616161;
-    }
-    /* Message d'avertissement */
-    #warning-message {
-      text-align: center;
-      margin: 20px 0;
-      padding: 10px;
-      background-color: #fff3cd;
-      border: 1px solid #ffeeba;
-      border-radius: 4px;
-      color: #856404;
-      font-weight: bold;
-    }
-    #buttons {
-      text-align: center;
+      gap: 20px;
       margin-top: 20px;
     }
-    #generate-pdf {
-      background: #d32f2f;
-      color: #fff;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.3s ease;
+    .signature-box {
+      flex: 1;
+      text-align: center;
+      min-width: 280px;
     }
-    #generate-pdf:hover {
-      background: #b71c1c;
+    .signature-box canvas {
+      display: block;
+      margin: 0 auto 10px auto;
+    }
+    /* Zone de signature avec cadre visible */
+    .signature-pad {
+      box-sizing: border-box;
+      border: 1px solid var(--secondary-color);
+      background-color: #fff;
+      width: 100%;
+      max-width: 400px;
+      height: 100px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    .pdf-button {
+      display: inline-block;
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: var(--primary-color);
+      color: #fff;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      box-shadow: var(--box-shadow);
+      margin: 0 10px;
+    }
+    .pdf-button:hover {
+      background-color: #c82333;
+    }
+    .button-container {
+      text-align: center;
+      margin-top: 30px;
+    }
+    /* Bloc de rappel surligné avec le message ATTENTION intégré */
+    .reminder {
+      text-align: center;
+      font-weight: bold;
+      background-color: #ffff99;
+      padding: 10px;
+      border: 1px solid var(--primary-color);
+      border-radius: var(--border-radius);
+      margin: 20px 0;
+    }
+    @media print {
+      .button-container { display: none; }
     }
   </style>
 </head>
 <body>
-  <div class="container" id="document">
-    <h1>Permutation – CS Oupeye</h1>
-    
-    <!-- Zone date dans un cadre -->
-    <div id="date-container" class="card">
-      <label for="date">Date :</label>
-      <input type="date" id="date">
-    </div>
-    
-    <!-- Formulaire dans un cadre -->
-    <div id="form-container" class="card">
-      <div class="form-group">
-        <label for="employee1">Je soussigné :</label>
-        <input type="text" id="employee1" placeholder="Saisir nom">
+  <div id="pdfContent">
+    <h1>commande de tenues - CS Oupeye&reg;</h1>
+
+    <div class="form-row">
+      <div>
+        <label for="nom">Nom :</label>
+        <input type="text" id="nom" name="nom">
       </div>
-      <div class="form-group">
-        <label for="guard1">Garde échangée :</label>
-        <input type="text" id="guard1" placeholder="Préciser date, heure et vecteur">
-      </div>
-      <div class="form-group">
-        <label for="employee2">Prestera le service de :</label>
-        <input type="text" id="employee2" placeholder="Saisir nom">
-      </div>
-      <div class="form-group">
-        <label for="guard2">Garde échangée :</label>
-        <input type="text" id="guard2" placeholder="Préciser date, heure et vecteur">
+      <div>
+        <label for="date">Date :</label>
+        <input type="date" id="date" name="date">
       </div>
     </div>
 
-    <!-- Signature dans un cadre -->
-    <div id="signature-container" class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Article</th>
+          <th>Nombre</th>
+          <th>Taille</th>
+          <th>Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Veste -->
+        <tr>
+          <td>veste</td>
+          <td><input type="text" name="nombre_veste"></td>
+          <td>
+            <select name="taille_veste">
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="2XL">2XL</option>
+              <option value="3XL">3XL</option>
+              <option value="4XL">4XL</option>
+              <option value="5XL">5XL</option>
+            </select>
+          </td>
+          <td>
+            <select name="type_veste">
+              <option value="ambulance">ambulance</option>
+              <option value="secouriste">secouriste</option>
+            </select>
+          </td>
+        </tr>
+        <!-- Bodywear -->
+        <tr>
+          <td>bodywear</td>
+          <td><input type="text" name="nombre_bodywear"></td>
+          <td>
+            <select name="taille_bodywear">
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="2XL">2XL</option>
+              <option value="3XL">3XL</option>
+              <option value="4XL">4XL</option>
+              <option value="5XL">5XL</option>
+            </select>
+          </td>
+          <td>
+            <select name="type_bodywear">
+              <option value="ambulance">ambulance</option>
+              <option value="secouriste">secouriste</option>
+            </select>
+          </td>
+        </tr>
+        <!-- Soft-sheel -->
+        <tr>
+          <td>soft-sheel</td>
+          <td><input type="text" name="nombre_softsheel"></td>
+          <td>
+            <select name="taille_softsheel">
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="2XL">2XL</option>
+              <option value="3XL">3XL</option>
+              <option value="4XL">4XL</option>
+              <option value="5XL">5XL</option>
+            </select>
+          </td>
+          <td>
+            <select name="type_softsheel">
+              <option value="ambulance">ambulance</option>
+              <option value="secouriste">secouriste</option>
+            </select>
+          </td>
+        </tr>
+        <!-- Polo/Tshirt -->
+        <tr>
+          <td>polo/tshirt</td>
+          <td><input type="text" name="nombre_polotshirt"></td>
+          <td>
+            <select name="taille_polotshirt">
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="2XL">2XL</option>
+              <option value="3XL">3XL</option>
+              <option value="4XL">4XL</option>
+              <option value="5XL">5XL</option>
+            </select>
+          </td>
+          <td>
+            <select name="type_polotshirt">
+              <option value="ambulance">ambulance</option>
+              <option value="secouriste">secouriste</option>
+            </select>
+          </td>
+        </tr>
+        <!-- Pantalon -->
+        <tr>
+          <td>pantalon</td>
+          <td><input type="text" name="nombre_pantalon"></td>
+          <td>
+            <select name="taille_pantalon">
+              <option value="34">34</option>
+              <option value="36">36</option>
+              <option value="38">38</option>
+              <option value="40">40</option>
+              <option value="42">42</option>
+              <option value="44">44</option>
+              <option value="46">46</option>
+              <option value="48">48</option>
+              <option value="50">50</option>
+              <option value="52">52</option>
+              <option value="54">54</option>
+              <option value="56">56</option>
+              <option value="58">58</option>
+            </select>
+          </td>
+          <td>
+            <select name="type_pantalon">
+              <option value="ambulance">ambulance</option>
+              <option value="secouriste">secouriste</option>
+            </select>
+          </td>
+        </tr>
+        <!-- Chaussures -->
+        <tr>
+          <td>chaussures</td>
+          <td><input type="text" name="nombre_chaussures"></td>
+          <td>
+            <select name="taille_chaussures">
+              <option value="36">36</option>
+              <option value="37">37</option>
+              <option value="38">38</option>
+              <option value="39">39</option>
+              <option value="40">40</option>
+              <option value="41">41</option>
+              <option value="42">42</option>
+              <option value="43">43</option>
+              <option value="44">44</option>
+              <option value="45">45</option>
+              <option value="46">46</option>
+            </select>
+          </td>
+          <td>
+            <select name="type_chaussures">
+              <option value="Haix">HAIX</option>
+              <option value="secouriste">secouriste</option>
+            </select>
+          </td>
+        </tr>
+        <!-- Caducée -->
+        <tr>
+          <td>caducée</td>
+          <td><input type="text" name="nombre_caducee"></td>
+          <td>
+            <select name="taille_caducee">
+              <option value="Grand">Grand</option>
+              <option value="Petit">Petit</option>
+            </select>
+          </td>
+          <td>
+            <select name="type_caducee">
+              <option value="ATNUP">ATNUP</option>
+              <option value="AMU">AMU</option>
+            </select>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="signature-container">
       <div class="signature-box">
-        <p>Je soussigné :</p>
-        <canvas id="signature-pad1" width="350" height="200"></canvas><br>
-        <button id="clear-signature1">Effacer signature</button>
-      </div>
-      <div class="signature-box">
-        <p>Prestera le service de :</p>
-        <canvas id="signature-pad2" width="350" height="200"></canvas><br>
-        <button id="clear-signature2">Effacer signature</button>
+        <p>Signature :</p>
+        <canvas id="signatureCanvas" class="signature-pad"></canvas>
+        <button type="button" onclick="clearSignature()" class="pdf-button">Effacer signature</button>
       </div>
     </div>
 
-    <!-- Message d'avertissement -->
-    <div id="warning-message">
-      !!! ATTENTION !!!<br>
-      La demande sera effective lorsque le référent transport ou le responsable de centre aura validé la demande.
+    <!-- Bloc de rappel intégré avec le message ATTENTION -->
+    <div class="reminder">
+      <p style="margin: 0;">!!! ATTENTION !!!</p>
+      <p style="margin: 0;">
+        Pour rappel, les tenues restent la propriété de la Croix-Rouge de Belgique. Merci d'envoyer ce document à 
+        <a href="mailto:logistique.cs.oupeye@croix-rouge.be">logistique.cs.oupeye@croix-rouge.be</a>
+      </p>
     </div>
 
-    <div id="buttons">
-      <button id="generate-pdf">Générer PDF</button>
+    <div class="button-container">
+      <button type="button" onclick="generatePDF()" class="pdf-button">Générer PDF et partager</button>
     </div>
   </div>
 
+  <!-- Inclusion des bibliothèques jsPDF et html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
   <script>
-    // Affecte la date du jour par défaut au champ de date
-    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+    // Code de capture de signature
+    const canvas = document.getElementById('signatureCanvas');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    let lastX = 0;
+    let lastY = 0;
 
-    // Fonction qui configure un pad de signature pour un canvas donné
-    function setupSignaturePad(canvas, clearButton) {
-      const ctx = canvas.getContext('2d');
-      let drawing = false;
-      let currentPos = { x: 0, y: 0 };
+    // Redimensionnement du canvas en utilisant ses dimensions réelles
+    function resizeCanvas() {
+      const width = canvas.offsetWidth;
+      const height = canvas.offsetHeight;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = width + "px";
+      canvas.style.height = height + "px";
+      // Réinitialiser la transformation avant d'appliquer le scale
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
-      function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        let x, y;
-        if (e.touches) {
-          x = e.touches[0].clientX - rect.left;
-          y = e.touches[0].clientY - rect.top;
-        } else {
-          x = e.clientX - rect.left;
-          y = e.clientY - rect.top;
-        }
-        return { x, y };
-      }
-
-      function startDrawing(e) {
-        drawing = true;
-        currentPos = getPos(e);
-      }
-
-      function endDrawing() {
-        drawing = false;
-      }
-
-      function draw(e) {
-        if (!drawing) return;
-        const pos = getPos(e);
-        ctx.beginPath();
-        ctx.moveTo(currentPos.x, currentPos.y);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-        currentPos = pos;
-      }
-
-      // Événements pour la souris
-      canvas.addEventListener('mousedown', startDrawing);
-      canvas.addEventListener('mousemove', draw);
-      canvas.addEventListener('mouseup', endDrawing);
-      canvas.addEventListener('mouseout', endDrawing);
-
-      // Événements tactiles pour mobile
-      canvas.addEventListener('touchstart', startDrawing);
-      canvas.addEventListener('touchmove', function(e) {
-        draw(e);
-        e.preventDefault();
-      });
-      canvas.addEventListener('touchend', endDrawing);
-
-      // Bouton pour effacer le pad
-      clearButton.addEventListener('click', function() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      });
+    function startPosition(e) {
+      drawing = true;
+      const rect = canvas.getBoundingClientRect();
+      lastX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      lastY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
     }
 
-    // Configuration des deux pads de signature
-    setupSignaturePad(document.getElementById('signature-pad1'), document.getElementById('clear-signature1'));
-    setupSignaturePad(document.getElementById('signature-pad2'), document.getElementById('clear-signature2'));
+    function finishedPosition() {
+      drawing = false;
+      ctx.beginPath();
+    }
 
-    // Génération du PDF à partir de la div "document"
-    document.getElementById('generate-pdf').addEventListener('click', function() {
-      html2canvas(document.getElementById('document'), { scale: 2 }).then(function(canvas) {
-        // Capture en format JPEG avec qualité maximale
+    function draw(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#000';
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      lastX = x;
+      lastY = y;
+    }
+
+    canvas.addEventListener('mousedown', startPosition);
+    canvas.addEventListener('touchstart', startPosition);
+    canvas.addEventListener('mouseup', finishedPosition);
+    canvas.addEventListener('touchend', finishedPosition);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchmove', draw);
+
+    function clearSignature() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Génération du PDF en JPEG avec une résolution maximale (scale: 2)
+    function generatePDF() {
+      const buttons = document.querySelectorAll('.button-container, .pdf-button');
+      buttons.forEach(btn => btn.style.display = 'none');
+
+      html2canvas(document.getElementById('pdfContent'), { scale: 2 }).then(canvas => {
         const imgData = canvas.toDataURL('image/jpeg', 1.0);
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4');
@@ -277,22 +430,10 @@
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-
-        // Utilisation de l'API Web Share si disponible, sinon téléchargement classique
-        const blobPDF = pdf.output('blob');
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blobPDF], 'demande_de_permutation.pdf', { type: 'application/pdf' })] })) {
-          navigator.share({
-            files: [new File([blobPDF], 'demande_de_permutation.pdf', { type: 'application/pdf' })],
-            title: 'Demande de permutation',
-            text: 'Voici le document de demande de permutation.'
-          })
-          .then(() => console.log('Partage réussi'))
-          .catch((error) => console.log('Erreur lors du partage', error));
-        } else {
-          pdf.save("demande_de_permutation.pdf");
-        }
+        pdf.save('commande_tenues.pdf');
+        buttons.forEach(btn => btn.style.display = 'inline-block');
       });
-    });
+    }
   </script>
 </body>
 </html>
