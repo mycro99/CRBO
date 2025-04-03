@@ -288,14 +288,16 @@
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
 
     // Votre configuration Firebase (personnalisez les valeurs)
-    apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
-    authDomain: "listing-44b2b.firebaseapp.com",
-    projectId: "listing-44b2b",
-    storageBucket: "listing-44b2b.firebasestorage.app",
-    messagingSenderId: "310030019842",
-    appId: "1:310030019842:web:c8a50b61f3dfbcb867e61b",
-    measurementId: "G-419VVR3NHE"
+    const firebaseConfig = {
+      apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
+      authDomain: "listing-44b2b.firebaseapp.com",
+      projectId: "listing-44b2b",
+      storageBucket: "listing-44b2b.firebasestorage.app",
+      messagingSenderId: "310030019842",
+      appId: "1:310030019842:web:c8a50b61f3dfbcb867e61b",
+      measurementId: "G-419VVR3NHE"
     };
+
 
     // Initialisation de Firebase, Analytics, Firestore et Auth
     const app = initializeApp(firebaseConfig);
