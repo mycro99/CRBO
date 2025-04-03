@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Listing des Volontaires - Croix-Rouge®</title>
+  <title>Listing des Volontaires - CS Oupeye®</title>
   <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -183,7 +183,7 @@
 <body>
   <div id="content">
     <h1>Listing des Volontaires - CS Oupeye®</h1>
-
+    
     <!-- Zone de recherche -->
     <div id="searchContainer">
       <input type="text" id="searchInput" placeholder="Rechercher...">
@@ -280,28 +280,39 @@
     </table>
   </div>
 
-  <!-- Script module intégrant Firebase, Firestore et la gestion du listing -->
   <script type="module">
     // Importation des modules Firebase nécessaires
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-analytics.js";
     import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
 
-    // Configuration Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
-      authDomain: "listing-44b2b.firebaseapp.com",
-      projectId: "listing-44b2b",
-      storageBucket: "listing-44b2b.firebasestorage.app",
-      messagingSenderId: "310030019842",
-      appId: "1:310030019842:web:c8a50b61f3dfbcb867e61b",
-      measurementId: "G-419VVR3NHE"
+    // Votre configuration Firebase (personnalisez les valeurs)
+    apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
+    authDomain: "listing-44b2b.firebaseapp.com",
+    projectId: "listing-44b2b",
+    storageBucket: "listing-44b2b.firebasestorage.app",
+    messagingSenderId: "310030019842",
+    appId: "1:310030019842:web:c8a50b61f3dfbcb867e61b",
+    measurementId: "G-419VVR3NHE"
     };
 
-    // Initialisation de Firebase, Analytics et Firestore
+    // Initialisation de Firebase, Analytics, Firestore et Auth
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const db = getFirestore(app);
+    const auth = getAuth();
+
+    // Vérifie si l'utilisateur est authentifié et charge les données Firestore
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log("Utilisateur authentifié :", user.email);
+        loadVolunteersFromFirestore();
+      } else {
+        console.log("Aucun utilisateur authentifié, redirection vers index.");
+        window.location.href = "index.html";
+      }
+    });
 
     // Liste locale des volontaires
     let volunteers = [];
@@ -383,7 +394,7 @@
       buildTable();
     }
 
-    // Construit le tableau HTML à partir de la liste des volontaires
+    // Construit le tableau HTML
     function buildTable() {
       const tbody = document.getElementById("volunteerTableBody");
       tbody.innerHTML = "";
@@ -440,13 +451,13 @@
       attachTableEventListeners();
     }
 
-    // Attache les écouteurs d'événements pour mettre à jour Firestore en temps réel
+    // Attache les événements sur les inputs pour mettre à jour Firestore
     function attachTableEventListeners() {
       document.querySelectorAll("#volunteerTableBody tr").forEach(row => {
         const index = row.getAttribute("data-index");
         const volunteer = volunteers[index];
 
-        // Mises à jour pour les champs texte (nom, prénom, email, téléphone)
+        // Mise à jour pour les champs texte
         row.querySelectorAll(".vol-nom, .vol-prenom, .vol-email, .vol-tel").forEach(input => {
           input.addEventListener("input", function() {
             const field = this.classList.contains("vol-nom") ? "nom" :
@@ -457,7 +468,7 @@
           });
         });
 
-        // Mises à jour pour les brevets
+        // Mise à jour pour les brevets
         row.querySelectorAll(".vol-brevet").forEach(checkbox => {
           checkbox.addEventListener("change", function() {
             const subfield = this.getAttribute("data-field");
@@ -466,7 +477,7 @@
           });
         });
 
-        // Mises à jour pour les badges
+        // Mise à jour pour les badges
         row.querySelectorAll(".vol-badge-amu, .vol-badge-atnup").forEach(input => {
           input.addEventListener("input", function() {
             if (this.classList.contains("vol-badge-amu")) {
@@ -478,7 +489,7 @@
           });
         });
 
-        // Mises à jour pour FBSE
+        // Mise à jour pour FBSE
         row.querySelectorAll(".vol-fbse").forEach(radio => {
           radio.addEventListener("change", function() {
             if (this.checked) {
@@ -488,20 +499,20 @@
           });
         });
 
-        // Mises à jour pour l'état actif
+        // Mise à jour pour l'état actif
         row.querySelector(".vol-actif").addEventListener("change", function() {
           volunteer.actif = this.checked;
           row.classList.toggle("inactive", !this.checked);
           updateVolunteerInFirestore(volunteer);
         });
 
-        // Mises à jour pour le permis
+        // Mise à jour pour le permis
         row.querySelector(".vol-permis").addEventListener("change", function() {
           volunteer.permis = this.checked;
           updateVolunteerInFirestore(volunteer);
         });
 
-        // Mises à jour pour la sélection médicale (radios et date)
+        // Mise à jour pour la sélection médicale
         row.querySelectorAll(".vol-med").forEach(radio => {
           radio.addEventListener("change", function() {
             if (this.checked) {
@@ -530,13 +541,12 @@
       });
     }
 
-    // Affiche ou masque le formulaire d'ajout
-    function toggleAddForm() {
-      const container = document.getElementById("addFormContainer");
-      container.style.display = (container.style.display === "none" || container.style.display === "") ? "block" : "none";
-    }
+    // Attache les événements pour le formulaire d'ajout
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("addForm").addEventListener("submit", addVolunteer);
+    });
 
-    // Filtrage en temps réel du tableau
+    // Filtrage en temps réel
     document.getElementById("searchInput").addEventListener("keyup", function() {
       const filter = this.value.toLowerCase();
       document.querySelectorAll("#volunteerTableBody tr").forEach(row => {
@@ -548,22 +558,13 @@
       });
     });
 
-    // Affiche ou masque le champ date selon la sélection médicale
+    // Affiche ou masque le champ date selon la sélection médicale dans le formulaire d'ajout
     document.querySelectorAll('input[name="newMedicale"]').forEach(radio => {
       radio.addEventListener("change", function() {
         const dateField = document.getElementById("newMedicaleDate");
         dateField.style.display = (this.value === "OUI") ? "block" : "none";
       });
     });
-
-    // Attache les événements après le chargement du DOM
-    window.addEventListener("DOMContentLoaded", () => {
-      document.querySelector("#addFormToggle button").addEventListener("click", toggleAddForm);
-      document.getElementById("addForm").addEventListener("submit", addVolunteer);
-    });
-
-    // Charge les volontaires depuis Firestore au chargement complet de la page
-    window.addEventListener("load", loadVolunteersFromFirestore);
   </script>
 </body>
 </html>
