@@ -452,6 +452,11 @@
       });
       attachTableEventListeners();
     }
+     function toggleAddForm() {
+       const container = document.getElementById("addFormContainer");
+      container.style.display = (container.style.display === "none" || container.style.display === "") ? "block" : "none";
+      console.log("toggleAddForm exécuté, état actuel :", container.style.display);
+      }
 
     // Attache les événements sur les inputs pour mettre à jour Firestore
     function attachTableEventListeners() {
@@ -566,6 +571,12 @@
         const dateField = document.getElementById("newMedicaleDate");
         dateField.style.display = (this.value === "OUI") ? "block" : "none";
       });
+    window.addEventListener("DOMContentLoaded", () => {
+    // Attache l'événement pour le formulaire d'ajout
+    document.getElementById("addForm").addEventListener("submit", addVolunteer);
+    // Attache l'événement pour le bouton de déploiement du volet d'ajout
+    document.querySelector("#addFormToggle button").addEventListener("click", toggleAddForm);
+     });
     });
   </script>
 </body>
