@@ -94,37 +94,71 @@
       <a href="staff.html" class="button staff">Staff</a>
     </div>
   </div>
-  <script>
-    // Liste des mots de passe autorisés pour accéder au bouton staff
-    const allowedStaffPasswords = ["pierre.maloir", "kevin.leruth", "wendy.buntinx", "benoit.dejonge", "maxime.gerday", "gregoire.biernaux"]; 
 
-    // Interception du clic sur chaque bouton pour vérifier la disponibilité de la page cible
+  <!-- Inclusion des SDK Firebase nécessaires -->
+  <script type="module">
+    // Importation des modules Firebase pour l'app et l'authentification
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
+    
+    // Remplacez les valeurs ci-dessous par celles de votre projet Firebase
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    
+    // Initialisation de Firebase et de l'authentification
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    
+    // Fonction d'authentification par email/mot de passe
+    window.firebaseSignIn = function(email, password) {
+      return signInWithEmailAndPassword(auth, email, password);
+    };
+  </script>
+
+  <!-- Script pour gérer la navigation avec authentification pour le bouton staff -->
+  <script>
+    // Suppression de l'ancien mécanisme de mot de passe (liste allowedStaffPasswords)
     document.querySelectorAll("a.button").forEach(link => {
       link.addEventListener("click", function(e) {
         e.preventDefault();
         const href = this.getAttribute("href");
-
-        // Si le bouton cliqué est "staff", demander le mot de passe
-        if (this.classList.contains("staff")) {
-          const pwd = prompt("Entrez le mot de passe pour accéder au staff:");
-          if (!allowedStaffPasswords.includes(pwd)) {
-            alert("Mot de passe incorrect !");
-            return;
-          }
-        }
         
-        // Vérification de la disponibilité de la page via une requête HEAD
-        fetch(href, { method: "HEAD" })
-          .then(response => {
-            if(response.ok) {
+        // Pour le bouton staff, demander l'authentification complète
+        if (this.classList.contains("staff")) {
+          // Demande d'email et de mot de passe
+          const email = prompt("Entrez votre adresse email :");
+          const password = prompt("Entrez votre mot de passe :");
+          
+          // Utilisation de Firebase Auth pour la connexion
+          firebaseSignIn(email, password)
+            .then(userCredential => {
+              // Connexion réussie
+              // Vous pouvez ajouter ici une vérification supplémentaire si besoin
               window.location.href = href;
-            } else {
+            })
+            .catch(error => {
+              alert("Authentification échouée : " + error.message);
+            });
+        } else {
+          // Pour les autres boutons, vérification de la disponibilité de la page via HEAD
+          fetch(href, { method: "HEAD" })
+            .then(response => {
+              if (response.ok) {
+                window.location.href = href;
+              } else {
+                window.location.href = "nowork/notwork.html";
+              }
+            })
+            .catch(error => {
               window.location.href = "nowork/notwork.html";
-            }
-          })
-          .catch(error => {
-            window.location.href = "nowork/notwork.html";
-          });
+            });
+        }
       });
     });
   </script>
