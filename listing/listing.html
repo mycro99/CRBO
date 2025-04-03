@@ -398,6 +398,8 @@
 
     // Construit le tableau HTML
     function buildTable() {
+      // Trie les volontaires par nom en ordre alphabétique
+      volunteers.sort((a, b) => a.nom.toLowerCase().localeCompare(b.nom.toLowerCase()));
       const tbody = document.getElementById("volunteerTableBody");
       tbody.innerHTML = "";
       volunteers.forEach((vol, index) => {
