@@ -114,36 +114,31 @@
       border-radius: var(--border-radius);
       box-shadow: var(--box-shadow);
     }
-    /* Modal recommandations : contenu scrollable et fermeture en cliquant à côté */
-   /* Modal recommandations */
-#recommandationModal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
-  z-index: 1000;
-}
-
-/* Contenu du modal centré */
-#recommandationContent {
-  position: fixed;             /* Passage de relative à fixed */
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 80%;
-  max-width: 600px;
-  max-height: 90vh;            /* Légèrement augmenté pour plus de confort */
-  overflow-y: auto;
-  background: #fff;
-  padding: 20px;
-  color: black;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-}
-
+    /* Modal recommandations */
+    #recommandationModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+    }
+    #recommandationContent {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: #fff;
+      padding: 20px;
+      color: black;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
     }
     .button-container {
       text-align: center;
@@ -204,23 +199,21 @@
         </tr>
       </thead>
       <tbody id="inventoryTable">
-        <!-- Articles de Consommables (en ordre alphabétique) -->
-        <!-- Chaque ligne est masquée par défaut -->
-        <!-- Consommables -->
-<tr class="category-header" data-category="consommables" onclick="toggleCategory('consommables')">
-  <td colspan="5">Consommables <span id="toggle-consommables" style="float:right;">[+]</span></td>
-</tr>
-<tr class="article-row consommables" data-id="consommables-1" style="display: none;">
-  <td>Accu‑check</td>
-  <td><img src="images/Accu-check.jpg" alt="Photo Accu‑check" width="80"></td>
-  <td id="stock-consommables-1">0</td>
-  <td>2</td>
-  <td>
-    <button class="stock-button" onclick="updateStock('consommables-1', 1)">+</button>
-    <button class="stock-button" onclick="updateStock('consommables-1', -1)">-</button>
-  </td>
-</tr>
-<tr class="article-row consommables" data-id="consommables-2" style="display: none;">
+        <!-- Exemple d'articles (ici seuls quelques exemples sont présentés) -->
+        <tr class="category-header" data-category="consommables" onclick="toggleCategory('consommables')">
+          <td colspan="5">Consommables <span id="toggle-consommables" style="float:right;">[+]</span></td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-1" style="display: none;">
+          <td>Accu‑check</td>
+          <td><img src="images/Accu-check.jpg" alt="Photo Accu‑check" width="80"></td>
+          <td id="stock-consommables-1">0</td>
+          <td>2</td>
+          <td>
+            <button class="stock-button" onclick="updateStock('consommables-1', 1)">+</button>
+            <button class="stock-button" onclick="updateStock('consommables-1', -1)">-</button>
+          </td>
+        </tr>
+        <tr class="article-row consommables" data-id="consommables-2" style="display: none;">
   <td>Aesculap</td>
   <td><img src="images/aesculap.jpg" alt="Photo Aesculap" width="80"></td>
   <td id="stock-consommables-2">0</td>
@@ -1782,7 +1775,7 @@
       </tbody>
     </table>
     
-    <!-- Bouton Générer PDF en bas du document -->
+    <!-- Bouton Générer PDF -->
     <div class="button-container">
       <button class="pdf-button" onclick="generatePDF()">Générer le PDF</button>
     </div>
@@ -1797,25 +1790,23 @@
       </div>
     </div>
     
-    <!-- Modal pour les recommandations (scrollable et fermeture en cliquant à côté) -->
+    <!-- Modal pour les recommandations -->
     <div id="recommandationModal">
       <div id="recommandationContent">
         <h2>Articles à recommander</h2>
         <div id="recommendationList"></div>
         <br>
-        <!-- Bouton pour générer le PDF de la liste des articles à recommander -->
         <button class="pdf-button" onclick="generatePDFRecommendations()">Générer le PDF</button>
         <button class="pdf-button" onclick="closeRecommendations()">Fermer</button>
       </div>
     </div>
   </div>
   
-  <!-- Inclusion de jsPDF depuis CDN -->
+  <!-- Inclusion de jsPDF et html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- Inclusion de html2canvas depuis CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
-    // Mise à jour de la quantité en stock
+    // Mise à jour de la quantité en stock (fonction locale)
     function updateStock(articleId, change) {
       var stockElem = document.getElementById('stock-' + articleId);
       var currentStock = parseInt(stockElem.textContent);
@@ -1883,7 +1874,7 @@
       });
     }
     
-    // Affiche le popup des articles à recommander (scrollable)
+    // Affiche le popup des articles à recommander
     function showRecommendations() {
       var articleRows = document.querySelectorAll(".article-row");
       var recommendations = [];
@@ -1916,7 +1907,7 @@
       document.getElementById("recommandationModal").style.display = "none";
     }
     
-    // Ferme le modal recommandations en cliquant à côté du contenu
+    // Ferme le modal en cliquant à côté du contenu
     document.getElementById("recommandationModal").addEventListener("click", function(e) {
       if(e.target === this) {
         closeRecommendations();
@@ -1928,8 +1919,6 @@
     function openScanner() {
       window.location.href = "scanner.html";
     }
-  }); 
-    
     
     // Génère un PDF de l'intégralité du contenu
     function generatePDF() {
@@ -1957,91 +1946,82 @@
       });
     }
     
-    // Fonction pour générer le PDF de la pop-up "À recommander"
+    // Génère un PDF de la pop-up "À recommander"
     function generatePDFRecommendations() {
-  const element = document.getElementById('recommandationContent');
-  // Sauvegarde des styles inline actuels (s'ils existent)
-  const originalMaxHeight = element.style.maxHeight;
-  const originalOverflowY = element.style.overflowY;
-  
-  // Suppression temporaire des contraintes pour capturer tout le contenu
-  element.style.maxHeight = 'none';
-  element.style.overflowY = 'visible';
-  
-  html2canvas(element, { useCORS: true, scale: 2 }).then(canvas => {
-    // Rétablissement des styles d'origine
-    element.style.maxHeight = originalMaxHeight;
-    element.style.overflowY = originalOverflowY;
-    
-    const imgData = canvas.toDataURL("image/jpeg", 1.0);
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const imgProps = pdf.getImageProperties(imgData);
-    const imgWidth = pageWidth;
-    const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-    let heightLeft = imgHeight;
-    let position = 0;
-    
-    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
-    pdf.save("articles_a_recommander.pdf");
-  });
-}
-
-  <!-- Placez ces scripts dans votre listing.html (dans le head ou avant la balise </body>) -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-<script>
-  // Configuration Firebase (vérifiez que storageBucket est correct)
-  const firebaseConfig = {
-    apiKey: "AIzaSyC5bwASNp21Obup95B2O2tNyTF64rTLuks",
-    authDomain: "inventaire-f456a.firebaseapp.com",
-    projectId: "inventaire-f456a",
-    storageBucket: "inventaire-f456a.appspot.com",  // Assurez-vous que c'est le bon bucket
-    messagingSenderId: "879949503888",
-    appId: "1:879949503888:web:b6c816a9f118067b04a715",
-    measurementId: "G-K1R8EWFEHS"
-  };
-
-  // Initialisation de Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
-  // Écoute en temps réel de la collection "inventory"
-  db.collection("inventory").onSnapshot((snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-      if (change.type === "modified") {
-        const data = change.doc.data();
-        // Met à jour l'affichage dans le tableau
-        const stockElem = document.getElementById("stock-" + data.id);
-        if (stockElem) {
-          stockElem.innerText = data.stock;
+      const element = document.getElementById('recommandationContent');
+      const originalMaxHeight = element.style.maxHeight;
+      const originalOverflowY = element.style.overflowY;
+      element.style.maxHeight = 'none';
+      element.style.overflowY = 'visible';
+      html2canvas(element, { useCORS: true, scale: 2 }).then(canvas => {
+        element.style.maxHeight = originalMaxHeight;
+        element.style.overflowY = originalOverflowY;
+        const imgData = canvas.toDataURL("image/jpeg", 1.0);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgWidth = pageWidth;
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
         }
-      }
+        pdf.save("articles_a_recommander.pdf");
+      });
+    }
+  </script>
+  
+  <!-- Firebase scripts (inclus une seule fois) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script>
+    // Configuration Firebase (vérifiez que storageBucket est correct)
+    const firebaseConfig = {
+      apiKey: "AIzaSyC5bwASNp21Obup95B2O2tNyTF64rTLuks",
+      authDomain: "inventaire-f456a.firebaseapp.com",
+      projectId: "inventaire-f456a",
+      storageBucket: "inventaire-f456a.appspot.com",
+      messagingSenderId: "879949503888",
+      appId: "1:879949503888:web:b6c816a9f118067b04a715",
+      measurementId: "G-K1R8EWFEHS"
+    };
+    // Initialisation de Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    // Écoute en temps réel de la collection "inventory"
+    db.collection("inventory").onSnapshot((snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "modified") {
+          const data = change.doc.data();
+          // Met à jour l'affichage dans le tableau
+          const stockElem = document.getElementById("stock-" + data.id);
+          if (stockElem) {
+            stockElem.innerText = data.stock;
+          }
+        }
+      });
     });
-  });
-
-  // Fonction pour mettre à jour le stock via Firestore
-  function updateStockFirestore(productId, change) {
-    const productRef = db.collection("inventory").doc(productId);
-    productRef.get().then((doc) => {
-      if (doc.exists) {
-        let newStock = doc.data().stock + change;
-        if (newStock < 0) newStock = 0;
-        productRef.update({ stock: newStock });
-      }
-    }).catch(error => {
-      console.error("Erreur lors de la mise à jour du stock : ", error);
-    });
-  }
-</script>
+    // Fonction pour mettre à jour le stock via Firestore
+    function updateStockFirestore(productId, change) {
+      const productRef = db.collection("inventory").doc(productId);
+      productRef.get().then((doc) => {
+        if (doc.exists) {
+          let newStock = doc.data().stock + change;
+          if (newStock < 0) newStock = 0;
+          productRef.update({ stock: newStock });
+        }
+      }).catch(error => {
+        console.error("Erreur lors de la mise à jour du stock : ", error);
+      });
+    }
+  </script>
 </body>
 </html>
