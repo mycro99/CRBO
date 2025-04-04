@@ -435,64 +435,77 @@
   <!-- Module Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-analytics.js";
-    import { getFirestore, collection, onSnapshot, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
-    
-    const firebaseConfig = {
-      apiKey: "AIzaSyC5bwASNp21Obup95B2O2tNyTF64rTLuks",
-      authDomain: "inventaire-f456a.firebaseapp.com",
-      projectId: "inventaire-f456a",
-      storageBucket: "inventaire-f456a.appspot.com",
-      messagingSenderId: "879949503888",
-      appId: "1:879949503888:web:b6c816a9f118067b04a715",
-      measurementId: "G-K1R8EWFEHS"
-    };
-    
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const dbModule = getFirestore(app);
-    const authModule = getAuth(app);
-    
-    function loadInventoryFromFirestoreModule() {
-      const invCol = collection(dbModule, "inventory");
-      onSnapshot(invCol, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === "modified") {
-            const data = change.doc.data();
-            const stockElem = document.getElementById("stock-" + data.id);
-            if (stockElem) {
-              stockElem.innerText = data.stock;
-            }
-          }
-        });
-      });
-    }
-    window.loadInventoryFromFirestoreModule = loadInventoryFromFirestoreModule;
-    
-    function updateStockFirestoreModule(productId, change) {
-      const productRef = doc(dbModule, "inventory", productId);
-      getDoc(productRef).then((docSnap) => {
-        if (docSnap.exists()) {
-          let newStock = docSnap.data().stock + change;
-          if (newStock < 0) newStock = 0;
-          updateDoc(productRef, { stock: newStock });
-        }
-      }).catch((error) => {
-        console.error("Erreur lors de la mise à jour du stock: ", error);
-      });
-    }
-    window.updateStockFirestoreModule = updateStockFirestoreModule;
-    
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-analytics.js";
+import { getFirestore, collection, onSnapshot, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC5bwASNp21Obup95B2O2tNyTF64rTLuks",
+  authDomain: "inventaire-f456a.firebaseapp.com",
+  projectId: "inventaire-f456a",
+  storageBucket: "inventaire-f456a.appspot.com",
+  messagingSenderId: "879949503888",
+  appId: "1:879949503888:web:b6c816a9f118067b04a715",
+  measurementId: "G-K1R8EWFEHS"
+};
+
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const dbModule = getFirestore(app);
+const authModule = getAuth(app);
+
+// Définir la persistance sur "local"
+setPersistence(authModule, browserLocalPersistence)
+  .then(() => {
+    // Vérifie si l'utilisateur est authentifié
     onAuthStateChanged(authModule, (user) => {
       if (user) {
         console.log("Utilisateur authentifié :", user.email);
         loadInventoryFromFirestoreModule();
       } else {
-        console.log("Aucun utilisateur authentifié, redirection vers index.");
+        console.log("Aucun utilisateur authentifié, redirection vers l'index.");
         window.location.href = "https://mycro99.github.io/CRBO/index.html";
       }
     });
+  })
+  .catch((error) => {
+    console.error("Erreur de persistence : ", error);
+  });
+
+function loadInventoryFromFirestoreModule() {
+  const invCol = collection(dbModule, "inventory");
+  onSnapshot(invCol, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "modified") {
+        const data = change.doc.data();
+        const stockElem = document.getElementById("stock-" + data.id);
+        if (stockElem) {
+          stockElem.innerText = data.stock;
+        }
+      }
+    });
+  });
+}
+
+function updateStockFirestoreModule(productId, change) {
+  const productRef = doc(dbModule, "inventory", productId);
+  getDoc(productRef)
+    .then((docSnap) => {
+      if (docSnap.exists()) {
+        let newStock = docSnap.data().stock + change;
+        if (newStock < 0) newStock = 0;
+        updateDoc(productRef, { stock: newStock });
+      }
+    })
+    .catch((error) => {
+      console.error("Erreur lors de la mise à jour du stock: ", error);
+    });
+}
+
+// Exposez ces fonctions globalement si besoin
+window.loadInventoryFromFirestoreModule = loadInventoryFromFirestoreModule;
+window.updateStockFirestoreModule = updateStockFirestoreModule;
+
   </script>
 </body>
 </html>
