@@ -1977,17 +1977,15 @@
         pdf.save("articles_a_recommander.pdf");
       });
     }
-  </script>
-  
-  <!-- Firebase scripts en version compat (uniquement) -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics-compat.js"></script>
+  <script type="module">
+    // Importation des modules Firebase nécessaires
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-analytics.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
 
-<script>
-  // Configuration Firebase (vérifiez que le storageBucket est correct)
-  const firebaseConfig = {
+    // Votre configuration Firebase (personnalisez les valeurs)
+    const firebaseConfig = {
   apiKey: "AIzaSyC5bwASNp21Obup95B2O2tNyTF64rTLuks",
   authDomain: "inventaire-f456a.firebaseapp.com",
   projectId: "inventaire-f456a",
@@ -1995,27 +1993,26 @@
   messagingSenderId: "879949503888",
   appId: "1:879949503888:web:b6c816a9f118067b04a715",
   measurementId: "G-K1R8EWFEHS"
-  };
+};
 
-  // Initialisation de Firebase, Firestore, Auth et Analytics
-  firebase.initializeApp(firebaseConfig);
-  var db = firebase.firestore();
-  var auth = firebase.auth();
-  var analytics = firebase.analytics();
 
-  // Vérifie si l'utilisateur est authentifié et charge les données Firestore
- auth.onAuthStateChanged(function(user) {
-  if (user) {
-    console.log("Utilisateur authentifié :", user.email);
-    loadInventoryFromFirestore();
-  } else {
-    console.log("Aucun utilisateur authentifié, redirection vers index.");
-    // Redirection vers le bon index, ici en utilisant une URL absolue
-    window.location.href = "https://mycro99.github.io/CRBO/index.html";
-    // OU, si votre inventaire est dans un sous-dossier, utilisez :
-    // window.location.href = "../index.html";
-  }
-});
+
+    // Initialisation de Firebase, Analytics, Firestore et Auth
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+    const auth = getAuth();
+
+    // Vérifie si l'utilisateur est authentifié et charge les données Firestore
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log("Utilisateur authentifié :", user.email);
+        loadVolunteersFromFirestore();
+      } else {
+        console.log("Aucun utilisateur authentifié, redirection vers index.");
+        window.location.href = "index.html";
+      }
+    });
 
 
   // Fonction pour charger l'inventaire depuis Firestore (exemple d'écoute en temps réel)
