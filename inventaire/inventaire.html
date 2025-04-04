@@ -1810,12 +1810,8 @@
   <script>
     // Mise à jour de la quantité en stock (fonction locale)
     function updateStock(articleId, change) {
-      var stockElem = document.getElementById('stock-' + articleId);
-      var currentStock = parseInt(stockElem.textContent);
-      currentStock += change;
-      if (currentStock < 0) currentStock = 0;
-      stockElem.textContent = currentStock;
-    }
+  updateStockFirestoreModule(articleId, change);
+}
     window.updateStock = updateStock;
     
     // Bascule l'affichage d'une catégorie
