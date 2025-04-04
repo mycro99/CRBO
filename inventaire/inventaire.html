@@ -1983,45 +1983,70 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script>
-    // Configuration Firebase (vérifiez que storageBucket est correct)
-    const firebaseConfig = {
-      apiKey: "AIzaSyC5bwASNp21Obup95B2O2tNyTF64rTLuks",
-      authDomain: "inventaire-f456a.firebaseapp.com",
-      projectId: "inventaire-f456a",
-      storageBucket: "inventaire-f456a.appspot.com",
-      messagingSenderId: "879949503888",
-      appId: "1:879949503888:web:b6c816a9f118067b04a715",
-      measurementId: "G-K1R8EWFEHS"
-    };
-    // Initialisation de Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    // Écoute en temps réel de la collection "inventory"
-    db.collection("inventory").onSnapshot((snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "modified") {
-          const data = change.doc.data();
-          // Met à jour l'affichage dans le tableau
-          const stockElem = document.getElementById("stock-" + data.id);
-          if (stockElem) {
-            stockElem.innerText = data.stock;
-          }
+   // Importez les fonctions nécessaires depuis le SDK Firebase v9
+import { initializeApp } from "firebase/app";
+import { getFirestore, onSnapshot } from "firebase/firestore";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getAnalytics } from "firebase/analytics";
+
+// Votre configuration Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyC5bwASNp21Obup95B2O2tNyTF64rTLuks",
+  authDomain: "inventaire-f456a.firebaseapp.com",
+  projectId: "inventaire-f456a",
+  storageBucket: "inventaire-f456a.appspot.com",
+  messagingSenderId: "879949503888",
+  appId: "1:879949503888:web:b6c816a9f118067b04a715",
+  measurementId: "G-K1R8EWFEHS"
+};
+
+// Initialisation de Firebase, Firestore, Auth et Analytics
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const analytics = getAnalytics(app);
+
+// Vérifie si l'utilisateur est authentifié
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    console.log("Utilisateur authentifié :", user.email);
+    // Ici, appelez la fonction qui charge votre inventaire depuis Firestore.
+    loadInventoryFromFirestore();
+  } else {
+    console.log("Aucun utilisateur authentifié, redirection vers index.");
+    window.location.href = "index.html";
+  }
+});
+
+// Exemple de fonction pour charger l'inventaire depuis Firestore
+function loadInventoryFromFirestore() {
+  // Par exemple, écoute en temps réel de la collection "inventory"
+  onSnapshot(db.collection("inventory"), (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "modified") {
+        const data = change.doc.data();
+        const stockElem = document.getElementById("stock-" + data.id);
+        if (stockElem) {
+          stockElem.innerText = data.stock;
         }
-      });
+      }
     });
-    // Fonction pour mettre à jour le stock via Firestore
-    function updateStockFirestore(productId, change) {
-      const productRef = db.collection("inventory").doc(productId);
-      productRef.get().then((doc) => {
-        if (doc.exists) {
-          let newStock = doc.data().stock + change;
-          if (newStock < 0) newStock = 0;
-          productRef.update({ stock: newStock });
-        }
-      }).catch(error => {
-        console.error("Erreur lors de la mise à jour du stock : ", error);
-      });
+  });
+}
+
+// Fonction pour mettre à jour le stock via Firestore
+function updateStockFirestore(productId, change) {
+  const productRef = db.collection("inventory").doc(productId);
+  productRef.get().then((doc) => {
+    if (doc.exists) {
+      let newStock = doc.data().stock + change;
+      if (newStock < 0) newStock = 0;
+      productRef.update({ stock: newStock });
     }
+  }).catch(error => {
+    console.error("Erreur lors de la mise à jour du stock : ", error);
+  });
+}
   </script>
 </body>
 </html>
