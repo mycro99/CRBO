@@ -2004,15 +2004,19 @@
   var analytics = firebase.analytics();
 
   // Vérifie si l'utilisateur est authentifié et charge les données Firestore
-  auth.onAuthStateChanged(function(user) {
-    if (user) {
-      console.log("Utilisateur authentifié :", user.email);
-      loadInventoryFromFirestore();
-    } else {
-      console.log("Aucun utilisateur authentifié, redirection vers index.");
-      window.location.href = "index.html";
-    }
-  });
+ auth.onAuthStateChanged(function(user) {
+  if (user) {
+    console.log("Utilisateur authentifié :", user.email);
+    loadInventoryFromFirestore();
+  } else {
+    console.log("Aucun utilisateur authentifié, redirection vers index.");
+    // Redirection vers le bon index, ici en utilisant une URL absolue
+    window.location.href = "https://mycro99.github.io/CRBO/index.html";
+    // OU, si votre inventaire est dans un sous-dossier, utilisez :
+    // window.location.href = "../index.html";
+  }
+});
+
 
   // Fonction pour charger l'inventaire depuis Firestore (exemple d'écoute en temps réel)
   function loadInventoryFromFirestore() {
