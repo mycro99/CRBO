@@ -1991,6 +1991,37 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
   <!-- Script principal avec Firebase -->
+ <script>
+    // Fonctions d'affichage (exemple d'extension pour les catégories, recherche, etc.)
+    function expandAll() {
+      document.querySelectorAll(".article-row").forEach(row => row.style.display = "table-row");
+    }
+    function collapseAll() {
+      document.querySelectorAll(".article-row").forEach(row => row.style.display = "none");
+    }
+    function toggleCategory(category) {
+      const rows = document.getElementsByClassName(category);
+      Array.from(rows).forEach(row => {
+        row.style.display = (row.style.display === "none" ? "table-row" : "none");
+      });
+    }
+    function searchArticles() {
+      const filter = document.getElementById("searchInput").value.toUpperCase();
+      document.querySelectorAll(".article-row").forEach(row => {
+        const cell = row.cells[0];
+        if (cell) {
+          const txtValue = cell.textContent || cell.innerText;
+          row.style.display = (txtValue.toUpperCase().includes(filter)) ? "table-row" : "none";
+        }
+      });
+    }
+    window.expandAll = expandAll;
+    window.collapseAll = collapseAll;
+    window.toggleCategory = toggleCategory;
+    window.searchArticles = searchArticles;
+  </script>
+  
+  <!-- Script Firebase -->
   <script type="module">
     // Importation des modules Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
@@ -2000,6 +2031,7 @@
       collection,
       doc,
       getDoc,
+      setDoc,
       updateDoc,
       onSnapshot
     } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
@@ -2022,27 +2054,29 @@
     const db = getFirestore(app);
     const auth = getAuth();
 
-    // Fonction qui met à jour le stock dans Firestore
+    // Fonction qui met à jour ou crée le document dans Firestore
     function updateStockFirestoreModule(productId, delta) {
       const productRef = doc(db, "inventory", productId);
+      // Récupère le document s'il existe déjà
       getDoc(productRef)
         .then((docSnap) => {
+          let currentStock = 0;
           if (docSnap.exists()) {
-            let newStock = docSnap.data().stock + delta;
-            if (newStock < 0) newStock = 0;
-            updateDoc(productRef, { stock: newStock });
-          } else {
-            console.error("Le document pour", productId, "n'existe pas.");
+            currentStock = docSnap.data().stock;
           }
+          let newStock = currentStock + delta;
+          if (newStock < 0) newStock = 0;
+          // Utilise setDoc avec merge:true pour créer ou mettre à jour
+          setDoc(productRef, { stock: newStock }, { merge: true });
         })
         .catch((error) => {
           console.error("Erreur lors de la mise à jour du stock:", error);
         });
     }
 
-    // Fonction combinée pour mettre à jour le DOM et Firestore
+    // Fonction combinée pour mettre à jour l'affichage et Firestore
     function updateStockAndFirestore(itemId, delta) {
-      // Mise à jour locale
+      // Mise à jour locale (DOM)
       const stockElem = document.getElementById("stock-" + itemId);
       let currentStock = parseInt(stockElem.textContent);
       let newStock = currentStock + delta;
@@ -2054,14 +2088,15 @@
     }
     window.updateStockAndFirestore = updateStockAndFirestore;
 
-    // Optionnel : mise à jour en temps réel depuis Firestore pour synchroniser l'affichage
+    // Écouteur en temps réel pour synchroniser le tableau avec Firestore
     function loadInventoryFromFirestoreModule() {
       const invCol = collection(db, "inventory");
       onSnapshot(invCol, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
-          if (change.type === "modified") {
+          if (change.type === "added" || change.type === "modified") {
             const data = change.doc.data();
-            const stockElem = document.getElementById("stock-" + data.id);
+            // On suppose que l'ID du document correspond à l'ID utilisé dans l'attribut data-id
+            const stockElem = document.getElementById("stock-" + change.doc.id);
             if (stockElem) {
               stockElem.textContent = data.stock;
             }
@@ -2071,11 +2106,11 @@
     }
     window.loadInventoryFromFirestoreModule = loadInventoryFromFirestoreModule;
 
-    // Vérification de l'authentification
+    // Vérifie si l'utilisateur est authentifié
     onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log("Utilisateur authentifié :", user.email);
-        // Optionnel : on peut charger la synchronisation en temps réel
+        // Lancer la synchronisation en temps réel
         loadInventoryFromFirestoreModule();
       } else {
         console.log("Aucun utilisateur authentifié, redirection vers index.");
@@ -2083,5 +2118,7 @@
       }
     });
   </script>
+</body>
+</html>
 </body>
 </html>
