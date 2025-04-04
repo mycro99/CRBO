@@ -1926,27 +1926,10 @@
     // Gestion du scanner
     let videoStream = null;
     function openScanner() {
-      document.getElementById('scannerModal').style.display = 'block';
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-          .then(function(stream) {
-            videoStream = stream;
-            var video = document.getElementById('video');
-            video.srcObject = stream;
-            video.play();
-          })
-          .catch(function(err) {
-            console.error("Erreur d'accès à la caméra: " + err);
-          });
-      }
+      window.location.href = "scanner.html";
     }
-    function closeScanner() {
-      document.getElementById('scannerModal').style.display = 'none';
-      if (videoStream) {
-        let tracks = videoStream.getTracks();
-        tracks.forEach(track => track.stop());
-      }
-    }
+  }); 
+    
     
     // Génère un PDF de l'intégralité du contenu
     function generatePDF() {
@@ -2014,5 +1997,51 @@
 }
 
   </script>
+  <!-- Ajoutez ces scripts dans votre listing.html, par exemple dans le head ou juste avant la balise </body> -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script>
+  // Remplacez les valeurs par votre configuration Firebase
+  const firebaseConfig = {
+    apiKey: "VOTRE_API_KEY",
+    authDomain: "votre-projet.firebaseapp.com",
+    projectId: "votre-projet",
+    storageBucket: "votre-projet.appspot.com",
+    messagingSenderId: "XXXXXX",
+    appId: "VOTRE_APP_ID"
+  };
+
+  // Initialisation de Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // Écoute en temps réel de la collection "inventory"
+  db.collection("inventory").onSnapshot((snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "modified") {
+        const data = change.doc.data();
+        // Met à jour l'affichage dans le tableau
+        const stockElem = document.getElementById("stock-" + data.id);
+        if (stockElem) {
+          stockElem.innerText = data.stock;
+        }
+      }
+    });
+  });
+
+  // Fonction pour mettre à jour le stock via Firestore
+  function updateStockFirestore(productId, change) {
+    const productRef = db.collection("inventory").doc(productId);
+    productRef.get().then((doc) => {
+      if (doc.exists) {
+        let newStock = doc.data().stock + change;
+        if (newStock < 0) newStock = 0;
+        productRef.update({ stock: newStock });
+      }
+    }).catch(error => {
+      console.error("Erreur lors de la mise à jour du stock : ", error);
+    });
+  }
+</script>
 </body>
 </html>
