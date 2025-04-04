@@ -434,75 +434,83 @@
   
   <!-- Module Firebase -->
   <script type="module">
-    // Importation des modules Firebase nécessaires
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-analytics.js";
-    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
+  // Importation des modules Firebase nécessaires
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-analytics.js";
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    updateDoc,
+    doc,
+    deleteDoc,
+    onSnapshot,
+    getDoc
+  } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
 
-    // Votre configuration Firebase (personnalisez les valeurs)
-    const firebaseConfig = {
-      apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
-      authDomain: "listing-44b2b.firebaseapp.com",
-      projectId: "listing-44b2b",
-      storageBucket: "listing-44b2b.firebasestorage.app",
-      messagingSenderId: "310030019842",
-      appId: "1:310030019842:web:c8a50b61f3dfbcb867e61b",
-      measurementId: "G-419VVR3NHE"
-    };
+  // Votre configuration Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
+    authDomain: "listing-44b2b.firebaseapp.com",
+    projectId: "listing-44b2b",
+    storageBucket: "listing-44b2b.firebasestorage.app",
+    messagingSenderId: "310030019842",
+    appId: "1:310030019842:web:c8a50b61f3dfbcb867e61b",
+    measurementId: "G-419VVR3NHE"
+  };
 
+  // Initialisation de Firebase, Analytics, Firestore et Auth
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+  const auth = getAuth();
 
-    // Initialisation de Firebase, Analytics, Firestore et Auth
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const db = getFirestore(app);
-    const auth = getAuth();
-
-    // Vérifie si l'utilisateur est authentifié et charge les données Firestore
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log("Utilisateur authentifié :", user.email);
-        loadInventoryFromFirestoreModule();
-      } else {
-        console.log("Aucun utilisateur authentifié, redirection vers index.");
-        window.location.href = "index.html";
-      }
-    });
-
-function loadInventoryFromFirestoreModule() {
-  const invCol = collection(dbModule, "inventory");
-  onSnapshot(invCol, (snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-      if (change.type === "modified") {
-        const data = change.doc.data();
-        const stockElem = document.getElementById("stock-" + data.id);
-        if (stockElem) {
-          stockElem.innerText = data.stock;
-        }
-      }
-    });
+  // Vérifie si l'utilisateur est authentifié et charge les données Firestore
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      console.log("Utilisateur authentifié :", user.email);
+      loadInventoryFromFirestoreModule();
+    } else {
+      console.log("Aucun utilisateur authentifié, redirection vers index.");
+      window.location.href = "index.html";
+    }
   });
-}
 
-function updateStockFirestoreModule(productId, change) {
-  const productRef = doc(dbModule, "inventory", productId);
-  getDoc(productRef)
-    .then((docSnap) => {
-      if (docSnap.exists()) {
-        let newStock = docSnap.data().stock + change;
-        if (newStock < 0) newStock = 0;
-        updateDoc(productRef, { stock: newStock });
-      }
-    })
-    .catch((error) => {
-      console.error("Erreur lors de la mise à jour du stock: ", error);
+  function loadInventoryFromFirestoreModule() {
+    const invCol = collection(db, "inventory");
+    onSnapshot(invCol, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "modified") {
+          const data = change.doc.data();
+          const stockElem = document.getElementById("stock-" + data.id);
+          if (stockElem) {
+            stockElem.innerText = data.stock;
+          }
+        }
+      });
     });
-}
+  }
 
-// Exposez ces fonctions globalement si besoin
-window.loadInventoryFromFirestoreModule = loadInventoryFromFirestoreModule;
-window.updateStockFirestoreModule = updateStockFirestoreModule;
+  function updateStockFirestoreModule(productId, change) {
+    const productRef = doc(db, "inventory", productId);
+    getDoc(productRef)
+      .then((docSnap) => {
+        if (docSnap.exists()) {
+          let newStock = docSnap.data().stock + change;
+          if (newStock < 0) newStock = 0;
+          updateDoc(productRef, { stock: newStock });
+        }
+      })
+      .catch((error) => {
+        console.error("Erreur lors de la mise à jour du stock: ", error);
+      });
+  }
 
-  </script>
+  // Exposez ces fonctions globalement si besoin
+  window.loadInventoryFromFirestoreModule = loadInventoryFromFirestoreModule;
+  window.updateStockFirestoreModule = updateStockFirestoreModule;
+</script>
 </body>
 </html>
