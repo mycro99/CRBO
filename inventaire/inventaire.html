@@ -1979,75 +1979,71 @@
     }
   </script>
   
-  <!-- Firebase scripts (inclus une seule fois) -->
-  <script type="module" src="votre-script.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script>
-   // Importez les fonctions nécessaires depuis le SDK Firebase v9
-import { initializeApp } from "firebase/app";
-import { getFirestore, onSnapshot } from "firebase/firestore";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getAnalytics } from "firebase/analytics";
+  <!-- Firebase scripts en version compat (uniquement) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics-compat.js"></script>
 
-// Votre configuration Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyC5bwASNp21Obup95B2O2tNyTF64rTLuks",
-  authDomain: "inventaire-f456a.firebaseapp.com",
-  projectId: "inventaire-f456a",
-  storageBucket: "inventaire-f456a.appspot.com",
-  messagingSenderId: "879949503888",
-  appId: "1:879949503888:web:b6c816a9f118067b04a715",
-  measurementId: "G-K1R8EWFEHS"
-};
+<script>
+  // Configuration Firebase (vérifiez que le storageBucket est correct)
+  var firebaseConfig = {
+    apiKey: "AIzaSyC5bwASNp21Obup95B2O2tNyTF64rTLuks",
+    authDomain: "inventaire-f456a.firebaseapp.com",
+    projectId: "inventaire-f456a",
+    storageBucket: "inventaire-f456a.appspot.com",
+    messagingSenderId: "879949503888",
+    appId: "1:879949503888:web:b6c816a9f118067b04a715",
+    measurementId: "G-K1R8EWFEHS"
+  };
 
-// Initialisation de Firebase, Firestore, Auth et Analytics
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const analytics = getAnalytics(app);
+  // Initialisation de Firebase, Firestore, Auth et Analytics
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.firestore();
+  var auth = firebase.auth();
+  var analytics = firebase.analytics();
 
-// Vérifie si l'utilisateur est authentifié
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    console.log("Utilisateur authentifié :", user.email);
-    // Ici, appelez la fonction qui charge votre inventaire depuis Firestore.
-    loadInventoryFromFirestore();
-  } else {
-    console.log("Aucun utilisateur authentifié, redirection vers index.");
-    window.location.href = "index.html";
-  }
-});
-
-// Exemple de fonction pour charger l'inventaire depuis Firestore
-function loadInventoryFromFirestore() {
-  // Par exemple, écoute en temps réel de la collection "inventory"
-  onSnapshot(db.collection("inventory"), (snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-      if (change.type === "modified") {
-        const data = change.doc.data();
-        const stockElem = document.getElementById("stock-" + data.id);
-        if (stockElem) {
-          stockElem.innerText = data.stock;
-        }
-      }
-    });
-  });
-}
-
-// Fonction pour mettre à jour le stock via Firestore
-function updateStockFirestore(productId, change) {
-  const productRef = db.collection("inventory").doc(productId);
-  productRef.get().then((doc) => {
-    if (doc.exists) {
-      let newStock = doc.data().stock + change;
-      if (newStock < 0) newStock = 0;
-      productRef.update({ stock: newStock });
+  // Vérifie si l'utilisateur est authentifié et charge les données Firestore
+  auth.onAuthStateChanged(function(user) {
+    if (user) {
+      console.log("Utilisateur authentifié :", user.email);
+      loadInventoryFromFirestore();
+    } else {
+      console.log("Aucun utilisateur authentifié, redirection vers index.");
+      window.location.href = "index.html";
     }
-  }).catch(error => {
-    console.error("Erreur lors de la mise à jour du stock : ", error);
   });
-}
+
+  // Fonction pour charger l'inventaire depuis Firestore (exemple d'écoute en temps réel)
+  function loadInventoryFromFirestore() {
+    db.collection("inventory").onSnapshot(function(snapshot) {
+      snapshot.docChanges().forEach(function(change) {
+        if (change.type === "modified") {
+          var data = change.doc.data();
+          // Mise à jour de l'affichage du stock dans le DOM
+          var stockElem = document.getElementById("stock-" + data.id);
+          if (stockElem) {
+            stockElem.innerText = data.stock;
+          }
+        }
+      });
+    });
+  }
+
+  // Fonction pour mettre à jour le stock via Firestore
+  function updateStockFirestore(productId, change) {
+    var productRef = db.collection("inventory").doc(productId);
+    productRef.get().then(function(doc) {
+      if (doc.exists) {
+        var newStock = doc.data().stock + change;
+        if (newStock < 0) newStock = 0;
+        productRef.update({ stock: newStock });
+      }
+    }).catch(function(error) {
+      console.error("Erreur lors de la mise à jour du stock : ", error);
+    });
+  }
+</script>
   </script>
 </body>
 </html>
