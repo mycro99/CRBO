@@ -2,43 +2,52 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Scanner Code‑Barres - Inventaire</title>
+  <title>Scanner - Inventaire CS Oupeye</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: sans-serif;
-      background-color: #f0f0f0;
-      text-align: center;
+      font-family: 'Roboto', sans-serif;
       margin: 0;
       padding: 20px;
+      background: #f5f5f5;
+      color: #333;
     }
     h1 {
+      text-align: center;
       color: #dc3545;
     }
-    #interactive {
+    #scanner-container {
+      position: relative;
       width: 100%;
       max-width: 600px;
       margin: 20px auto;
       border: 2px solid #dc3545;
       border-radius: 6px;
-      position: relative;
+      overflow: hidden;
     }
-    #result {
-      margin-top: 20px;
-      font-size: 1.2em;
-      color: #333;
+    /* La vidéo occupe toute la largeur du conteneur */
+    #video {
+      width: 100%;
+      display: block;
     }
-    #buttons, #returnButton {
+    #result, #articleInfo {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 1.1em;
+    }
+    #updateControls {
+      text-align: center;
       margin-top: 20px;
     }
     .btn {
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
+      padding: 10px 16px;
+      margin: 5px;
+      font-size: 1em;
       background-color: #dc3545;
       color: #fff;
+      border: none;
+      border-radius: 4px;
       cursor: pointer;
-      margin: 5px;
     }
     .btn:hover {
       background-color: #c82333;
@@ -46,29 +55,29 @@
   </style>
 </head>
 <body>
-  <h1>Scanner Code‑Barres</h1>
-  <!-- Zone de diffusion vidéo pour Quagga -->
-  <div id="interactive"></div>
-  <!-- Zone pour afficher le résultat du scan -->
-  <div id="result">En attente de scan…</div>
-  <!-- Boutons d'action (initialement cachés) -->
-  <div id="buttons" style="display:none;">
-    <button id="addButton" class="btn">Ajouter +1</button>
-    <button id="removeButton" class="btn">Retirer -1</button>
+  <h1>Scanner de code‑barres</h1>
+  <div id="scanner-container">
+    <video id="video"></video>
   </div>
-  <!-- Bouton pour retourner à l'inventaire -->
-  <button id="returnButton" class="btn" style="display:none;">Retour à l'inventaire</button>
+  <div id="result"></div>
+  <div id="updateControls" style="display:none;">
+    <p id="articleInfo"></p>
+    <button class="btn" onclick="updateStockAndFirestore(1)">Ajouter 1</button>
+    <button class="btn" onclick="updateStockAndFirestore(-1)">Retirer 1</button>
+    <button class="btn" onclick="goToInventory()">Terminer</button>
+  </div>
 
-  <!-- Inclusion de QuaggaJS depuis un CDN -->
+  <!-- Inclusion de QuaggaJS pour la lecture de code‑barres -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-  <!-- Script principal avec Firebase et gestion du scanner -->
+
+  <!-- Code Firebase et scanner -->
   <script type="module">
     // Importation des modules Firebase nécessaires
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
     import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
 
-    // Configuration Firebase (à adapter si besoin)
+    // Configuration Firebase (à adapter avec vos informations)
     const firebaseConfig = {
       apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
       authDomain: "listing-44b2b.firebaseapp.com",
@@ -84,30 +93,33 @@
     const db = getFirestore(app);
     const auth = getAuth();
 
-    // Variables globales pour l'article scanné
-    let currentItemId = null;
-    let currentStock = 0;
+    // Variables globales pour conserver le code‑barres et les données de l'article scanné
+    let currentBarcode = null;
+    let currentArticleData = null;
+    let processingBarcode = false; // pour éviter les traitements multiples
 
-    // Vérifie que l'utilisateur est authentifié
+    // Vérification de l'authentification
     onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log("Utilisateur authentifié :", user.email);
-        startScanner();
+        initScanner();
       } else {
-        console.log("Non authentifié, redirection vers index.");
+        console.log("Utilisateur non authentifié, redirection vers index.");
         window.location.href = "index.html";
       }
     });
 
-    // Démarrage de Quagga pour activer le scanner
-    function startScanner() {
+    // Initialisation de QuaggaJS pour scanner le code‑barres
+    function initScanner() {
       Quagga.init({
         inputStream: {
           name: "Live",
           type: "LiveStream",
-          target: document.querySelector('#interactive'),
+          target: document.querySelector('#video'),
           constraints: {
-            facingMode: "environment" // Utiliser la caméra arrière
+            width: 600,
+            height: 400,
+            facingMode: "environment"
           }
         },
         decoder: {
@@ -121,71 +133,72 @@
         }
       }, function(err) {
         if (err) {
-          console.error("Erreur d'initialisation Quagga :", err);
+          console.error(err);
           return;
         }
-        console.log("Scanner initialisé.");
+        console.log("Quagga initialisé avec succès.");
         Quagga.start();
       });
 
-      // Lorsque Quagga détecte un code
+      // Détection d'un code‑barres
       Quagga.onDetected(processBarcode);
     }
 
-    // Traitement du code-barres détecté
+    // Traitement du code‑barres détecté
     async function processBarcode(result) {
-      // Arrête le scanner pour éviter des détections multiples
-      Quagga.pause();
+      if (processingBarcode) return;
+      processingBarcode = true;
       const code = result.codeResult.code;
-      console.log("Code détecté :", code);
-      document.getElementById("result").innerText = "Code détecté : " + code;
+      console.log("Code‑barres détecté : " + code);
+      currentBarcode = code;
 
-      // Ici, nous utilisons le code scanné comme ID du document
+      // Arrêter le scanner pour éviter d'autres détections
+      Quagga.stop();
+
+      // Recherche de l'article dans Firestore (en utilisant le code‑barres comme identifiant)
       const docRef = doc(db, "inventory", code);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        currentItemId = code;
-        currentStock = docSnap.data().stock;
+        currentArticleData = docSnap.data();
         document.getElementById("result").innerText =
-          "Article " + currentItemId + " trouvé (Stock actuel : " + currentStock + ")";
-        // Affiche les boutons pour ajouter/retirer
-        document.getElementById("buttons").style.display = "block";
+          "Article trouvé : " + currentArticleData.name + " (Stock : " + currentArticleData.stock + ")";
+        // Afficher les contrôles de mise à jour
+        document.getElementById("articleInfo").innerText =
+          "Article : " + currentArticleData.name + " - Stock actuel : " + currentArticleData.stock;
+        document.getElementById("updateControls").style.display = "block";
       } else {
-        document.getElementById("result").innerText = "Aucun article trouvé pour le code : " + code;
-        // Affiche le bouton pour retourner à l'inventaire
-        document.getElementById("returnButton").style.display = "block";
+        document.getElementById("result").innerText = "Aucun article trouvé pour le code‑barres : " + code;
+        // Optionnel : réessayer le scan après quelques secondes
+        setTimeout(() => {
+          processingBarcode = false;
+          Quagga.start();
+        }, 3000);
       }
     }
 
-    // Mise à jour du stock (affichage + Firestore)
+    // Fonction pour mettre à jour le stock à la fois en local et dans Firestore
     async function updateStockAndFirestore(delta) {
-      if (!currentItemId) return;
-      const productRef = doc(db, "inventory", currentItemId);
-      const docSnap = await getDoc(productRef);
+      if (!currentBarcode) return;
+      const docRef = doc(db, "inventory", currentBarcode);
+      const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         let newStock = docSnap.data().stock + delta;
         if (newStock < 0) newStock = 0;
-        await updateDoc(productRef, { stock: newStock });
-        document.getElementById("result").innerText =
-          "Article " + currentItemId + " mis à jour : Stock = " + newStock;
+        await updateDoc(docRef, { stock: newStock });
+        // Mise à jour de l'affichage
+        document.getElementById("articleInfo").innerText =
+          "Article : " + currentArticleData.name + " - Stock actuel : " + newStock;
       } else {
-        document.getElementById("result").innerText = "Erreur : article introuvable.";
+        console.error("Erreur : l'article n'existe pas dans Firestore.");
       }
-      // Masque les boutons et affiche le bouton de retour
-      document.getElementById("buttons").style.display = "none";
-      document.getElementById("returnButton").style.display = "block";
     }
+    window.updateStockAndFirestore = updateStockAndFirestore;
 
-    // Écouteurs d'événements sur les boutons
-    document.getElementById("addButton").addEventListener("click", () => {
-      updateStockAndFirestore(1);
-    });
-    document.getElementById("removeButton").addEventListener("click", () => {
-      updateStockAndFirestore(-1);
-    });
-    document.getElementById("returnButton").addEventListener("click", () => {
+    // Redirection vers la page d'inventaire
+    function goToInventory() {
       window.location.href = "inventaire.html";
-    });
+    }
+    window.goToInventory = goToInventory;
   </script>
 </body>
 </html>
