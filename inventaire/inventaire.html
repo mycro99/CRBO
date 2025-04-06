@@ -2118,6 +2118,46 @@
       }
     });
   </script>
+    <script>
+  // Une fois le DOM entièrement chargé
+  document.addEventListener("DOMContentLoaded", function() {
+    // Récupère le paramètre 'barcode' dans l'URL
+    const params = new URLSearchParams(window.location.search);
+    const scannedBarcode = params.get("barcode");
+
+    if (scannedBarcode) {
+      console.log("Code-barres scanné :", scannedBarcode);
+      
+      // Sélectionne toutes les lignes d'article qui possèdent un attribut "data-barcode"
+      const rows = document.querySelectorAll("tr.article-row[data-barcode]");
+      let found = false;
+
+      rows.forEach(row => {
+        const barcode = row.getAttribute("data-barcode");
+        if (barcode === scannedBarcode) {
+          found = true;
+          // Assurez-vous que la ligne soit visible (au cas où elle serait masquée par un repli de catégorie)
+          row.style.display = "table-row";
+
+          // Vous pouvez également "déplier" la catégorie si besoin en appelant votre fonction toggleCategory()
+          // Exemple : si l'attribut data-category de la catégorie concernée n'est pas développé,
+          // vous pouvez déclencher toggleCategory('consommables') ou la catégorie correspondante
+
+          // Pour mettre en évidence l'article, on peut par exemple modifier le style
+          row.style.backgroundColor = "#ffff99"; // surbrillance jaune
+
+          // Faites défiler la page jusqu'à l'article
+          row.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+
+      if (!found) {
+        console.log("Aucun article avec le code-barres " + scannedBarcode + " n'a été trouvé dans le tableau.");
+      }
+    }
+  });
+</script>
+
 </body>
 </html>
 </body>
