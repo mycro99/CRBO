@@ -2157,8 +2157,65 @@
     }
   });
 </script>
-
-</body>
-</html>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const params = new URLSearchParams(window.location.search);
+      const scannedBarcode = params.get("barcode");
+      
+      if (scannedBarcode) {
+        console.log("Code‑barres scanné :", scannedBarcode);
+        
+        // Recherche parmi les lignes d'article possédant l'attribut data-barcode
+        const rows = document.querySelectorAll("tr.article-row[data-barcode]");
+        let rowFound = null;
+        
+        rows.forEach(row => {
+          if (row.getAttribute("data-barcode") === scannedBarcode) {
+            rowFound = row;
+          }
+        });
+        
+        if (rowFound) {
+          // Déterminer la catégorie en vérifiant les classes de la ligne
+          let category = null;
+          const possibleCategories = ["consommables", "desinfection", "divers", "entretien", "garage"];
+          possibleCategories.forEach(cat => {
+            if (rowFound.classList.contains(cat)) {
+              category = cat;
+            }
+          });
+          
+          if (category) {
+            openCategory(category);
+          }
+          
+          // Rendre visible et mettre en surbrillance la ligne trouvée
+          rowFound.style.display = "table-row";
+          rowFound.style.backgroundColor = "#ffff99"; // surbrillance jaune
+          
+          // Défilement jusqu'à l'article
+          rowFound.scrollIntoView({ behavior: "smooth", block: "center" });
+        } else {
+          console.log("Aucun article correspondant trouvé pour le code‑barres :", scannedBarcode);
+        }
+      }
+    });
+    
+    // Fonction pour ouvrir (déplier) la catégorie spécifiée
+    function openCategory(category) {
+      const rows = document.querySelectorAll("tr.article-row." + category);
+      rows.forEach(row => {
+        row.style.display = "table-row";
+      });
+      
+      const header = document.querySelector("tr.category-header[data-category='" + category + "']");
+      if (header) {
+        const toggleSpan = header.querySelector("span[id^='toggle-']");
+        if (toggleSpan) {
+          toggleSpan.textContent = "[-]";
+        }
+      }
+    }
+  </script>
 </body>
 </html>
