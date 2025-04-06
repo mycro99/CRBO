@@ -106,7 +106,8 @@
     }
     
     // Redirige vers inventaire.html en passant la catégorie dans l'URL
-    window.location.href = "inventaire.html?category=" + encodeURIComponent(category);
+    window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
+                         "&barcode=" + encodeURIComponent(code);
   });
     
     // Lancer le scanner une fois la page chargée
