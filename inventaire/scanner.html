@@ -119,6 +119,9 @@
       if (!scannerContainer) {
         console.error("Le conteneur #scanner-container n'a pas été trouvé.");
         return;
+      if (!document.getElementById('scanner-container')) {
+        console.error("Le conteneur 'scanner-container' n'existe pas !");
+        return;
       }
 
       Quagga.init({
@@ -152,6 +155,7 @@
 
       Quagga.onDetected(processBarcode);
     }
+    window.initScanner = initScanner;
 
     // Traitement du code‑barres détecté
     async function processBarcode(result) {
