@@ -16,7 +16,7 @@
       text-align: center;
       color: #dc3545;
     }
-    /* Conteneur pour Quagga (la vidéo sera injectée ici automatiquement) */
+    /* Conteneur pour le flux vidéo */
     #scanner-container {
       position: relative;
       width: 100%;
@@ -25,78 +25,23 @@
       border: 2px solid #dc3545;
       border-radius: 6px;
       overflow: hidden;
-      background: #000; /* fond noir pour indiquer la zone de capture */
+      background: #000; /* Fond noir pour la zone de capture */
     }
-    #result, #articleInfo {
-      text-align: center;
-      margin-top: 15px;
-      font-size: 1.1em;
-    }
-    #updateControls {
-      text-align: center;
-      margin-top: 20px;
-    }
-    .btn {
-      padding: 10px 16px;
-      margin: 5px;
-      font-size: 1em;
-      background-color: #dc3545;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .btn:hover {
-      background-color: #c82333;
+    /* La vidéo s'ajuste au conteneur */
+    #scanner-container video {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
     }
   </style>
 </head>
 <body>
   <h1>Scanner de code‑barres</h1>
   <div id="scanner-container"></div>
-  <div id="result"></div>
-  <!-- Ici, nous n'utilisons pas les contrôles de mise à jour du stock, 
-       puisque le scanner se contente de rediriger vers inventaire.html -->
   
   <!-- Inclusion de QuaggaJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-  
-  <!-- Code pour le scanner et l'authentification Firebase -->
-  <script type="module">
-    // Importation des modules Firebase nécessaires (pour vérifier l'authentification)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
-    
-    // Configuration Firebase (adaptez avec vos informations)
-    const firebaseConfig = {
-      apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
-      authDomain: "listing-44b2b.firebaseapp.com",
-      projectId: "listing-44b2b",
-      storageBucket: "listing-44b2b.firebasestorage.app",
-      messagingSenderId: "310030019842",
-      appId: "1:310030019842:web:c8a50b61f3dfbcb867e61b",
-      measurementId: "G-419VVR3NHE"
-    };
-
-    // Initialisation de Firebase et de l'authentification
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    let processingBarcode = false;
-
-    // Vérification de l'authentification : si l'utilisateur est connecté, on lance le scanner,
-    // sinon on le redirige vers index.html
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log("Utilisateur authentifié :", user.email);
-        initScanner();
-      } else {
-        console.log("Utilisateur non authentifié, redirection vers index.");
-        window.location.href = "index.html";
-      }
-    });
-
-    // Initialisation de QuaggaJS
+  <script>
     function initScanner() {
       Quagga.init({
         inputStream: {
@@ -126,23 +71,20 @@
         console.log("Quagga initialisé avec succès.");
         Quagga.start();
       });
-      Quagga.onDetected(processBarcode);
+      
+      // Lorsqu'un code‑barres est détecté
+      Quagga.onDetected(function(result) {
+        const code = result.codeResult.code;
+        console.log("Code détecté: " + code);
+        // Arrête le scanner pour éviter plusieurs détections
+        Quagga.stop();
+        // Redirige vers inventaire.html en passant le code dans l'URL
+        window.location.href = "inventaire.html?barcode=" + encodeURIComponent(code);
+      });
     }
-
-    // Traitement du code‑barres détecté
-    async function processBarcode(result) {
-      if (processingBarcode) return;
-      processingBarcode = true;
-      const code = result.codeResult.code;
-      console.log("Code‑barres détecté : " + code);
-      // Arrête le scanner pour éviter les détections multiples
-      Quagga.stop();
-      // Redirige vers inventaire.html en passant le code scanné dans l'URL
-      window.location.href = "inventaire.html?barcode=" + encodeURIComponent(code);
-    }
-
-    // Vous pouvez ajouter ici d'autres fonctions si nécessaire
-
+    
+    // Lancer le scanner une fois la page chargée
+    window.addEventListener('load', initScanner);
   </script>
 </body>
 </html>
