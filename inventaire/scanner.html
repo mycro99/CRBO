@@ -16,7 +16,7 @@
       text-align: center;
       color: #dc3545;
     }
-    /* Conteneur pour Quagga (la vidéo sera insérée ici automatiquement) */
+    /* Conteneur pour Quagga (la vidéo sera injectée ici) */
     #scanner-container {
       position: relative;
       width: 100%;
@@ -25,7 +25,7 @@
       border: 2px solid #dc3545;
       border-radius: 6px;
       overflow: hidden;
-      background: #000; /* fond noir */
+      background: #000; /* Fond noir */
     }
     #result, #articleInfo {
       text-align: center;
@@ -69,10 +69,19 @@
   <script type="module">
     // Importation des modules Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
-    import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      updateDoc,
+      collection,
+      query,
+      where,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
 
-    // Configuration Firebase (modifiez ces valeurs selon votre configuration)
+    // Configuration Firebase (adaptée à votre projet)
     const firebaseConfig = {
       apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
       authDomain: "listing-44b2b.firebaseapp.com",
@@ -88,7 +97,7 @@
     const db = getFirestore(app);
     const auth = getAuth();
 
-    // Variables globales
+    // Variables globales pour stocker le code‑barres et les données de l'article scanné
     let currentBarcode = null;
     let currentArticleData = null;
     let processingBarcode = false;
@@ -104,7 +113,7 @@
       }
     });
 
-    // Fonction d'initialisation du scanner
+    // Initialisation de QuaggaJS
     function initScanner() {
       const container = document.querySelector('#scanner-container');
       if (!container) {
@@ -117,9 +126,7 @@
           type: "LiveStream",
           target: container,
           constraints: {
-            width: 600,
-            height: 400,
-            facingMode: "environment"
+            facingMode: "environment" // Utilise la caméra arrière
           }
         },
         decoder: {
@@ -152,15 +159,15 @@
       currentBarcode = code;
       Quagga.stop();
 
-      // Requête sur Firestore pour retrouver l'article correspondant (champ "barcode")
+      // Recherche dans Firestore : on recherche le document dont le champ "barcode" correspond au code scanné
       const q = query(collection(db, "inventory"), where("barcode", "==", code));
       const querySnapshot = await getDocs(q);
       if (querySnapshot.empty) {
         alert("Aucun article correspondant trouvé !");
         processingBarcode = false;
-        initScanner(); // Relancer le scanner
+        initScanner(); // Redémarrer le scanner pour réessayer
       } else {
-        // Supposons qu'un seul document correspond
+        // On suppose ici qu'un seul document correspond
         querySnapshot.forEach((doc) => {
           currentArticleData = doc.data();
           currentArticleData.id = doc.id;
@@ -171,7 +178,7 @@
       }
     }
 
-    // Mise à jour du stock dans Firestore et mise à jour de l'affichage
+    // Mise à jour du stock dans Firestore et de l'affichage
     async function updateStockAndFirestore(delta) {
       if (!currentArticleData) return;
       const docRef = doc(db, "inventory", currentArticleData.id);
@@ -189,6 +196,7 @@
     }
     window.updateStockAndFirestore = updateStockAndFirestore;
 
+    // Redirection vers la page d'inventaire
     function goToInventory() {
       window.location.href = "inventaire.html";
     }
