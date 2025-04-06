@@ -16,6 +16,7 @@
       text-align: center;
       color: #dc3545;
     }
+    /* Conteneur pour Quagga (la vidéo sera ajoutée ici automatiquement) */
     #scanner-container {
       position: relative;
       width: 100%;
@@ -24,12 +25,7 @@
       border: 2px solid #dc3545;
       border-radius: 6px;
       overflow: hidden;
-    }
-    /* Utilisez une balise <video> pour le flux */
-    #video {
-      width: 600px;      /* Taille fixe pour tester */
-      height: 400px;     /* Taille fixe pour tester */
-      background: #000;  /* Fond noir pour voir la zone de capture */
+      background: #000; /* Fond noir pour indiquer la zone de capture */
     }
     #result, #articleInfo {
       text-align: center;
@@ -57,10 +53,7 @@
 </head>
 <body>
   <h1>Scanner de code‑barres</h1>
-  <div id="scanner-container">
-    <!-- Utilisation d'une balise video -->
-    <video id="video" autoplay playsinline></video>
-  </div>
+  <div id="scanner-container"></div>
   <div id="result"></div>
   <div id="updateControls" style="display:none;">
     <p id="articleInfo"></p>
@@ -69,16 +62,17 @@
     <button class="btn" onclick="goToInventory()">Terminer</button>
   </div>
 
-  <!-- Inclusion de QuaggaJS pour la lecture de code‑barres -->
+  <!-- Inclusion de QuaggaJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
   <!-- Code Firebase et scanner -->
   <script type="module">
+    // Importation des modules Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
     import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
 
-    // Configuration Firebase
+    // Configuration Firebase (à adapter avec vos infos)
     const firebaseConfig = {
       apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
       authDomain: "listing-44b2b.firebaseapp.com",
@@ -89,6 +83,7 @@
       measurementId: "G-419VVR3NHE"
     };
 
+    // Initialisation de Firebase, Firestore et Auth
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth();
@@ -97,6 +92,7 @@
     let currentArticleData = null;
     let processingBarcode = false;
 
+    // Vérification de l'authentification
     onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log("Utilisateur authentifié :", user.email);
@@ -107,12 +103,13 @@
       }
     });
 
+    // Initialisation de Quagga avec le conteneur comme target
     function initScanner() {
       Quagga.init({
         inputStream: {
           name: "Live",
           type: "LiveStream",
-          target: document.querySelector('#video'),
+          target: document.querySelector('#scanner-container'),
           constraints: {
             width: 600,
             height: 400,
@@ -140,6 +137,7 @@
       Quagga.onDetected(processBarcode);
     }
 
+    // Traitement du code‑barres détecté
     async function processBarcode(result) {
       if (processingBarcode) return;
       processingBarcode = true;
@@ -156,6 +154,7 @@
         processingBarcode = false;
         initScanner(); // Redémarrer le scanner pour réessayer
       } else {
+        // Ici on suppose qu'il n'y a qu'un seul résultat
         querySnapshot.forEach((doc) => {
           currentArticleData = doc.data();
           currentArticleData.id = doc.id;
@@ -166,6 +165,7 @@
       }
     }
 
+    // Fonction pour mettre à jour le stock dans Firestore et mettre à jour l'affichage
     async function updateStockAndFirestore(delta) {
       if (!currentArticleData) return;
       const docRef = doc(db, "inventory", currentArticleData.id);
