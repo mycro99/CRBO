@@ -16,7 +16,7 @@
       text-align: center;
       color: #dc3545;
     }
-    /* Conteneur pour Quagga (la vidéo sera ajoutée ici automatiquement) */
+    /* Conteneur pour Quagga (la vidéo sera insérée ici automatiquement) */
     #scanner-container {
       position: relative;
       width: 100%;
@@ -25,7 +25,7 @@
       border: 2px solid #dc3545;
       border-radius: 6px;
       overflow: hidden;
-      background: #000; /* Fond noir pour indiquer la zone de capture */
+      background: #000; /* Fond noir pour la zone de capture */
     }
     #result, #articleInfo {
       text-align: center;
@@ -67,12 +67,21 @@
 
   <!-- Code Firebase et scanner -->
   <script type="module">
-    // Importation des modules Firebase
+    // Importation des modules Firebase nécessaires
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
-    import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      updateDoc,
+      collection,
+      query,
+      where,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
 
-    // Configuration Firebase (à adapter avec vos infos)
+    // Configuration Firebase (remplacez par vos propres infos)
     const firebaseConfig = {
       apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
       authDomain: "listing-44b2b.firebaseapp.com",
@@ -96,23 +105,30 @@
     onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log("Utilisateur authentifié :", user.email);
-        initScanner();
+        // Démarrage après que la page est chargée
+        window.addEventListener("load", initScanner);
       } else {
         console.log("Utilisateur non authentifié, redirection vers index.");
         window.location.href = "index.html";
       }
     });
 
-    // Initialisation de Quagga avec le conteneur comme target
+    // Initialisation de Quagga dans le conteneur scanner-container
     function initScanner() {
+      const scannerContainer = document.querySelector('#scanner-container');
+      if (!scannerContainer) {
+        console.error("Le conteneur #scanner-container n'a pas été trouvé.");
+        return;
+      }
+
       Quagga.init({
         inputStream: {
           name: "Live",
           type: "LiveStream",
-          target: document.querySelector('#scanner-container'),
+          target: scannerContainer,
           constraints: {
-            width: 600,
-            height: 400,
+            width: { ideal: 600 },
+            height: { ideal: 400 },
             facingMode: "environment"
           }
         },
@@ -147,42 +163,53 @@
       Quagga.stop();
 
       // Recherche dans Firestore par le champ "barcode"
-      const q = query(collection(db, "inventory"), where("barcode", "==", code));
-      const querySnapshot = await getDocs(q);
-      if (querySnapshot.empty) {
-        alert("Aucun article correspondant trouvé !");
+      try {
+        const q = query(collection(db, "inventory"), where("barcode", "==", code));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+          alert("Aucun article correspondant trouvé !");
+          processingBarcode = false;
+          initScanner(); // Redémarre le scanner pour réessayer
+        } else {
+          // Supposons qu'il n'y a qu'un seul résultat
+          querySnapshot.forEach((doc) => {
+            currentArticleData = doc.data();
+            currentArticleData.id = doc.id;
+          });
+          document.getElementById("articleInfo").innerText =
+            "Article : " + currentArticleData.nom + " - Stock actuel : " + currentArticleData.stock;
+          document.getElementById("updateControls").style.display = "block";
+        }
+      } catch (error) {
+        console.error("Erreur lors de la recherche dans Firestore :", error);
         processingBarcode = false;
-        initScanner(); // Redémarrer le scanner pour réessayer
-      } else {
-        // Ici on suppose qu'il n'y a qu'un seul résultat
-        querySnapshot.forEach((doc) => {
-          currentArticleData = doc.data();
-          currentArticleData.id = doc.id;
-        });
-        document.getElementById("articleInfo").innerText =
-          "Article : " + currentArticleData.nom + " - Stock actuel : " + currentArticleData.stock;
-        document.getElementById("updateControls").style.display = "block";
+        initScanner();
       }
     }
 
-    // Fonction pour mettre à jour le stock dans Firestore et mettre à jour l'affichage
+    // Mise à jour du stock dans Firestore et mise à jour de l'affichage
     async function updateStockAndFirestore(delta) {
       if (!currentArticleData) return;
-      const docRef = doc(db, "inventory", currentArticleData.id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        let newStock = docSnap.data().stock + delta;
-        if (newStock < 0) newStock = 0;
-        await updateDoc(docRef, { stock: newStock });
-        currentArticleData.stock = newStock;
-        document.getElementById("articleInfo").innerText =
-          "Article : " + currentArticleData.nom + " - Stock actuel : " + newStock;
-      } else {
-        console.error("Erreur : l'article n'existe pas dans Firestore.");
+      try {
+        const docRef = doc(db, "inventory", currentArticleData.id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          let newStock = docSnap.data().stock + delta;
+          if (newStock < 0) newStock = 0;
+          await updateDoc(docRef, { stock: newStock });
+          currentArticleData.stock = newStock;
+          document.getElementById("articleInfo").innerText =
+            "Article : " + currentArticleData.nom + " - Stock actuel : " + newStock;
+        } else {
+          console.error("Erreur : l'article n'existe pas dans Firestore.");
+        }
+      } catch (error) {
+        console.error("Erreur lors de la mise à jour du stock :", error);
       }
     }
     window.updateStockAndFirestore = updateStockAndFirestore;
 
+    // Redirection vers la page d'inventaire
     function goToInventory() {
       window.location.href = "inventaire.html";
     }
