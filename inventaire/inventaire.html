@@ -2217,5 +2217,16 @@
       }
     }
   </script>
+    <script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Récupère le paramètre "category" dans l'URL
+    const params = new URLSearchParams(window.location.search);
+    const cat = params.get('category');
+    if (cat) {
+      // Appelle ta fonction toggleCategory pour ouvrir la catégorie souhaitée
+      toggleCategory(cat);
+    }
+  });
+</script>
 </body>
 </html>
