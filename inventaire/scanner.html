@@ -32,6 +32,7 @@
       width: 100%;
       height: auto;
       object-fit: cover;
+      display: block !important; /* Forcer l'affichage */
     }
   </style>
 </head>
@@ -43,15 +44,24 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <script>
     function initScanner() {
+      // Vérifie que le conteneur est présent
+      const scannerContainer = document.querySelector('#scanner-container');
+      console.log("Conteneur trouvé :", scannerContainer);
+      if (!scannerContainer) {
+        console.error("Le conteneur #scanner-container est introuvable.");
+        return;
+      }
+      
       Quagga.init({
         inputStream: {
           name: "Live",
           type: "LiveStream",
-          target: document.querySelector('#scanner-container'),
+          target: scannerContainer,
           constraints: {
             width: 600,
             height: 400,
-            facingMode: "environment"
+            // Pour tester sur desktop, tu peux utiliser "user". Sur mobile, utilise "environment".
+            facingMode: "user" 
           }
         },
         decoder: {
@@ -72,45 +82,44 @@
         Quagga.start();
       });
       
-      // Lorsqu'un code‑barres est détecté
-      // Exemple de mapping de codes-barres par catégorie
-  const categoryMapping = {
-    consommables: ["00732094314618", "CODE2_CONSOMMABLE", "CODE3_CONSOMMABLE"],
-    désinfection: ["CODE1_DESINFECTION", "CODE2_DESINFECTION"],
-    divers: ["CODE1_DIVERS"],
-    entretien: ["5400141193657"],
-    garage: ["CODE1_GARAGE"]
-  };
+      // Mapping des codes-barres vers les catégories
+      const categoryMapping = {
+        consommables: ["00732094314618", "CODE2_CONSOMMABLE", "CODE3_CONSOMMABLE"],
+        désinfection: ["CODE1_DESINFECTION", "CODE2_DESINFECTION"],
+        divers: ["CODE1_DIVERS"],
+        entretien: ["5400141193657"],
+        garage: ["CODE1_GARAGE"]
+      };
 
-  // Fonction de traitement lorsqu'un code-barres est détecté
-  Quagga.onDetected(function(result) {
-    const code = result.codeResult.code;
-    console.log("Code détecté: " + code);
-    // Arrête le scanner pour éviter plusieurs détections
-    Quagga.stop();
-    
-    // Recherche la catégorie correspondant au code détecté
-    let category = "";
-    for (const cat in categoryMapping) {
-      if (categoryMapping[cat].includes(code)) {
-        category = cat;
-        break;
-      }
+      // Lorsqu'un code‑barres est détecté
+      Quagga.onDetected(function(result) {
+        const code = result.codeResult.code;
+        console.log("Code détecté: " + code);
+        // Arrête le scanner pour éviter plusieurs détections
+        Quagga.stop();
+        
+        // Recherche la catégorie correspondant au code détecté
+        let category = "";
+        for (const cat in categoryMapping) {
+          if (categoryMapping[cat].includes(code)) {
+            category = cat;
+            break;
+          }
+        }
+        
+        if (!category) {
+          alert("Aucun article correspondant trouvé pour ce code : " + code);
+          // Redémarre le scanner pour réessayer
+          initScanner();
+          return;
+        }
+        
+        // Redirige vers inventaire.html en passant la catégorie et le code-barres dans l'URL
+        window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
+                                 "&barcode=" + encodeURIComponent(code);
+      });
     }
     
-    if (!category) {
-      alert("Aucun article correspondant trouvé pour ce code : " + code);
-      // Redémarre le scanner pour réessayer
-      initScanner();
-      return;
-    }
-    
-    // Redirige vers inventaire.html en passant la catégorie dans l'URL
-    window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
-                         "&barcode=" + encodeURIComponent(code);
-  });
-    
-    // Lancer le scanner une fois la page chargée
     window.addEventListener('load', initScanner);
   </script>
 </body>
