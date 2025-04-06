@@ -214,6 +214,19 @@
       window.location.href = "inventaire.html";
     }
     window.goToInventory = goToInventory;
-  </script>
+    </script>
+  <script>
+  document.addEventListener("DOMContentLoaded", function() {
+    if (document.getElementById('scanner-container')) {
+      console.log("Le conteneur 'scanner-container' est présent dans le DOM.");
+    } else {
+      console.error("Le conteneur 'scanner-container' n'est PAS présent dans le DOM.");
+    }
+    
+    // Vous pouvez ensuite initialiser votre scanner ici
+    initScanner();
+  });
+</script>
+
 </body>
 </html>
