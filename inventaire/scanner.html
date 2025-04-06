@@ -73,15 +73,41 @@
       });
       
       // Lorsqu'un code‑barres est détecté
-      Quagga.onDetected(function(result) {
-        const code = result.codeResult.code;
-        console.log("Code détecté: " + code);
-        // Arrête le scanner pour éviter plusieurs détections
-        Quagga.stop();
-        // Redirige vers inventaire.html en passant le code dans l'URL
-        window.location.href = "inventaire.html?barcode=" + encodeURIComponent(code);
-      });
+      // Exemple de mapping de codes-barres par catégorie
+  const categoryMapping = {
+    consommables: ["00732094314618", "CODE2_CONSOMMABLE", "CODE3_CONSOMMABLE"],
+    désinfection: ["CODE1_DESINFECTION", "CODE2_DESINFECTION"],
+    divers: ["CODE1_DIVERS"],
+    entretien: ["5400141193657"],
+    garage: ["CODE1_GARAGE"]
+  };
+
+  // Fonction de traitement lorsqu'un code-barres est détecté
+  Quagga.onDetected(function(result) {
+    const code = result.codeResult.code;
+    console.log("Code détecté: " + code);
+    // Arrête le scanner pour éviter plusieurs détections
+    Quagga.stop();
+    
+    // Recherche la catégorie correspondant au code détecté
+    let category = "";
+    for (const cat in categoryMapping) {
+      if (categoryMapping[cat].includes(code)) {
+        category = cat;
+        break;
+      }
     }
+    
+    if (!category) {
+      alert("Aucun article correspondant trouvé pour ce code : " + code);
+      // Redémarre le scanner pour réessayer
+      initScanner();
+      return;
+    }
+    
+    // Redirige vers inventaire.html en passant la catégorie dans l'URL
+    window.location.href = "inventaire.html?category=" + encodeURIComponent(category);
+  });
     
     // Lancer le scanner une fois la page chargée
     window.addEventListener('load', initScanner);
