@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Scanner Code‑Barres - Inventaire</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f0f0f0;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #dc3545;
+    }
+    #interactive {
+      width: 100%;
+      max-width: 600px;
+      margin: 20px auto;
+      border: 2px solid #dc3545;
+      border-radius: 6px;
+      position: relative;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 1.2em;
+      color: #333;
+    }
+    #buttons, #returnButton {
+      margin-top: 20px;
+    }
+    .btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background-color: #dc3545;
+      color: #fff;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .btn:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Scanner Code‑Barres</h1>
+  <!-- Zone de diffusion vidéo pour Quagga -->
+  <div id="interactive"></div>
+  <!-- Zone pour afficher le résultat du scan -->
+  <div id="result">En attente de scan…</div>
+  <!-- Boutons d'action (initialement cachés) -->
+  <div id="buttons" style="display:none;">
+    <button id="addButton" class="btn">Ajouter +1</button>
+    <button id="removeButton" class="btn">Retirer -1</button>
+  </div>
+  <!-- Bouton pour retourner à l'inventaire -->
+  <button id="returnButton" class="btn" style="display:none;">Retour à l'inventaire</button>
+
+  <!-- Inclusion de QuaggaJS depuis un CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+  <!-- Script principal avec Firebase et gestion du scanner -->
+  <script type="module">
+    // Importation des modules Firebase nécessaires
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
+
+    // Configuration Firebase (à adapter si besoin)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
+      authDomain: "listing-44b2b.firebaseapp.com",
+      projectId: "listing-44b2b",
+      storageBucket: "listing-44b2b.firebasestorage.app",
+      messagingSenderId: "310030019842",
+      appId: "1:310030019842:web:c8a50b61f3dfbcb867e61b",
+      measurementId: "G-419VVR3NHE"
+    };
+
+    // Initialisation de Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth();
+
+    // Variables globales pour l'article scanné
+    let currentItemId = null;
+    let currentStock = 0;
+
+    // Vérifie que l'utilisateur est authentifié
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log("Utilisateur authentifié :", user.email);
+        startScanner();
+      } else {
+        console.log("Non authentifié, redirection vers index.");
+        window.location.href = "index.html";
+      }
+    });
+
+    // Démarrage de Quagga pour activer le scanner
+    function startScanner() {
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#interactive'),
+          constraints: {
+            facingMode: "environment" // Utiliser la caméra arrière
+          }
+        },
+        decoder: {
+          readers: [
+            "code_128_reader",
+            "ean_reader",
+            "ean_8_reader",
+            "code_39_reader",
+            "upc_reader"
+          ]
+        }
+      }, function(err) {
+        if (err) {
+          console.error("Erreur d'initialisation Quagga :", err);
+          return;
+        }
+        console.log("Scanner initialisé.");
+        Quagga.start();
+      });
+
+      // Lorsque Quagga détecte un code
+      Quagga.onDetected(processBarcode);
+    }
+
+    // Traitement du code-barres détecté
+    async function processBarcode(result) {
+      // Arrête le scanner pour éviter des détections multiples
+      Quagga.pause();
+      const code = result.codeResult.code;
+      console.log("Code détecté :", code);
+      document.getElementById("result").innerText = "Code détecté : " + code;
+
+      // Ici, nous utilisons le code scanné comme ID du document
+      const docRef = doc(db, "inventory", code);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        currentItemId = code;
+        currentStock = docSnap.data().stock;
+        document.getElementById("result").innerText =
+          "Article " + currentItemId + " trouvé (Stock actuel : " + currentStock + ")";
+        // Affiche les boutons pour ajouter/retirer
+        document.getElementById("buttons").style.display = "block";
+      } else {
+        document.getElementById("result").innerText = "Aucun article trouvé pour le code : " + code;
+        // Affiche le bouton pour retourner à l'inventaire
+        document.getElementById("returnButton").style.display = "block";
+      }
+    }
+
+    // Mise à jour du stock (affichage + Firestore)
+    async function updateStockAndFirestore(delta) {
+      if (!currentItemId) return;
+      const productRef = doc(db, "inventory", currentItemId);
+      const docSnap = await getDoc(productRef);
+      if (docSnap.exists()) {
+        let newStock = docSnap.data().stock + delta;
+        if (newStock < 0) newStock = 0;
+        await updateDoc(productRef, { stock: newStock });
+        document.getElementById("result").innerText =
+          "Article " + currentItemId + " mis à jour : Stock = " + newStock;
+      } else {
+        document.getElementById("result").innerText = "Erreur : article introuvable.";
+      }
+      // Masque les boutons et affiche le bouton de retour
+      document.getElementById("buttons").style.display = "none";
+      document.getElementById("returnButton").style.display = "block";
+    }
+
+    // Écouteurs d'événements sur les boutons
+    document.getElementById("addButton").addEventListener("click", () => {
+      updateStockAndFirestore(1);
+    });
+    document.getElementById("removeButton").addEventListener("click", () => {
+      updateStockAndFirestore(-1);
+    });
+    document.getElementById("returnButton").addEventListener("click", () => {
+      window.location.href = "inventaire.html";
+    });
+  </script>
+</body>
+</html>
