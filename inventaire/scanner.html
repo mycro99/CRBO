@@ -74,7 +74,7 @@
   <script type="module">
     // Importation des modules Firebase nécessaires
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
-    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
+    import { getFirestore, collection, query, where, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
 
     // Configuration Firebase (à adapter avec vos informations)
@@ -93,10 +93,9 @@
     const db = getFirestore(app);
     const auth = getAuth();
 
-    // Variables globales pour conserver le code‑barres et les données de l'article scanné
-    let currentBarcode = null;
+    // Variable pour stocker l'article trouvé (incluant son ID Firestore)
     let currentArticleData = null;
-    let processingBarcode = false; // pour éviter les traitements multiples
+    let processingBarcode = false; // pour éviter de traiter plusieurs fois le même scan
 
     // Vérification de l'authentification
     onAuthStateChanged(auth, (user) => {
@@ -133,7 +132,7 @@
         }
       }, function(err) {
         if (err) {
-          console.error(err);
+          console.error("Erreur lors de l'initialisation de Quagga:", err);
           return;
         }
         console.log("Quagga initialisé avec succès.");
@@ -149,47 +148,60 @@
       if (processingBarcode) return;
       processingBarcode = true;
       const code = result.codeResult.code;
-      console.log("Code‑barres détecté : " + code);
-      currentBarcode = code;
-
-      // Arrêter le scanner pour éviter d'autres détections
+      console.log("Code‑barres détecté :", code);
+      // Arrêter le scanner pour éviter de multiples détections
       Quagga.stop();
+      // Recherche l'article dans Firestore par le champ "barcode"
+      await handleScannedCode(code);
+    }
 
-      // Recherche de l'article dans Firestore (en utilisant le code‑barres comme identifiant)
-      const docRef = doc(db, "inventory", code);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        currentArticleData = docSnap.data();
-        document.getElementById("result").innerText =
-          "Article trouvé : " + currentArticleData.name + " (Stock : " + currentArticleData.stock + ")";
-        // Afficher les contrôles de mise à jour
-        document.getElementById("articleInfo").innerText =
-          "Article : " + currentArticleData.name + " - Stock actuel : " + currentArticleData.stock;
-        document.getElementById("updateControls").style.display = "block";
-      } else {
-        document.getElementById("result").innerText = "Aucun article trouvé pour le code‑barres : " + code;
-        // Optionnel : réessayer le scan après quelques secondes
-        setTimeout(() => {
+    async function handleScannedCode(scannedCode) {
+      console.log("Recherche de l'article avec le code-barres :", scannedCode);
+      // Requête sur la collection "inventory" où le champ "barcode" est égal au code scanné
+      const q = query(collection(db, "inventory"), where("barcode", "==", scannedCode));
+      try {
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+          alert("Aucun article correspondant trouvé !");
           processingBarcode = false;
-          Quagga.start();
-        }, 3000);
+          initScanner();
+        } else {
+          // On suppose qu'il n'y a qu'un seul résultat
+          querySnapshot.forEach((docSnap) => {
+            currentArticleData = docSnap.data();
+            currentArticleData.id = docSnap.id; // Conserver l'ID du document
+            console.log("Article trouvé :", currentArticleData);
+            document.getElementById("articleInfo").innerText =
+              "Article : " + currentArticleData.nom + " - Stock actuel : " + currentArticleData.stock;
+            document.getElementById("updateControls").style.display = "block";
+          });
+        }
+      } catch (error) {
+        console.error("Erreur lors de la recherche dans Firestore :", error);
+        processingBarcode = false;
+        initScanner();
       }
     }
 
     // Fonction pour mettre à jour le stock à la fois en local et dans Firestore
     async function updateStockAndFirestore(delta) {
-      if (!currentBarcode) return;
-      const docRef = doc(db, "inventory", currentBarcode);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        let newStock = docSnap.data().stock + delta;
-        if (newStock < 0) newStock = 0;
-        await updateDoc(docRef, { stock: newStock });
-        // Mise à jour de l'affichage
-        document.getElementById("articleInfo").innerText =
-          "Article : " + currentArticleData.name + " - Stock actuel : " + newStock;
-      } else {
-        console.error("Erreur : l'article n'existe pas dans Firestore.");
+      if (!currentArticleData) return;
+      const docRef = doc(db, "inventory", currentArticleData.id);
+      try {
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          let newStock = docSnap.data().stock + delta;
+          if (newStock < 0) newStock = 0;
+          await updateDoc(docRef, { stock: newStock });
+          // Mise à jour de l'affichage et de la variable globale
+          currentArticleData.stock = newStock;
+          document.getElementById("articleInfo").innerText =
+            "Article : " + currentArticleData.nom + " - Stock actuel : " + newStock;
+        } else {
+          console.error("Erreur : l'article n'existe pas dans Firestore.");
+        }
+      } catch (error) {
+        console.error("Erreur lors de la mise à jour du stock :", error);
       }
     }
     window.updateStockAndFirestore = updateStockAndFirestore;
