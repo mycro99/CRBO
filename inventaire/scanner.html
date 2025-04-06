@@ -16,7 +16,7 @@
       text-align: center;
       color: #dc3545;
     }
-    /* Conteneur pour Quagga (la vidéo sera injectée ici) */
+    /* Conteneur pour Quagga (la vidéo sera injectée ici automatiquement) */
     #scanner-container {
       position: relative;
       width: 100%;
@@ -25,7 +25,7 @@
       border: 2px solid #dc3545;
       border-radius: 6px;
       overflow: hidden;
-      background: #000; /* Fond noir */
+      background: #000; /* fond noir pour indiquer la zone de capture */
     }
     #result, #articleInfo {
       text-align: center;
@@ -55,33 +55,19 @@
   <h1>Scanner de code‑barres</h1>
   <div id="scanner-container"></div>
   <div id="result"></div>
-  <div id="updateControls" style="display: none;">
-    <p id="articleInfo"></p>
-    <button class="btn" onclick="updateStockAndFirestore(1)">Ajouter 1</button>
-    <button class="btn" onclick="updateStockAndFirestore(-1)">Retirer 1</button>
-    <button class="btn" onclick="goToInventory()">Terminer</button>
-  </div>
-
+  <!-- Ici, nous n'utilisons pas les contrôles de mise à jour du stock, 
+       puisque le scanner se contente de rediriger vers inventaire.html -->
+  
   <!-- Inclusion de QuaggaJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-
-  <!-- Code Firebase et scanner -->
+  
+  <!-- Code pour le scanner et l'authentification Firebase -->
   <script type="module">
-    // Importation des modules Firebase
+    // Importation des modules Firebase nécessaires (pour vérifier l'authentification)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
-    import {
-      getFirestore,
-      doc,
-      getDoc,
-      updateDoc,
-      collection,
-      query,
-      where,
-      getDocs
-    } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
-
-    // Configuration Firebase (adaptée à votre projet)
+    
+    // Configuration Firebase (adaptez avec vos informations)
     const firebaseConfig = {
       apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
       authDomain: "listing-44b2b.firebaseapp.com",
@@ -92,17 +78,14 @@
       measurementId: "G-419VVR3NHE"
     };
 
-    // Initialisation de Firebase, Firestore et Auth
+    // Initialisation de Firebase et de l'authentification
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth();
+    const auth = getAuth(app);
 
-    // Variables globales pour stocker le code‑barres et les données de l'article scanné
-    let currentBarcode = null;
-    let currentArticleData = null;
     let processingBarcode = false;
 
-    // Vérification de l'authentification
+    // Vérification de l'authentification : si l'utilisateur est connecté, on lance le scanner,
+    // sinon on le redirige vers index.html
     onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log("Utilisateur authentifié :", user.email);
@@ -115,18 +98,15 @@
 
     // Initialisation de QuaggaJS
     function initScanner() {
-      const container = document.querySelector('#scanner-container');
-      if (!container) {
-        console.error("Le conteneur 'scanner-container' n'existe pas !");
-        return;
-      }
       Quagga.init({
         inputStream: {
           name: "Live",
           type: "LiveStream",
-          target: container,
+          target: document.querySelector('#scanner-container'),
           constraints: {
-            facingMode: "environment" // Utilise la caméra arrière
+            width: 600,
+            height: 400,
+            facingMode: "environment"
           }
         },
         decoder: {
@@ -148,7 +128,6 @@
       });
       Quagga.onDetected(processBarcode);
     }
-    window.initScanner = initScanner;
 
     // Traitement du code‑barres détecté
     async function processBarcode(result) {
@@ -156,51 +135,14 @@
       processingBarcode = true;
       const code = result.codeResult.code;
       console.log("Code‑barres détecté : " + code);
-      currentBarcode = code;
+      // Arrête le scanner pour éviter les détections multiples
       Quagga.stop();
-
-      // Recherche dans Firestore : on recherche le document dont le champ "barcode" correspond au code scanné
-      const q = query(collection(db, "inventory"), where("barcode", "==", code));
-      const querySnapshot = await getDocs(q);
-      if (querySnapshot.empty) {
-        alert("Aucun article correspondant trouvé !");
-        processingBarcode = false;
-        initScanner(); // Redémarrer le scanner pour réessayer
-      } else {
-        // On suppose ici qu'un seul document correspond
-        querySnapshot.forEach((doc) => {
-          currentArticleData = doc.data();
-          currentArticleData.id = doc.id;
-        });
-        document.getElementById("articleInfo").innerText =
-          "Article : " + currentArticleData.nom + " - Stock actuel : " + currentArticleData.stock;
-        document.getElementById("updateControls").style.display = "block";
-      }
+      // Redirige vers inventaire.html en passant le code scanné dans l'URL
+      window.location.href = "inventaire.html?barcode=" + encodeURIComponent(code);
     }
 
-    // Mise à jour du stock dans Firestore et de l'affichage
-    async function updateStockAndFirestore(delta) {
-      if (!currentArticleData) return;
-      const docRef = doc(db, "inventory", currentArticleData.id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        let newStock = docSnap.data().stock + delta;
-        if (newStock < 0) newStock = 0;
-        await updateDoc(docRef, { stock: newStock });
-        currentArticleData.stock = newStock;
-        document.getElementById("articleInfo").innerText =
-          "Article : " + currentArticleData.nom + " - Stock actuel : " + newStock;
-      } else {
-        console.error("Erreur : l'article n'existe pas dans Firestore.");
-      }
-    }
-    window.updateStockAndFirestore = updateStockAndFirestore;
+    // Vous pouvez ajouter ici d'autres fonctions si nécessaire
 
-    // Redirection vers la page d'inventaire
-    function goToInventory() {
-      window.location.href = "inventaire.html";
-    }
-    window.goToInventory = goToInventory;
   </script>
 </body>
 </html>
