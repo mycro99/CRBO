@@ -99,7 +99,7 @@
       });
     }
 
-    // Optionnel : Callback pour afficher les erreurs de scan (pour info)
+    // Callback pour afficher les erreurs de scan (pour info)
     function onScanFailure(error) {
       console.warn("Échec du scan : " + error);
     }
@@ -113,7 +113,7 @@
       html5QrcodeScanner = new Html5Qrcode("reader");
       const config = {
         fps: 10,      // images par seconde
-        qrbox: 300,   // zone de détection élargie à 400 pixels
+        qrbox: 300,   // zone de détection fixée à 300 pixels
         videoConstraints: {
           width: { ideal: 1920 },
           height: { ideal: 1080 },
@@ -134,7 +134,6 @@
         messageDiv.innerText = "Erreur lors de l'initialisation : " + err;
       });
     });
-   });
   </script>
- </body>
+</body>
 </html>
