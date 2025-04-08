@@ -59,13 +59,12 @@
           constraints: {
             width: 600,
             height: 400,
-            // Pour desktop l'usage de "environment" peut parfois poser problème.
-            // Si le scanner ne détecte rien, essaie de mettre "user" ici.
+            // Sur mobile, ce paramètre permet d'utiliser la caméra arrière
             facingMode: "environment" 
           }
         },
         decoder: {
-          // On ajoute "ean_13_reader" pour les codes au format EAN-13
+          // Plusieurs lecteurs pour couvrir différents formats de code-barres
           readers: [
             "code_128_reader",
             "ean_13_reader",
@@ -74,17 +73,17 @@
             "code_39_reader",
             "upc_reader"
           ],
-          locate: true // Améliore la détection en localisant le code-barres dans l'image
+          locate: true // Aide Quagga à localiser le code-barres dans l'image
         }
       }, function(err) {
         if (err) {
           console.error("Erreur lors de l'initialisation de Quagga:", err);
           return;
         }
-        console.log("Quagga initialisé avec succès.");
+        console.log("Quagga initialisé avec succès sur mobile.");
         Quagga.start();
       });
-      
+
       // Mapping des codes-barres vers les catégories
       const categoryMapping = {
         consommables: ["00732094314618", "CODE2_CONSOMMABLE", "CODE3_CONSOMMABLE"],
@@ -94,12 +93,12 @@
         garage: ["CODE1_GARAGE"]
       };
 
-      // Callback pour le débogage : log à chaque image traitée (attention, beaucoup de messages dans la console)
+      // Callback de traitement (optionnel) pour observer si des images sont traitées
       Quagga.onProcessed(function(result) {
-        console.log("Image traitée pour le scan");
+        console.log("Image traitée sur mobile...");
       });
 
-      // Lorsqu'un code‑barres est détecté
+      // Lorsque Quagga détecte un code-barres
       Quagga.onDetected(function(result) {
         console.log("Callback onDetected appelé.");
         console.log("Résultat complet :", result);
@@ -112,8 +111,8 @@
         const score = result.codeResult.score || 0;
         console.log("Code détecté : " + code + " (score : " + score + ")");
         
-        // Pour tester, le seuil est temporairement fixé à 0 afin de ne rejeter aucune détection.
-        const threshold = 0.0;
+        // Ici le seuil est fixé à 0.5. Si le score est inférieur, la détection est ignorée.
+        const threshold = 0.5;
         if (score < threshold) {
           console.log("Score trop faible (" + score + " < " + threshold + "), détection ignorée.");
           return;
@@ -133,18 +132,22 @@
         
         if (!category) {
           alert("Aucun article correspondant trouvé pour ce code : " + code);
-          // Redémarre le scanner après un court délai pour permettre un nouveau scan
+          // Relance le scanner après un court délai pour un nouveau scan
           setTimeout(initScanner, 1000);
           return;
         }
         
-        // Redirige vers inventaire.html avec la catégorie et le code en paramètres
+        // Redirige vers la page d'inventaire en passant la catégorie et le code-barres en paramètres
         window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
                                  "&barcode=" + encodeURIComponent(code);
       });
     }
     
-    window.addEventListener('load', initScanner);
+    // Note : Sur certains navigateurs mobiles, il peut être nécessaire d'obtenir une interaction utilisateur
+    // (par exemple via un bouton "Démarrer le scan") pour accéder à la caméra.
+    window.addEventListener('load', function(){
+      initScanner();
+    });
   </script>
 </body>
 </html>
