@@ -2,38 +2,29 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Débogage Scanner avec Quagga2 Version 1.2.7</title>
+  <title>Scanner de code‑barres avec html5‑qrcode</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Roboto', sans-serif;
-      margin: 0;
-      padding: 20px;
       background: #f5f5f5;
+      padding: 20px;
       color: #333;
     }
     h1 {
       text-align: center;
       color: #dc3545;
     }
-    /* Conteneur pour le flux vidéo */
-    #scanner-container {
-      position: relative;
+    #reader {
       width: 100%;
       max-width: 600px;
-      margin: 20px auto;
-      border: 2px solid #dc3545;
-      border-radius: 6px;
-      overflow: hidden;
-      background: #000;
+      margin: 0 auto;
     }
-    #scanner-container video {
-      width: 100%;
-      height: auto;
-      object-fit: cover;
-      display: block;
+    #message {
+      text-align: center;
+      margin-top: 20px;
+      color: #dc3545;
     }
-    /* Bouton de démarrage */
     #start-btn {
       display: block;
       margin: 20px auto;
@@ -45,135 +36,56 @@
       border-radius: 4px;
       cursor: pointer;
     }
-    /* Zone d'affichage des logs */
-    #logContainer {
-      background: #eee;
-      color: #000;
-      font-family: monospace;
-      font-size: 14px;
-      padding: 10px;
-      margin: 20px auto;
-      max-width: 600px;
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-    }
   </style>
 </head>
 <body>
-  <h1>Débogage du scanner avec Quagga2</h1>
-  <div id="scanner-container"></div>
+  <h1>Scanner de code‑barres</h1>
+  <div id="reader"></div>
   <button id="start-btn">Démarrer le scan</button>
-  <h2>Logs</h2>
-  <div id="logContainer"></div>
+  <div id="message"></div>
   
-  <!-- Chargement de Quagga2 version 1.2.7 depuis jsDelivr -->
-  <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.2.7/dist/quagga.min.js"></script>
+  <!-- Chargement de la bibliothèque html5-qrcode depuis un CDN -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <script>
-    // Fonction pour afficher un message dans le conteneur de log et dans la console
-    function writeLog(msg) {
-      const logContainer = document.getElementById("logContainer");
-      const p = document.createElement("p");
-      p.innerText = new Date().toLocaleTimeString() + " - " + msg;
-      logContainer.appendChild(p);
-      console.log(msg);
-    }
-    
-    // Fonction d'initialisation du scanner
-    function initScanner() {
-      writeLog("Initialisation du scanner...");
-      const scannerContainer = document.getElementById("scanner-container");
-      if (!scannerContainer) {
-        writeLog("Erreur : conteneur scanner introuvable");
-        return;
-      }
-      
-      Quagga.init({
-        inputStream: {
-          name: "Live",
-          type: "LiveStream",
-          target: scannerContainer,
-          constraints: {
-            // En supprimant width et height, on laisse le navigateur choisir la résolution optimale.
-            facingMode: "environment" // Utilise la caméra arrière sur mobile
-          }
-        },
-        decoder: {
-          readers: [
-            "code_128_reader",
-            "ean_13_reader",
-            "ean_reader",
-            "ean_8_reader",
-            "code_39_reader",
-            "upc_reader"
-          ]
-          // L'option locate a été omise ici pour simplifier la configuration.
-        }
-      }, function(err) {
-        if (err) {
-          writeLog("Erreur lors de l'initialisation : " + err);
-          return;
-        }
-        writeLog("Scanner initialisé, présentez un code‑barres !");
-        Quagga.start();
-      });
-      
-      // Mapping des codes-barres vers les catégories (à adapter selon vos données)
-      const categoryMapping = {
-        consommables: ["00732094314618", "CODE2_CONSOMMABLE", "CODE3_CONSOMMABLE"],
-        désinfection: ["CODE1_DESINFECTION", "CODE2_DESINFECTION"],
-        divers: ["CODE1_DIVERS"],
-        entretien: ["5400141193657"],
-        garage: ["CODE1_GARAGE"]
-      };
-      
-      // Callback pour chaque image traitée (pour le débogage)
-      Quagga.onProcessed(function(result) {
-        writeLog("Image traitée...");
-      });
-      
-      // Callback lorsqu'un code-barres est détecté
-      Quagga.onDetected(function(result) {
-        writeLog("Détection : " + JSON.stringify(result.codeResult));
-        if (!result || !result.codeResult) {
-          writeLog("Résultat invalide.");
-          return;
-        }
-        const code = result.codeResult.code.trim();
-        const score = result.codeResult.score || 0;
-        writeLog("Code détecté : " + code + ", score : " + score);
-        if (score < 0.5) {
-          writeLog("Score insuffisant, détection ignorée.");
-          return;
-        }
-        Quagga.stop();
-        writeLog("Scanner arrêté.");
-        
-        // Recherche de la catégorie correspondant au code détecté
-        let category = "";
-        for (const cat in categoryMapping) {
-          if (categoryMapping[cat].includes(code)) {
-            category = cat;
-            break;
-          }
-        }
-        if (!category) {
-          alert("Aucun article correspondant trouvé pour le code : " + code);
-          setTimeout(initScanner, 1000);
-          return;
-        }
-        window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
-                                 "&barcode=" + encodeURIComponent(code);
+    const startBtn = document.getElementById("start-btn");
+    const messageDiv = document.getElementById("message");
+    let html5QrcodeScanner;
+
+    // Callback appelé lorsqu'un code est détecté
+    function onScanSuccess(decodedText, decodedResult) {
+      messageDiv.innerText = "Code détecté : " + decodedText;
+      // Arrêter le scanner
+      html5QrcodeScanner.clear().then(_ => {
+        // Ici, tu peux rediriger vers inventaire.html avec le code détecté
+        window.location.href = "inventaire.html?barcode=" + encodeURIComponent(decodedText);
+      }).catch(err => {
+        messageDiv.innerText = "Erreur à l'arrêt du scanner : " + err;
       });
     }
-    
-    // Lancement via le bouton de démarrage
-    document.addEventListener("DOMContentLoaded", function(){
-      const startBtn = document.getElementById("start-btn");
-      startBtn.addEventListener("click", function(){
-        startBtn.style.display = "none";
-        writeLog("Démarrage du scan sur clic.");
-        initScanner();
+
+    // Callback appelé en cas d'échec (optionnel, pour info)
+    function onScanFailure(error) {
+      // Par exemple, ignorer l'erreur ou afficher un message temporaire
+      console.warn(`Échec du scan : ${error}`);
+    }
+
+    // Démarrage du scan via le clic sur le bouton
+    startBtn.addEventListener("click", function(){
+      startBtn.style.display = "none";
+      messageDiv.innerText = "Initialisation du scanner…";
+      
+      // Instanciation du scanner dans le conteneur "reader"
+      html5QrcodeScanner = new Html5Qrcode("reader");
+      const config = { fps: 10, qrbox: 250, rememberLastUsedCamera: true };
+      html5QrcodeScanner.start(
+        { facingMode: "environment" }, // pour utiliser la caméra arrière sur mobile
+        config,
+        onScanSuccess,
+        onScanFailure
+      ).then(() => {
+        messageDiv.innerText = "Scanner initialisé. Présentez un code‑barres.";
+      }).catch(err => {
+        messageDiv.innerText = "Erreur lors de l'initialisation : " + err;
       });
     });
   </script>
