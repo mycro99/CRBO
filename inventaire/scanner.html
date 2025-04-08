@@ -62,6 +62,12 @@
       entretien: ["5400141193657"],
       garage: ["CODE1_GARAGE"]
     };
+    // Fonction de normalisation qui extrait tous les chiffres d'une chaîne
+    function normalizeBarcode(rawCode) {
+      if (!rawCode) return "";
+      const matches = rawCode.match(/\d+/g);
+      return matches ? matches.join('') : "";
+    }
 
     // Fonction de mapping pour déterminer la catégorie en fonction du code scanné
     function mapCodeToCategory(scannedCode) {
