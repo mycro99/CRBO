@@ -110,7 +110,12 @@
       html5QrcodeScanner = new Html5Qrcode("reader");
       const config = {
         fps: 10,      // images par seconde
-        qrbox: 400,   // zone de détection élargie à 400 pixels
+        qrbox: 300,   // zone de détection élargie à 400 pixels
+        videoConstraints: {
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          facingMode: "environment"
+        },
         rememberLastUsedCamera: true
       };
 
