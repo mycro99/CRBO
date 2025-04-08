@@ -134,6 +134,24 @@
         messageDiv.innerText = "Erreur lors de l'initialisation : " + err;
       });
     });
+    
+    document.getElementById("reader").addEventListener("click", function(){
+  const video = document.querySelector("#reader video");
+  if(video && video.srcObject) {
+    const track = video.srcObject.getVideoTracks()[0];
+    if (track && track.applyConstraints) {
+      track.applyConstraints({
+        advanced: [{ focusMode: "single-shot" }]
+      }).then(() => {
+        console.log("Focus déclenché par clic.");
+      }).catch((err) => {
+        console.error("Erreur lors du déclenchement du focus :", err);
+      });
+    } else {
+      console.warn("La piste vidéo ne supporte pas applyConstraints.");
+    }
+  }
+});
   </script>
 </body>
 </html>
