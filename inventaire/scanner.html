@@ -32,7 +32,7 @@
       width: 100%;
       height: auto;
       object-fit: cover;
-      display: block !important; /* Forcer l'affichage */
+      display: block !important;
     }
   </style>
 </head>
@@ -44,7 +44,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <script>
     function initScanner() {
-      // Vérifie que le conteneur est présent
       const scannerContainer = document.querySelector('#scanner-container');
       console.log("Conteneur trouvé :", scannerContainer);
       if (!scannerContainer) {
@@ -60,12 +59,13 @@
           constraints: {
             width: 600,
             height: 400,
-            // Pour tester sur desktop, tu peux utiliser "user". Sur mobile, utilise "environment".
+            // Pour desktop l'usage de "environment" peut parfois poser problème.
+            // Si le scanner ne détecte rien, essaie de mettre "user" ici.
             facingMode: "environment" 
           }
         },
         decoder: {
-          // Ajout de "ean_13_reader" pour s'assurer de détecter les codes au format EAN-13
+          // On ajoute "ean_13_reader" pour les codes au format EAN-13
           readers: [
             "code_128_reader",
             "ean_13_reader",
@@ -74,7 +74,7 @@
             "code_39_reader",
             "upc_reader"
           ],
-          locate: true // Active la localisation, ce qui peut aider à la détection
+          locate: true // Améliore la détection en localisant le code-barres dans l'image
         }
       }, function(err) {
         if (err) {
@@ -94,19 +94,28 @@
         garage: ["CODE1_GARAGE"]
       };
 
+      // Callback pour le débogage : log à chaque image traitée (attention, beaucoup de messages dans la console)
+      Quagga.onProcessed(function(result) {
+        console.log("Image traitée pour le scan");
+      });
+
       // Lorsqu'un code‑barres est détecté
       Quagga.onDetected(function(result) {
+        console.log("Callback onDetected appelé.");
+        console.log("Résultat complet :", result);
         if (!result || !result.codeResult) {
+          console.log("Résultat invalide ou absent.");
           return;
         }
-        // Normalisation et vérification du score de confiance
+        
         const code = result.codeResult.code.trim();
         const score = result.codeResult.score || 0;
-        console.log("Code détecté: " + code + " avec score: " + score);
+        console.log("Code détecté : " + code + " (score : " + score + ")");
         
-        // Seuil à ajuster selon vos tests ; ici on accepte uniquement les lectures avec un score >= 0.5
-        if (score < 0.5) {
-          console.log("Détection de faible qualité (score < 0.5), on continue le scan.");
+        // Pour tester, le seuil est temporairement fixé à 0 afin de ne rejeter aucune détection.
+        const threshold = 0.0;
+        if (score < threshold) {
+          console.log("Score trop faible (" + score + " < " + threshold + "), détection ignorée.");
           return;
         }
         
@@ -124,12 +133,12 @@
         
         if (!category) {
           alert("Aucun article correspondant trouvé pour ce code : " + code);
-          // Redémarre le scanner pour réessayer après un court délai
+          // Redémarre le scanner après un court délai pour permettre un nouveau scan
           setTimeout(initScanner, 1000);
           return;
         }
         
-        // Redirige vers inventaire.html en passant la catégorie et le code‑barres dans l'URL
+        // Redirige vers inventaire.html avec la catégorie et le code en paramètres
         window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
                                  "&barcode=" + encodeURIComponent(code);
       });
