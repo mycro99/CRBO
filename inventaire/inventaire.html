@@ -199,7 +199,7 @@
         </tr>
       </thead>
       <tbody id="inventoryTable">
-        <!-- Exemple d'articles -->
+        <!-- Exemple d'articles pour la catégorie consommables -->
         <tr class="category-header" data-category="consommables" onclick="toggleCategory('consommables')">
           <td colspan="5">Consommables <span id="toggle-consommables" style="float:right;">[+]</span></td>
         </tr>
@@ -1802,104 +1802,76 @@
     </div>
   </div>
   
-  <!-- Inclusion de jsPDF et html2canvas -->
+  <!-- Inclusions de jsPDF et html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
-  <!-- Fonctions d'interface -->
+  <!-- Fonctions d'interface (expand, collapse, toggle, search, etc.) -->
   <script>
-    // Mise à jour de la quantité en stock (fonction locale)
-    function updateStock(articleId, change) {
-  updateStockFirestoreModule(articleId, change);
-}
-    window.updateStock = updateStock;
-    
-    // Bascule l'affichage d'une catégorie
+    // Bascule l'affichage d'une catégorie via le header
     function toggleCategory(category) {
-      var rows = document.getElementsByClassName(category);
-      var toggleSpan = document.getElementById("toggle-" + category);
-      for (var i = 0; i < rows.length; i++) {
-        rows[i].style.display = (rows[i].style.display === "none") ? "" : "none";
+      const rows = document.getElementsByClassName(category);
+      const toggleSpan = document.getElementById("toggle-" + category);
+      for (let i = 0; i < rows.length; i++) {
+        rows[i].style.display = (rows[i].style.display === "none") ? "table-row" : "none";
       }
       toggleSpan.textContent = (toggleSpan.textContent === "[+]") ? "[-]" : "[+]";
     }
     window.toggleCategory = toggleCategory;
     
-    // Étend toutes les catégories
+    // Affiche toutes les lignes
     function expandAll() {
-      var articleRows = document.querySelectorAll(".article-row");
-      articleRows.forEach(function(row) {
-        row.style.display = "";
-      });
-      var toggleSpans = document.querySelectorAll('[id^="toggle-"]');
-      toggleSpans.forEach(function(span) {
-        span.textContent = "[-]";
-      });
+      const articleRows = document.querySelectorAll(".article-row");
+      articleRows.forEach(row => row.style.display = "table-row");
+      const toggleSpans = document.querySelectorAll('[id^="toggle-"]');
+      toggleSpans.forEach(span => span.textContent = "[-]");
     }
     window.expandAll = expandAll;
     
-    // Replie toutes les catégories
+    // Cache toutes les lignes
     function collapseAll() {
-      var articleRows = document.querySelectorAll(".article-row");
-      articleRows.forEach(function(row) {
-        row.style.display = "none";
-      });
-      var toggleSpans = document.querySelectorAll('[id^="toggle-"]');
-      toggleSpans.forEach(function(span) {
-        span.textContent = "[+]";
-      });
+      const articleRows = document.querySelectorAll(".article-row");
+      articleRows.forEach(row => row.style.display = "none");
+      const toggleSpans = document.querySelectorAll('[id^="toggle-"]');
+      toggleSpans.forEach(span => span.textContent = "[+]");
     }
     window.collapseAll = collapseAll;
     
-    // Filtre les articles selon le texte recherché
+    // Recherche d'articles
     function searchArticles() {
-      var filter = document.getElementById("searchInput").value.toUpperCase();
-      var articleRows = document.querySelectorAll(".article-row");
-      articleRows.forEach(function(row) {
-        var cell = row.cells[0];
+      const filter = document.getElementById("searchInput").value.toUpperCase();
+      const articleRows = document.querySelectorAll(".article-row");
+      articleRows.forEach(row => {
+        const cell = row.cells[0];
         if (cell) {
-          var txtValue = cell.textContent || cell.innerText;
-          row.style.display = (txtValue.toUpperCase().indexOf(filter) > -1) ? "" : "none";
+          const txtValue = cell.textContent || cell.innerText;
+          row.style.display = (txtValue.toUpperCase().includes(filter)) ? "table-row" : "none";
         }
-      });
-      var categoryHeaders = document.querySelectorAll(".category-header");
-      categoryHeaders.forEach(function(header) {
-        var category = header.getAttribute("data-category");
-        var rows = document.querySelectorAll(".article-row." + category);
-        var anyVisible = false;
-        rows.forEach(function(row) {
-          if (row.style.display !== "none") {
-            anyVisible = true;
-          }
-        });
-        header.style.display = anyVisible ? "" : "none";
       });
     }
     window.searchArticles = searchArticles;
     
-    // Affiche le popup des articles à recommander
+    // Affiche le modal des recommandations
     function showRecommendations() {
-      var articleRows = document.querySelectorAll(".article-row");
-      var recommendations = [];
-      articleRows.forEach(function(row) {
-        var cells = row.getElementsByTagName("td");
-        if(cells.length >= 4) {
-          var nom = cells[0].innerText;
-          var stock = parseInt(cells[2].innerText);
-          var min = parseInt(cells[3].innerText);
-          if(stock <= min) {
+      const articleRows = document.querySelectorAll(".article-row");
+      const recommendations = [];
+      articleRows.forEach(row => {
+        const cells = row.getElementsByTagName("td");
+        if (cells.length >= 4) {
+          const nom = cells[0].innerText;
+          const stock = parseInt(cells[2].innerText);
+          const min = parseInt(cells[3].innerText);
+          if (stock <= min) {
             recommendations.push(nom + " (Stock: " + stock + " / Min: " + min + ")");
           }
         }
       });
-      var recommendationList = document.getElementById("recommendationList");
-      if(recommendations.length === 0) {
+      const recommendationList = document.getElementById("recommendationList");
+      if (recommendations.length === 0) {
         recommendationList.innerHTML = "<p>Aucun article à recommander.</p>";
       } else {
-        var htmlList = "<ul>";
-        recommendations.forEach(function(item) {
-          htmlList += "<li>" + item + "</li>";
-        });
+        let htmlList = "<ul>";
+        recommendations.forEach(item => htmlList += "<li>" + item + "</li>");
         htmlList += "</ul>";
         recommendationList.innerHTML = htmlList;
       }
@@ -1912,26 +1884,19 @@
     }
     window.closeRecommendations = closeRecommendations;
     
-    // Ferme le modal en cliquant à côté du contenu
-    document.getElementById("recommandationModal").addEventListener("click", function(e) {
-      if(e.target === this) {
-        closeRecommendations();
-      }
-    });
-    
-    // Gestion du scanner
+    // Ouvre le scanner (redirection vers scanner.html)
     function openScanner() {
       window.location.href = "scanner.html";
     }
     window.openScanner = openScanner;
     
-    // Génère un PDF de l'intégralité du contenu
+    // Génère le PDF de l'inventaire complet
     function generatePDF() {
-      const element = document.getElementById('pdfContent');
+      const element = document.getElementById("pdfContent");
       html2canvas(element, { useCORS: true, scale: 1, allowTaint: true }).then(canvas => {
         const imgData = canvas.toDataURL("image/jpeg", 0.7);
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdf = new jsPDF("p", "mm", "a4");
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
         const imgProps = pdf.getImageProperties(imgData);
@@ -1939,12 +1904,12 @@
         const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
         let heightLeft = imgHeight;
         let position = 0;
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
         while (heightLeft > 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
-          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
         }
         pdf.save("inventaire_reserve.pdf");
@@ -1952,19 +1917,19 @@
     }
     window.generatePDF = generatePDF;
     
-    // Génère un PDF de la pop-up "À recommander"
+    // Génère un PDF pour le modal recommandations
     function generatePDFRecommendations() {
-      const element = document.getElementById('recommandationContent');
+      const element = document.getElementById("recommandationContent");
       const originalMaxHeight = element.style.maxHeight;
       const originalOverflowY = element.style.overflowY;
-      element.style.maxHeight = 'none';
-      element.style.overflowY = 'visible';
+      element.style.maxHeight = "none";
+      element.style.overflowY = "visible";
       html2canvas(element, { useCORS: true, scale: 2 }).then(canvas => {
         element.style.maxHeight = originalMaxHeight;
         element.style.overflowY = originalOverflowY;
         const imgData = canvas.toDataURL("image/jpeg", 1.0);
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdf = new jsPDF("p", "mm", "a4");
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
         const imgProps = pdf.getImageProperties(imgData);
@@ -1972,12 +1937,12 @@
         const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
         let heightLeft = imgHeight;
         let position = 0;
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
         while (heightLeft > 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
-          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
         }
         pdf.save("articles_a_recommander.pdf");
@@ -1986,44 +1951,8 @@
     window.generatePDFRecommendations = generatePDFRecommendations;
   </script>
   
-  <!-- Module Firebase -->
-  <<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  
-  <!-- Script principal avec Firebase -->
- <script>
-    // Fonctions d'affichage (exemple d'extension pour les catégories, recherche, etc.)
-    function expandAll() {
-      document.querySelectorAll(".article-row").forEach(row => row.style.display = "table-row");
-    }
-    function collapseAll() {
-      document.querySelectorAll(".article-row").forEach(row => row.style.display = "none");
-    }
-    function toggleCategory(category) {
-      const rows = document.getElementsByClassName(category);
-      Array.from(rows).forEach(row => {
-        row.style.display = (row.style.display === "none" ? "table-row" : "none");
-      });
-    }
-    function searchArticles() {
-      const filter = document.getElementById("searchInput").value.toUpperCase();
-      document.querySelectorAll(".article-row").forEach(row => {
-        const cell = row.cells[0];
-        if (cell) {
-          const txtValue = cell.textContent || cell.innerText;
-          row.style.display = (txtValue.toUpperCase().includes(filter)) ? "table-row" : "none";
-        }
-      });
-    }
-    window.expandAll = expandAll;
-    window.collapseAll = collapseAll;
-    window.toggleCategory = toggleCategory;
-    window.searchArticles = searchArticles;
-  </script>
-  
-  <!-- Script Firebase -->
+  <!-- Module Firebase et synchronisation -->
   <script type="module">
-    // Importation des modules Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-analytics.js";
     import {
@@ -2037,7 +1966,6 @@
     } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
 
-    // Configuration Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
       authDomain: "listing-44b2b.firebaseapp.com",
@@ -2048,54 +1976,44 @@
       measurementId: "G-419VVR3NHE"
     };
 
-    // Initialisation de Firebase
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const db = getFirestore(app);
     const auth = getAuth();
 
-    // Fonction qui met à jour ou crée le document dans Firestore
     function updateStockFirestoreModule(productId, delta) {
       const productRef = doc(db, "inventory", productId);
-      // Récupère le document s'il existe déjà
       getDoc(productRef)
-        .then((docSnap) => {
+        .then(docSnap => {
           let currentStock = 0;
           if (docSnap.exists()) {
             currentStock = docSnap.data().stock;
           }
           let newStock = currentStock + delta;
           if (newStock < 0) newStock = 0;
-          // Utilise setDoc avec merge:true pour créer ou mettre à jour
           setDoc(productRef, { stock: newStock }, { merge: true });
         })
-        .catch((error) => {
+        .catch(error => {
           console.error("Erreur lors de la mise à jour du stock:", error);
         });
     }
-
-    // Fonction combinée pour mettre à jour l'affichage et Firestore
+    
     function updateStockAndFirestore(itemId, delta) {
-      // Mise à jour locale (DOM)
       const stockElem = document.getElementById("stock-" + itemId);
       let currentStock = parseInt(stockElem.textContent);
       let newStock = currentStock + delta;
       if (newStock < 0) newStock = 0;
       stockElem.textContent = newStock;
-      
-      // Mise à jour dans Firestore
       updateStockFirestoreModule(itemId, delta);
     }
     window.updateStockAndFirestore = updateStockAndFirestore;
-
-    // Écouteur en temps réel pour synchroniser le tableau avec Firestore
+    
     function loadInventoryFromFirestoreModule() {
       const invCol = collection(db, "inventory");
-      onSnapshot(invCol, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
+      onSnapshot(invCol, snapshot => {
+        snapshot.docChanges().forEach(change => {
           if (change.type === "added" || change.type === "modified") {
             const data = change.doc.data();
-            // On suppose que l'ID du document correspond à l'ID utilisé dans l'attribut data-id
             const stockElem = document.getElementById("stock-" + change.doc.id);
             if (stockElem) {
               stockElem.textContent = data.stock;
@@ -2106,11 +2024,9 @@
     }
     window.loadInventoryFromFirestoreModule = loadInventoryFromFirestoreModule;
 
-    // Vérifie si l'utilisateur est authentifié
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, user => {
       if (user) {
         console.log("Utilisateur authentifié :", user.email);
-        // Lancer la synchronisation en temps réel
         loadInventoryFromFirestoreModule();
       } else {
         console.log("Aucun utilisateur authentifié, redirection vers index.");
@@ -2118,96 +2034,13 @@
       }
     });
   </script>
-    <script>
-  // Une fois le DOM entièrement chargé
-  document.addEventListener("DOMContentLoaded", function() {
-    // Récupère le paramètre 'barcode' dans l'URL
-    const params = new URLSearchParams(window.location.search);
-    const scannedBarcode = params.get("barcode");
-
-    if (scannedBarcode) {
-      console.log("Code-barres scanné :", scannedBarcode);
-      
-      // Sélectionne toutes les lignes d'article qui possèdent un attribut "data-barcode"
-      const rows = document.querySelectorAll("tr.article-row[data-barcode]");
-      let found = false;
-
-      rows.forEach(row => {
-        const barcode = row.getAttribute("data-barcode");
-        if (barcode === scannedBarcode) {
-          found = true;
-          // Assurez-vous que la ligne soit visible (au cas où elle serait masquée par un repli de catégorie)
-          row.style.display = "table-row";
-
-          // Vous pouvez également "déplier" la catégorie si besoin en appelant votre fonction toggleCategory()
-          // Exemple : si l'attribut data-category de la catégorie concernée n'est pas développé,
-          // vous pouvez déclencher toggleCategory('consommables') ou la catégorie correspondante
-
-          // Pour mettre en évidence l'article, on peut par exemple modifier le style
-          row.style.backgroundColor = "#ffff99"; // surbrillance jaune
-
-          // Faites défiler la page jusqu'à l'article
-          row.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      });
-
-      if (!found) {
-        console.log("Aucun article avec le code-barres " + scannedBarcode + " n'a été trouvé dans le tableau.");
-      }
-    }
-  });
-</script>
-    <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      const params = new URLSearchParams(window.location.search);
-      const scannedBarcode = params.get("barcode");
-      
-      if (scannedBarcode) {
-        console.log("Code‑barres scanné :", scannedBarcode);
-        
-        // Recherche parmi les lignes d'article possédant l'attribut data-barcode
-        const rows = document.querySelectorAll("tr.article-row[data-barcode]");
-        let rowFound = null;
-        
-        rows.forEach(row => {
-          if (row.getAttribute("data-barcode") === scannedBarcode) {
-            rowFound = row;
-          }
-        });
-        
-        if (rowFound) {
-          // Déterminer la catégorie en vérifiant les classes de la ligne
-          let category = null;
-          const possibleCategories = ["consommables", "desinfection", "divers", "entretien", "garage"];
-          possibleCategories.forEach(cat => {
-            if (rowFound.classList.contains(cat)) {
-              category = cat;
-            }
-          });
-          
-          if (category) {
-            openCategory(category);
-          }
-          
-          // Rendre visible et mettre en surbrillance la ligne trouvée
-          rowFound.style.display = "table-row";
-          rowFound.style.backgroundColor = "#ffff99"; // surbrillance jaune
-          
-          // Défilement jusqu'à l'article
-          rowFound.scrollIntoView({ behavior: "smooth", block: "center" });
-        } else {
-          console.log("Aucun article correspondant trouvé pour le code‑barres :", scannedBarcode);
-        }
-      }
-    });
-    
-    // Fonction pour ouvrir (déplier) la catégorie spécifiée
+  
+  <!-- Gestion de l'ouverture basée sur les paramètres URL -->
+  <script>
+    // Fonction pour ouvrir (afficher) tous les articles d'une catégorie et régler le toggle pour qu'il indique "[-]"
     function openCategory(category) {
       const rows = document.querySelectorAll("tr.article-row." + category);
-      rows.forEach(row => {
-        row.style.display = "table-row";
-      });
-      
+      rows.forEach(row => row.style.display = "table-row");
       const header = document.querySelector("tr.category-header[data-category='" + category + "']");
       if (header) {
         const toggleSpan = header.querySelector("span[id^='toggle-']");
@@ -2216,17 +2049,41 @@
         }
       }
     }
+    
+    document.addEventListener("DOMContentLoaded", function() {
+      const params = new URLSearchParams(window.location.search);
+      const scannedBarcode = params.get("barcode");
+      const scannedCategory = params.get("category");
+      
+      if (scannedBarcode) {
+        console.log("Code-barres scanné :", scannedBarcode);
+        const rowFound = document.querySelector(`tr.article-row[data-barcode="${scannedBarcode}"]`);
+        if (rowFound) {
+          // Détermine la catégorie en recherchant dans les classes possibles
+          let category = null;
+          const possibleCategories = ["consommables", "desinfection", "divers", "entretien", "garage"];
+          possibleCategories.forEach(cat => {
+            if (rowFound.classList.contains(cat)) {
+              category = cat;
+            }
+          });
+          if (category) {
+            openCategory(category);
+          }
+          // Affiche et surligne la ligne correspondant au code-barres
+          rowFound.style.display = "table-row";
+          rowFound.style.backgroundColor = "#ffff99";
+          rowFound.scrollIntoView({ behavior: "smooth", block: "center" });
+        } else if (scannedCategory) {
+          // Si aucun article n'est trouvé avec ce code, ouvre la catégorie transmise
+          openCategory(scannedCategory);
+        }
+      }
+      else if (scannedCategory) {
+        // Si aucun code-barres n'est spécifié, mais qu'une catégorie est indiquée, ouvre-la
+        openCategory(scannedCategory);
+      }
+    });
   </script>
-    <script>
-  document.addEventListener("DOMContentLoaded", function() {
-    // Récupère le paramètre "category" dans l'URL
-    const params = new URLSearchParams(window.location.search);
-    const cat = params.get('category');
-    if (cat) {
-      // Appelle ta fonction toggleCategory pour ouvrir la catégorie souhaitée
-      toggleCategory(cat);
-    }
-  });
-</script>
 </body>
 </html>
