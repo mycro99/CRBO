@@ -44,41 +44,76 @@
   <button id="start-btn">Démarrer le scan</button>
   <div id="message"></div>
   
-  <!-- Chargement de la bibliothèque html5-qrcode depuis un CDN -->
+  <!-- Chargement de la bibliothèque html5‑qrcode depuis un CDN -->
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script>
     const startBtn = document.getElementById("start-btn");
     const messageDiv = document.getElementById("message");
     let html5QrcodeScanner;
 
+    // Dictionnaire de correspondance des codes-barres vers les catégories
+    const categoryMapping = {
+      consommables: ["00732094314618", "CODE2_CONSOMMABLE", "CODE3_CONSOMMABLE"],
+      désinfection: ["CODE1_DESINFECTION", "CODE2_DESINFECTION"],
+      divers: ["CODE1_DIVERS"],
+      entretien: ["5400141193657"],
+      garage: ["CODE1_GARAGE"]
+    };
+
+    // Fonction de mapping pour déterminer la catégorie en fonction du code scanné
+    function mapCodeToCategory(scannedCode) {
+      for (let category in categoryMapping) {
+        if (categoryMapping[category].includes(scannedCode)) {
+          return category;
+        }
+      }
+      return "";
+    }
+
     // Callback appelé lorsqu'un code est détecté
     function onScanSuccess(decodedText, decodedResult) {
+      // Affichage du code dans la zone message pour le suivi
       messageDiv.innerText = "Code détecté : " + decodedText;
-      // Arrêter le scanner
-      html5QrcodeScanner.clear().then(_ => {
-        // Ici, tu peux rediriger vers inventaire.html avec le code détecté
-        window.location.href = "inventaire.html?barcode=" + encodeURIComponent(decodedText);
+
+      // Détermination de la catégorie à partir du code scanné
+      const category = mapCodeToCategory(decodedText.trim());
+      if (category === "") {
+        alert("Aucun article correspondant trouvé pour le code : " + decodedText);
+        // Vous pouvez choisir de relancer le scan ici si besoin
+        return;
+      }
+      
+      // Arrêter le scanner et rediriger vers inventaire.html avec le code et la catégorie
+      html5QrcodeScanner.clear().then(() => {
+        // Par exemple, l'URL contient ?category=entretien&barcode=5400141193657
+        window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
+                                 "&barcode=" + encodeURIComponent(decodedText.trim());
       }).catch(err => {
         messageDiv.innerText = "Erreur à l'arrêt du scanner : " + err;
       });
     }
 
-    // Callback appelé en cas d'échec (optionnel, pour info)
+    // Optionnel : Callback pour afficher les erreurs de scan au fur et à mesure
     function onScanFailure(error) {
-      // Par exemple, ignorer l'erreur ou afficher un message temporaire
-      console.warn(`Échec du scan : ${error}`);
+      // Ici, on peut afficher un message dans la console ou ignorer l'erreur
+      console.warn("Échec du scan : " + error);
     }
 
-    // Démarrage du scan via le clic sur le bouton
+    // Démarrage du scan au clic sur le bouton
     startBtn.addEventListener("click", function(){
       startBtn.style.display = "none";
       messageDiv.innerText = "Initialisation du scanner…";
       
       // Instanciation du scanner dans le conteneur "reader"
       html5QrcodeScanner = new Html5Qrcode("reader");
-      const config = { fps: 10, qrbox: 250, rememberLastUsedCamera: true };
+      const config = {
+        fps: 10,      // images par seconde
+        qrbox: 250,   // taille de la zone de scan
+        rememberLastUsedCamera: true
+      };
+
       html5QrcodeScanner.start(
-        { facingMode: "environment" }, // pour utiliser la caméra arrière sur mobile
+        { facingMode: "environment" }, // utilise la caméra arrière
         config,
         onScanSuccess,
         onScanFailure
