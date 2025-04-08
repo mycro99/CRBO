@@ -72,30 +72,32 @@
 
     // Callback appelé lorsqu'un code est détecté
     function onScanSuccess(decodedText, decodedResult) {
-      // Affichage du code dans la zone message pour le suivi
       messageDiv.innerText = "Code détecté : " + decodedText;
-
-      // Détermination de la catégorie à partir du code scanné
-      const category = mapCodeToCategory(decodedText.trim());
+      console.log("Code détecté :", decodedText);
+      
+      const trimmedCode = decodedText.trim();
+      const category = mapCodeToCategory(trimmedCode);
+      
       if (category === "") {
         alert("Aucun article correspondant trouvé pour le code : " + decodedText);
-        // Vous pouvez choisir de relancer le scan ici si besoin
+        // Vous pouvez choisir de relancer le scan ici ou laisser l'utilisateur réessayer
         return;
       }
       
-      // Arrêter le scanner et rediriger vers inventaire.html avec le code et la catégorie
-      html5QrcodeScanner.clear().then(() => {
-        // Par exemple, l'URL contient ?category=entretien&barcode=5400141193657
+      // On arrête le scanner, puis on redirige
+      html5QrcodeScanner.stop().then(() => {
+        console.log("Scanner arrêté, redirection en cours...");
+        messageDiv.innerText = "Scanner arrêté, redirection...";
         window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
-                                 "&barcode=" + encodeURIComponent(decodedText.trim());
+                                 "&barcode=" + encodeURIComponent(trimmedCode);
       }).catch(err => {
+        console.error("Erreur à l'arrêt du scanner :", err);
         messageDiv.innerText = "Erreur à l'arrêt du scanner : " + err;
       });
     }
 
-    // Optionnel : Callback pour afficher les erreurs de scan au fur et à mesure
+    // Optionnel : Callback pour afficher les erreurs de scan (pour info)
     function onScanFailure(error) {
-      // Ici, on peut afficher un message dans la console ou ignorer l'erreur
       console.warn("Échec du scan : " + error);
     }
 
@@ -120,6 +122,7 @@
       ).then(() => {
         messageDiv.innerText = "Scanner initialisé. Présentez un code‑barres.";
       }).catch(err => {
+        console.error("Erreur lors de l'initialisation : ", err);
         messageDiv.innerText = "Erreur lors de l'initialisation : " + err;
       });
     });
