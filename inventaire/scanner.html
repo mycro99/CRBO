@@ -32,18 +32,33 @@
       width: 100%;
       height: auto;
       object-fit: cover;
-      display: block !important;
+      display: block;
+    }
+    /* Bouton de démarrage */
+    #start-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <h1>Scanner de code‑barres</h1>
   <div id="scanner-container"></div>
+  <button id="start-btn">Démarrer le scan</button>
   
   <!-- Inclusion de QuaggaJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <script>
     function initScanner() {
+      // Cache le bouton de démarrage après le clic
+      document.getElementById('start-btn').style.display = 'none';
       const scannerContainer = document.querySelector('#scanner-container');
       console.log("Conteneur trouvé :", scannerContainer);
       if (!scannerContainer) {
@@ -59,8 +74,7 @@
           constraints: {
             width: 600,
             height: 400,
-            // Sur mobile, ce paramètre permet d'utiliser la caméra arrière
-            facingMode: "environment" 
+            facingMode: "environment" // Utilise la caméra arrière sur mobile
           }
         },
         decoder: {
@@ -73,7 +87,7 @@
             "code_39_reader",
             "upc_reader"
           ],
-          locate: true // Aide Quagga à localiser le code-barres dans l'image
+          locate: true
         }
       }, function(err) {
         if (err) {
@@ -83,7 +97,7 @@
         console.log("Quagga initialisé avec succès sur mobile.");
         Quagga.start();
       });
-
+      
       // Mapping des codes-barres vers les catégories
       const categoryMapping = {
         consommables: ["00732094314618", "CODE2_CONSOMMABLE", "CODE3_CONSOMMABLE"],
@@ -93,12 +107,12 @@
         garage: ["CODE1_GARAGE"]
       };
 
-      // Callback de traitement (optionnel) pour observer si des images sont traitées
+      // Callback qui se déclenche à chaque traitement d'image (utile pour le debug)
       Quagga.onProcessed(function(result) {
         console.log("Image traitée sur mobile...");
       });
 
-      // Lorsque Quagga détecte un code-barres
+      // Callback appelé quand un code-barres est détecté
       Quagga.onDetected(function(result) {
         console.log("Callback onDetected appelé.");
         console.log("Résultat complet :", result);
@@ -111,7 +125,7 @@
         const score = result.codeResult.score || 0;
         console.log("Code détecté : " + code + " (score : " + score + ")");
         
-        // Ici le seuil est fixé à 0.5. Si le score est inférieur, la détection est ignorée.
+        // Définition d'un seuil de confiance de 0.5
         const threshold = 0.5;
         if (score < threshold) {
           console.log("Score trop faible (" + score + " < " + threshold + "), détection ignorée.");
@@ -132,7 +146,7 @@
         
         if (!category) {
           alert("Aucun article correspondant trouvé pour ce code : " + code);
-          // Relance le scanner après un court délai pour un nouveau scan
+          // Redémarre le scanner après un court délai pour un nouveau scan
           setTimeout(initScanner, 1000);
           return;
         }
@@ -143,10 +157,11 @@
       });
     }
     
-    // Note : Sur certains navigateurs mobiles, il peut être nécessaire d'obtenir une interaction utilisateur
-    // (par exemple via un bouton "Démarrer le scan") pour accéder à la caméra.
-    window.addEventListener('load', function(){
-      initScanner();
+    // Au chargement de la page, ajoute un écouteur sur le bouton
+    document.addEventListener('DOMContentLoaded', function(){
+      document.getElementById('start-btn').addEventListener('click', function(){
+        initScanner();
+      });
     });
   </script>
 </body>
