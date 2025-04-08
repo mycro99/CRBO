@@ -55,25 +55,45 @@
     let html5QrcodeScanner;
 
     // Dictionnaire de correspondance des codes-barres vers les catégories
+    // Pour faciliter la comparaison, il est conseillé de stocker dans votre mapping
+    // les codes déjà normalisés (ici, uniquement des chiffres dans le bon ordre)
     const categoryMapping = {
-      consommables: ["4015630006038","00732094314618", "070454320679100124", "CODE3_CONSOMMABLE"],
+      consommables: ["4015630006038", "00732094314618", "070454320679100124", "CODE3_CONSOMMABLE"],
       désinfection: ["CODE1_DESINFECTION", "CODE2_DESINFECTION"],
       divers: ["CODE1_DIVERS"],
       entretien: ["5400141193657"],
       garage: ["CODE1_GARAGE"]
     };
-    // Fonction de normalisation qui extrait tous les chiffres d'une chaîne
+
+    /**
+     * Cette fonction tente d'extraire un code GS1-128 à partir d'une chaîne brute.
+     * Si la chaîne contient les identificateurs d'application "(01)" et "(10)",
+     * elle renvoie la concaténation des 14 chiffres suivant "(01)" et des 4 premiers chiffres suivant "(10)".
+     * Sinon, elle supprime tous les caractères non numériques.
+     */
     function normalizeBarcode(rawCode) {
-      if (!rawCode) return "";
-      const matches = rawCode.match(/\d+/g);
-      return matches ? matches.join('') : "";
+      // Première tentative : rechercher un code au format GS1-128
+      let match = rawCode.match(/\(01\)(\d{14})\(10\)(\d{1,20})/);
+      if(match) {
+        // On renvoie la partie GTIN (14 chiffres) suivie des 4 premiers chiffres du numéro de lot.
+        return match[1] + match[2].substring(0, 4);
+      }
+      // Sinon, on supprime tout caractère non numérique.
+      // Vous pouvez ici adapter la règle (par exemple, si vous souhaitez forcer une longueur donnée).
+      let digits = rawCode.replace(/\D/g, "");
+      return digits;
     }
 
-    // Fonction de mapping pour déterminer la catégorie en fonction du code scanné
+    // Fonction de mapping : on compare le code scanné normalisé avec chacun des codes du mapping,
+    // en appliquant la normalisation aux deux côtés pour éviter les problèmes de format.
     function mapCodeToCategory(scannedCode) {
+      // On suppose que scannedCode est déjà normalisé (uniquement des chiffres)
       for (let category in categoryMapping) {
-        if (categoryMapping[category].includes(scannedCode)) {
-          return category;
+        for (let code of categoryMapping[category]) {
+          // On normalise le code stocké pour comparaison
+          if (normalizeBarcode(code) === scannedCode) {
+            return category;
+          }
         }
       }
       return "";
@@ -81,15 +101,16 @@
 
     // Callback appelé lorsqu'un code est détecté
     function onScanSuccess(decodedText, decodedResult) {
-      messageDiv.innerText = "Code détecté : " + decodedText;
-      console.log("Code détecté :", decodedText);
+      // Normalisation du code scanné
+      const normalizedCode = normalizeBarcode(decodedText);
+      messageDiv.innerText = "Code détecté (normalisé) : " + normalizedCode;
+      console.log("Code détecté (normalisé) :", normalizedCode);
       
-      const trimmedCode = decodedText.trim();
-      const category = mapCodeToCategory(trimmedCode);
+      const category = mapCodeToCategory(normalizedCode);
       
       if (category === "") {
-        alert("Aucun article correspondant trouvé pour le code : " + decodedText);
-        // Vous pouvez choisir de relancer le scan ici ou laisser l'utilisateur réessayer
+        alert("Aucun article correspondant trouvé pour le code : " + normalizedCode);
+        // Vous pouvez relancer le scan ici si besoin
         return;
       }
       
@@ -98,7 +119,7 @@
         console.log("Scanner arrêté, redirection en cours...");
         messageDiv.innerText = "Scanner arrêté, redirection...";
         window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
-                                 "&barcode=" + encodeURIComponent(trimmedCode);
+                                 "&barcode=" + encodeURIComponent(normalizedCode);
       }).catch(err => {
         console.error("Erreur à l'arrêt du scanner :", err);
         messageDiv.innerText = "Erreur à l'arrêt du scanner : " + err;
@@ -115,7 +136,6 @@
       startBtn.style.display = "none";
       messageDiv.innerText = "Initialisation du scanner…";
       
-      // Instanciation du scanner dans le conteneur "reader"
       html5QrcodeScanner = new Html5Qrcode("reader");
       const config = {
         fps: 10,      // images par seconde
@@ -129,7 +149,7 @@
       };
 
       html5QrcodeScanner.start(
-        { facingMode: "environment" }, // utilise la caméra arrière
+        { facingMode: "environment" },
         config,
         onScanSuccess,
         onScanFailure
