@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Scanner avec Quagga2 - Inventaire CS Oupeye</title>
+  <title>Débogage Scanner avec Quagga2 Version 1.2.7</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
   <style>
     body {
@@ -67,8 +67,8 @@
   <h2>Logs</h2>
   <div id="logContainer"></div>
   
-  <!-- Chargement de Quagga2 version 1.2.5 depuis un CDN -->
-  <script src="https://unpkg.com/@ericblade/quagga2@1.2.5/dist/quagga.min.js"></script>
+  <!-- Chargement de Quagga2 version 1.2.7 depuis jsDelivr -->
+  <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.2.7/dist/quagga.min.js"></script>
   <script>
     // Fonction pour afficher un message dans le conteneur de log et dans la console
     function writeLog(msg) {
@@ -78,7 +78,7 @@
       logContainer.appendChild(p);
       console.log(msg);
     }
-
+    
     // Fonction d'initialisation du scanner
     function initScanner() {
       writeLog("Initialisation du scanner...");
@@ -94,13 +94,11 @@
           type: "LiveStream",
           target: scannerContainer,
           constraints: {
-            width: 600,
-            height: 400,
+            // En supprimant width et height, on laisse le navigateur choisir la résolution optimale.
             facingMode: "environment" // Utilise la caméra arrière sur mobile
           }
         },
         decoder: {
-          // Nous utilisons ici les lecteurs les plus fréquents
           readers: [
             "code_128_reader",
             "ean_13_reader",
@@ -109,7 +107,7 @@
             "code_39_reader",
             "upc_reader"
           ]
-          // OPTION: On a retiré l'option locate: true en test
+          // L'option locate a été omise ici pour simplifier la configuration.
         }
       }, function(err) {
         if (err) {
@@ -120,7 +118,7 @@
         Quagga.start();
       });
       
-      // Mapping des codes-barres vers les catégories
+      // Mapping des codes-barres vers les catégories (à adapter selon vos données)
       const categoryMapping = {
         consommables: ["00732094314618", "CODE2_CONSOMMABLE", "CODE3_CONSOMMABLE"],
         désinfection: ["CODE1_DESINFECTION", "CODE2_DESINFECTION"],
@@ -151,6 +149,7 @@
         Quagga.stop();
         writeLog("Scanner arrêté.");
         
+        // Recherche de la catégorie correspondant au code détecté
         let category = "";
         for (const cat in categoryMapping) {
           if (categoryMapping[cat].includes(code)) {
@@ -163,17 +162,16 @@
           setTimeout(initScanner, 1000);
           return;
         }
-        
         window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
                                  "&barcode=" + encodeURIComponent(code);
       });
     }
     
-    // Démarrage via le bouton
+    // Lancement via le bouton de démarrage
     document.addEventListener("DOMContentLoaded", function(){
       const startBtn = document.getElementById("start-btn");
       startBtn.addEventListener("click", function(){
-        this.style.display = "none";
+        startBtn.style.display = "none";
         writeLog("Démarrage du scan sur clic.");
         initScanner();
       });
