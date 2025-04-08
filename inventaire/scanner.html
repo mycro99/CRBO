@@ -46,23 +46,37 @@
       border-radius: 4px;
       cursor: pointer;
     }
+    /* Zone pour afficher des messages */
+    #message {
+      text-align: center;
+      margin-top: 10px;
+      color: #dc3545;
+    }
   </style>
 </head>
 <body>
   <h1>Scanner de code‑barres</h1>
   <div id="scanner-container"></div>
   <button id="start-btn">Démarrer le scan</button>
+  <div id="message"></div>
   
   <!-- Inclusion de QuaggaJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <script>
+    // Fonction pour afficher des messages sur la page et dans la console
+    function showMessage(msg) {
+      const msgDiv = document.getElementById('message');
+      msgDiv.innerText = msg;
+      console.log(msg);
+    }
+
+    // Fonction d'initialisation du scanner
     function initScanner() {
-      // Cache le bouton de démarrage après le clic
-      document.getElementById('start-btn').style.display = 'none';
+      showMessage("Initialisation du scanner...");
       const scannerContainer = document.querySelector('#scanner-container');
       console.log("Conteneur trouvé :", scannerContainer);
       if (!scannerContainer) {
-        console.error("Le conteneur #scanner-container est introuvable.");
+        showMessage("Le conteneur #scanner-container est introuvable.");
         return;
       }
       
@@ -78,7 +92,6 @@
           }
         },
         decoder: {
-          // Plusieurs lecteurs pour couvrir différents formats de code-barres
           readers: [
             "code_128_reader",
             "ean_13_reader",
@@ -92,9 +105,11 @@
       }, function(err) {
         if (err) {
           console.error("Erreur lors de l'initialisation de Quagga:", err);
+          showMessage("Erreur lors de l'initialisation du scanner : " + err);
           return;
         }
         console.log("Quagga initialisé avec succès sur mobile.");
+        showMessage("Scanner initialisé. Présentez le code-barres !");
         Quagga.start();
       });
       
@@ -107,7 +122,7 @@
         garage: ["CODE1_GARAGE"]
       };
 
-      // Callback qui se déclenche à chaque traitement d'image (utile pour le debug)
+      // Callback pour indiquer qu'une image a été traitée (pour le debug)
       Quagga.onProcessed(function(result) {
         console.log("Image traitée sur mobile...");
       });
@@ -120,12 +135,11 @@
           console.log("Résultat invalide ou absent.");
           return;
         }
-        
         const code = result.codeResult.code.trim();
         const score = result.codeResult.score || 0;
         console.log("Code détecté : " + code + " (score : " + score + ")");
         
-        // Définition d'un seuil de confiance de 0.5
+        // Seuil de confiance fixé à 0.5
         const threshold = 0.5;
         if (score < threshold) {
           console.log("Score trop faible (" + score + " < " + threshold + "), détection ignorée.");
@@ -151,15 +165,18 @@
           return;
         }
         
-        // Redirige vers la page d'inventaire en passant la catégorie et le code-barres en paramètres
+        // Redirige vers l'inventaire en passant la catégorie et le code-barres en paramètres
         window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
                                  "&barcode=" + encodeURIComponent(code);
       });
     }
     
-    // Au chargement de la page, ajoute un écouteur sur le bouton
+    // Ajout d'un écouteur pour le bouton qui démarre le scanner
     document.addEventListener('DOMContentLoaded', function(){
-      document.getElementById('start-btn').addEventListener('click', function(){
+      const startButton = document.getElementById('start-btn');
+      startButton.addEventListener('click', function(){
+        console.log("Bouton 'Démarrer le scan' cliqué.");
+        startButton.style.display = 'none';
         initScanner();
       });
     });
