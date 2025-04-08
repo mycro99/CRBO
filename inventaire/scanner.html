@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Scanner - Inventaire CS Oupeye</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #dc3545;
+    }
+    /* Conteneur pour le flux vidéo */
+    #scanner-container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin: 20px auto;
+      border: 2px solid #dc3545;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #000; /* Fond noir pour la zone de capture */
+    }
+    /* La vidéo s'ajuste au conteneur */
+    #scanner-container video {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      display: block !important; /* Forcer l'affichage */
+    }
+  </style>
+</head>
+<body>
+  <h1>Scanner de code‑barres</h1>
+  <div id="scanner-container"></div>
+  
+  <!-- Inclusion de QuaggaJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+  <script>
+    function initScanner() {
+      // Vérifie que le conteneur est présent
+      const scannerContainer = document.querySelector('#scanner-container');
+      console.log("Conteneur trouvé :", scannerContainer);
+      if (!scannerContainer) {
+        console.error("Le conteneur #scanner-container est introuvable.");
+        return;
+      }
+      
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: scannerContainer,
+          constraints: {
+            width: 600,
+            height: 400,
+            // Pour tester sur desktop, tu peux utiliser "user". Sur mobile, utilise "environment".
+            facingMode: "environment" 
+          }
+        },
+        decoder: {
+          // Ajout de "ean_13_reader" pour s'assurer de détecter les codes au format EAN-13
+          readers: [
+            "code_128_reader",
+            "ean_13_reader",
+            "ean_reader",
+            "ean_8_reader",
+            "code_39_reader",
+            "upc_reader"
+          ],
+          locate: true // Active la localisation, ce qui peut aider à la détection
+        }
+      }, function(err) {
+        if (err) {
+          console.error("Erreur lors de l'initialisation de Quagga:", err);
+          return;
+        }
+        console.log("Quagga initialisé avec succès.");
+        Quagga.start();
+      });
+      
+      // Mapping des codes-barres vers les catégories
+      const categoryMapping = {
+        consommables: ["00732094314618", "CODE2_CONSOMMABLE", "CODE3_CONSOMMABLE"],
+        désinfection: ["CODE1_DESINFECTION", "CODE2_DESINFECTION"],
+        divers: ["CODE1_DIVERS"],
+        entretien: ["5400141193657"],
+        garage: ["CODE1_GARAGE"]
+      };
+
+      // Lorsqu'un code‑barres est détecté
+      Quagga.onDetected(function(result) {
+        if (!result || !result.codeResult) {
+          return;
+        }
+        // Normalisation et vérification du score de confiance
+        const code = result.codeResult.code.trim();
+        const score = result.codeResult.score || 0;
+        console.log("Code détecté: " + code + " avec score: " + score);
+        
+        // Seuil à ajuster selon vos tests ; ici on accepte uniquement les lectures avec un score >= 0.5
+        if (score < 0.5) {
+          console.log("Détection de faible qualité (score < 0.5), on continue le scan.");
+          return;
+        }
+        
+        // Arrête le scanner pour éviter plusieurs détections
+        Quagga.stop();
+        
+        // Recherche la catégorie correspondant au code détecté
+        let category = "";
+        for (const cat in categoryMapping) {
+          if (categoryMapping[cat].includes(code)) {
+            category = cat;
+            break;
+          }
+        }
+        
+        if (!category) {
+          alert("Aucun article correspondant trouvé pour ce code : " + code);
+          // Redémarre le scanner pour réessayer après un court délai
+          setTimeout(initScanner, 1000);
+          return;
+        }
+        
+        // Redirige vers inventaire.html en passant la catégorie et le code‑barres dans l'URL
+        window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
+                                 "&barcode=" + encodeURIComponent(code);
+      });
+    }
+    
+    window.addEventListener('load', initScanner);
+  </script>
+</body>
+</html>
