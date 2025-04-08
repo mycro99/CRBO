@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Scanner - Inventaire CS Oupeye</title>
+  <title>Scanner avec Quagga2 - Inventaire CS Oupeye</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
   <style>
     body {
@@ -25,9 +25,8 @@
       border: 2px solid #dc3545;
       border-radius: 6px;
       overflow: hidden;
-      background: #000; /* Fond noir pour la zone de capture */
+      background: #000;
     }
-    /* La vidéo s'ajuste au conteneur */
     #scanner-container video {
       width: 100%;
       height: auto;
@@ -46,7 +45,7 @@
       border-radius: 4px;
       cursor: pointer;
     }
-    /* Zone pour afficher des messages */
+    /* Zone de messages sur la page */
     #message {
       text-align: center;
       margin-top: 10px;
@@ -55,28 +54,26 @@
   </style>
 </head>
 <body>
-  <h1>Scanner de code‑barres</h1>
+  <h1>Scanner de code‑barres avec Quagga2</h1>
   <div id="scanner-container"></div>
   <button id="start-btn">Démarrer le scan</button>
   <div id="message"></div>
   
-  <!-- Inclusion de QuaggaJS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+  <!-- Chargement de Quagga2 depuis un CDN -->
+  <script src="https://unpkg.com/@ericblade/quagga2@1.2.6/dist/quagga.min.js"></script>
   <script>
-    // Fonction pour afficher des messages sur la page et dans la console
+    // Fonction pour afficher un message sur la page et dans la console
     function showMessage(msg) {
-      const msgDiv = document.getElementById('message');
-      msgDiv.innerText = msg;
+      document.getElementById('message').innerText = msg;
       console.log(msg);
     }
-
+    
     // Fonction d'initialisation du scanner
     function initScanner() {
       showMessage("Initialisation du scanner...");
-      const scannerContainer = document.querySelector('#scanner-container');
-      console.log("Conteneur trouvé :", scannerContainer);
+      const scannerContainer = document.getElementById('scanner-container');
       if (!scannerContainer) {
-        showMessage("Le conteneur #scanner-container est introuvable.");
+        showMessage("Erreur : le conteneur #scanner-container est introuvable.");
         return;
       }
       
@@ -88,7 +85,8 @@
           constraints: {
             width: 600,
             height: 400,
-            facingMode: "environment" // Utilise la caméra arrière sur mobile
+            // Sur mobile, la caméra arrière est utilisée.
+            facingMode: "environment"
           }
         },
         decoder: {
@@ -100,20 +98,20 @@
             "code_39_reader",
             "upc_reader"
           ],
-          locate: true
+          locate: true // Active la localisation du code-barres dans l'image
         }
       }, function(err) {
         if (err) {
-          console.error("Erreur lors de l'initialisation de Quagga:", err);
-          showMessage("Erreur lors de l'initialisation du scanner : " + err);
+          console.error("Erreur lors de l'initialisation :", err);
+          showMessage("Erreur lors de l'initialisation : " + err);
           return;
         }
-        console.log("Quagga initialisé avec succès sur mobile.");
-        showMessage("Scanner initialisé. Présentez le code-barres !");
+        showMessage("Scanner initialisé. Présentez un code‑barres !");
+        console.log("Quagga2 initialisé avec succès.");
         Quagga.start();
       });
       
-      // Mapping des codes-barres vers les catégories
+      // Mapping des codes-barres vers les catégories (à adapter selon vos données)
       const categoryMapping = {
         consommables: ["00732094314618", "CODE2_CONSOMMABLE", "CODE3_CONSOMMABLE"],
         désinfection: ["CODE1_DESINFECTION", "CODE2_DESINFECTION"],
@@ -121,35 +119,36 @@
         entretien: ["5400141193657"],
         garage: ["CODE1_GARAGE"]
       };
-
-      // Callback pour indiquer qu'une image a été traitée (pour le debug)
+      
+      // Callback appelé pour chaque image traitée (optionnel pour le debug)
       Quagga.onProcessed(function(result) {
-        console.log("Image traitée sur mobile...");
+        console.log("Image traitée...");
       });
-
-      // Callback appelé quand un code-barres est détecté
+      
+      // Callback déclenché lors de la détection d'un code-barres
       Quagga.onDetected(function(result) {
-        console.log("Callback onDetected appelé.");
-        console.log("Résultat complet :", result);
+        console.log("Détection :", result);
         if (!result || !result.codeResult) {
-          console.log("Résultat invalide ou absent.");
+          console.log("Résultat invalide.");
           return;
         }
+        
         const code = result.codeResult.code.trim();
         const score = result.codeResult.score || 0;
-        console.log("Code détecté : " + code + " (score : " + score + ")");
+        console.log("Code détecté :", code, "Score :", score);
         
-        // Seuil de confiance fixé à 0.5
+        // Seuil de validation : ajustez-le selon vos tests
         const threshold = 0.5;
         if (score < threshold) {
-          console.log("Score trop faible (" + score + " < " + threshold + "), détection ignorée.");
+          console.log("Score insuffisant :", score);
           return;
         }
         
         // Arrête le scanner pour éviter plusieurs détections
         Quagga.stop();
+        console.log("Scanner arrêté.");
         
-        // Recherche la catégorie correspondant au code détecté
+        // Recherche de la catégorie correspondante au code détecté
         let category = "";
         for (const cat in categoryMapping) {
           if (categoryMapping[cat].includes(code)) {
@@ -159,24 +158,24 @@
         }
         
         if (!category) {
-          alert("Aucun article correspondant trouvé pour ce code : " + code);
-          // Redémarre le scanner après un court délai pour un nouveau scan
+          alert("Aucun article correspondant trouvé pour le code : " + code);
+          // Relance le scanner après un court délai pour retenter le scan
           setTimeout(initScanner, 1000);
           return;
         }
         
-        // Redirige vers l'inventaire en passant la catégorie et le code-barres en paramètres
+        // Redirige vers la page d'inventaire avec les paramètres correspondant
         window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
                                  "&barcode=" + encodeURIComponent(code);
       });
     }
     
-    // Ajout d'un écouteur pour le bouton qui démarre le scanner
+    // Au chargement de la page, ajoute un écouteur sur le bouton de démarrage
     document.addEventListener('DOMContentLoaded', function(){
-      const startButton = document.getElementById('start-btn');
-      startButton.addEventListener('click', function(){
-        console.log("Bouton 'Démarrer le scan' cliqué.");
-        startButton.style.display = 'none';
+      const startBtn = document.getElementById('start-btn');
+      startBtn.addEventListener('click', function(){
+        startBtn.style.display = 'none'; // Masquer le bouton après le clic
+        showMessage("Démarrage du scan...");
         initScanner();
       });
     });
