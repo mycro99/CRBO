@@ -263,7 +263,7 @@
     <button class="stock-button" onclick="updateStockAndFirestore('consommables-6', -1)">-</button>
   </td>
 </tr>
-<tr class="article-row consommables" data-id="consommables-7" data-barcode="7290011042035, 729001042066" style="display: none;">
+<tr class="article-row consommables" data-id="consommables-7" data-barcode="7290011042035", 729001042066" style="display: none;">
   <td>Bandage israélien</td>
   <td><img src="images/band_isra.jpg" alt="Photo Bandage israélien" width="80"></td>
   <td id="stock-consommables-7">0</td>
@@ -2037,53 +2037,67 @@
   
   <!-- Gestion de l'ouverture basée sur les paramètres URL -->
   <script>
-    // Fonction pour ouvrir (afficher) tous les articles d'une catégorie et régler le toggle pour qu'il indique "[-]"
-    function openCategory(category) {
-      const rows = document.querySelectorAll("tr.article-row." + category);
-      rows.forEach(row => row.style.display = "table-row");
-      const header = document.querySelector("tr.category-header[data-category='" + category + "']");
-      if (header) {
-        const toggleSpan = header.querySelector("span[id^='toggle-']");
-        if (toggleSpan) {
-          toggleSpan.textContent = "[-]";
-        }
+  // Fonction pour ouvrir (afficher) tous les articles d'une catégorie et régler le toggle pour qu'il indique "[-]"
+  function openCategory(category) {
+    const rows = document.querySelectorAll("tr.article-row." + category);
+    rows.forEach(row => row.style.display = "table-row");
+    const header = document.querySelector("tr.category-header[data-category='" + category + "']");
+    if (header) {
+      const toggleSpan = header.querySelector("span[id^='toggle-']");
+      if (toggleSpan) {
+        toggleSpan.textContent = "[-]";
       }
     }
+  }
+  
+  document.addEventListener("DOMContentLoaded", function() {
+    const params = new URLSearchParams(window.location.search);
+    const scannedBarcode = params.get("barcode");
+    const scannedCategory = params.get("category");
     
-    document.addEventListener("DOMContentLoaded", function() {
-      const params = new URLSearchParams(window.location.search);
-      const scannedBarcode = params.get("barcode");
-      const scannedCategory = params.get("category");
+    if (scannedBarcode) {
+      console.log("Code-barres scanné :", scannedBarcode);
       
-      if (scannedBarcode) {
-        console.log("Code-barres scanné :", scannedBarcode);
-        const rowFound = document.querySelector(`tr.article-row[data-barcode="${scannedBarcode}"]`);
-        if (rowFound) {
-          // Détermine la catégorie en recherchant dans les classes possibles
-          let category = null;
-          const possibleCategories = ["consommables", "desinfection", "divers", "entretien", "garage"];
-          possibleCategories.forEach(cat => {
-            if (rowFound.classList.contains(cat)) {
-              category = cat;
-            }
-          });
-          if (category) {
-            openCategory(category);
+      // Parcours de toutes les lignes pour vérifier si l'attribut data-barcode
+      // contient (après découpage) le code scanné
+      let rowFound = null;
+      const articleRows = document.querySelectorAll("tr.article-row");
+      articleRows.forEach(row => {
+        const dataBarcode = row.getAttribute("data-barcode");
+        if (dataBarcode) {
+          // Découper la chaîne et supprimer les espaces éventuels sur chaque code
+          const codes = dataBarcode.split(",").map(code => code.trim());
+          if (codes.includes(scannedBarcode)) {
+            rowFound = row;
           }
-          // Affiche et surligne la ligne correspondant au code-barres
-          rowFound.style.display = "table-row";
-          rowFound.style.backgroundColor = "#ffff99";
-          rowFound.scrollIntoView({ behavior: "smooth", block: "center" });
-        } else if (scannedCategory) {
-          // Si aucun article n'est trouvé avec ce code, ouvre la catégorie transmise
-          openCategory(scannedCategory);
         }
-      }
-      else if (scannedCategory) {
-        // Si aucun code-barres n'est spécifié, mais qu'une catégorie est indiquée, ouvre-la
+      });
+      
+      if (rowFound) {
+        // Déterminer la catégorie de la ligne trouvée
+        let category = null;
+        const possibleCategories = ["consommables", "desinfection", "divers", "entretien", "garage"];
+        possibleCategories.forEach(cat => {
+          if (rowFound.classList.contains(cat)) {
+            category = cat;
+          }
+        });
+        if (category) {
+          openCategory(category);
+        }
+        // Afficher et surligner la ligne correspondant au code-barres
+        rowFound.style.display = "table-row";
+        rowFound.style.backgroundColor = "#ffff99";
+        rowFound.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else if (scannedCategory) {
+        // Si aucun article n'est trouvé avec ce code, ouvrir la catégorie transmise
         openCategory(scannedCategory);
       }
-    });
-  </script>
+    } else if (scannedCategory) {
+      // Si aucun code-barres n'est spécifié, mais qu'une catégorie est indiquée, l'ouvrir
+      openCategory(scannedCategory);
+    }
+  });
+</script>
 </body>
 </html>
