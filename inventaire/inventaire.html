@@ -1901,7 +1901,7 @@
           const nom = cells[0].innerText;
           const stock = parseInt(cells[2].innerText);
           const min = parseInt(cells[3].innerText);
-          if (stock <= min) {
+          if (stock < min) {
             recommendations.push(nom + " (Stock: " + stock + " / Min: " + min + ")");
           }
         }
