@@ -2203,6 +2203,8 @@ window.closeHistory = closeHistory;
       date: serverTimestamp()
     });
 
+    cleanupHistoryLimit();
+
   } catch (error) {
     console.error("Erreur lors de la mise à jour du stock:", error);
   }
