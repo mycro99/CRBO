@@ -2040,22 +2040,69 @@
     const db = getFirestore(app);
     const auth = getAuth();
 
-    function updateStockFirestoreModule(productId, delta) {
-      const productRef = doc(db, "inventory", productId);
-      getDoc(productRef)
-        .then(docSnap => {
-          let currentStock = 0;
-          if (docSnap.exists()) {
-            currentStock = docSnap.data().stock;
-          }
-          let newStock = currentStock + delta;
-          if (newStock < 0) newStock = 0;
-          setDoc(productRef, { stock: newStock }, { merge: true });
-        })
-        .catch(error => {
-          console.error("Erreur lors de la mise à jour du stock:", error);
-        });
+    function getArticleName(productId) {
+      const row = document.querySelector(`tr.article-row[data-id="${productId}"]`);
+
+       if (!row) {
+      return productId;
+  }
+
+    const nameCell = row.querySelector("td");
+
+    if (!nameCell) {
+    return productId;
+  }
+
+    return nameCell.textContent.trim();
+}
+
+  async function updateStockFirestoreModule(productId, delta) {
+  const productRef = doc(db, "inventory", productId);
+  const user = auth.currentUser;
+  const userEmail = user ? user.email : "Utilisateur inconnu";
+
+  try {
+    const docSnap = await getDoc(productRef);
+
+    let currentStock = 0;
+    if (docSnap.exists()) {
+      currentStock = docSnap.data().stock || 0;
     }
+
+    let newStock = currentStock + delta;
+    if (newStock < 0) newStock = 0;
+
+    const articleName = getArticleName(productId);
+    const action = delta > 0 ? `+${delta}` : `${delta}`;
+
+    await setDoc(productRef, {
+      stock: newStock,
+      lastModifiedBy: userEmail,
+      lastModifiedAt: serverTimestamp()
+    }, { merge: true });
+
+    await addDoc(collection(db, "history"), {
+      articleId: productId,
+      articleName: articleName,
+      action: action,
+      newStock: newStock,
+      userEmail: userEmail,
+      date: serverTimestamp()
+    });
+
+    await setDoc(doc(db, "metadata", "lastUpdate"), {
+      articleId: productId,
+      articleName: articleName,
+      action: action,
+      newStock: newStock,
+      userEmail: userEmail,
+      date: serverTimestamp()
+    });
+
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du stock:", error);
+  }
+}
     
     function updateStockAndFirestore(itemId, delta) {
       const stockElem = document.getElementById("stock-" + itemId);
