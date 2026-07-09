@@ -2292,9 +2292,9 @@ window.closeHistory = closeHistory;
 
     const docsToDelete = snapshot.docs.slice(1000);
 
-    docsToDelete.forEach(async (oldDoc) => {
+    for (const oldDoc of docsToDelete) {
       await deleteDoc(doc(db, "history", oldDoc.id));
-    });
+}
 
     console.log("Nettoyage historique effectué :", docsToDelete.length, "ancienne(s) entrée(s) supprimée(s).");
 
