@@ -1987,13 +1987,7 @@
 
   try {
 
-    const q = query(
-      collection(db, "history"),
-      orderBy("date", "desc"),
-      limit(100)
-    );
-
-    const snapshot = await getDocs(q);
+ const snapshot = await getDocs(collection(db, "history"));
 
     if (snapshot.empty) {
       historyList.innerHTML = "Aucun historique disponible.";
