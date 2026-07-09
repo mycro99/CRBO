@@ -1980,8 +1980,63 @@
     }
     window.closeRecommendations = closeRecommendations;
     
-    function showHistory() {
-  document.getElementById("historyModal").style.display = "block";
+    async function showHistory() {
+
+  const historyList = document.getElementById("historyList");
+  historyList.innerHTML = "Chargement...";
+
+  try {
+
+    const q = query(
+      collection(db, "history"),
+      orderBy("date", "desc"),
+      limit(100)
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      historyList.innerHTML = "Aucun historique disponible.";
+    } else {
+
+      let html = "";
+
+      snapshot.forEach(doc => {
+
+        const data = doc.data();
+
+        const date = data.date && data.date.toDate
+          ? data.date.toDate().toLocaleString("fr-BE")
+          : "Date inconnue";
+
+        html += `
+          <div style="margin-bottom:10px;border-bottom:1px solid #ccc;padding-bottom:5px;">
+            ${date}<br>
+            ${data.userEmail}<br>
+            ${data.articleName}<br>
+            Action : ${data.action}<br>
+            Stock : ${data.newStock}
+          </div>
+        `;
+
+      });
+
+      historyList.innerHTML = html;
+
+    }
+
+    document.getElementById("historyModal").style.display = "block";
+
+  } catch (err) {
+
+    console.error(err);
+
+    historyList.innerHTML =
+      "Erreur lors du chargement de l'historique.";
+
+    document.getElementById("historyModal").style.display = "block";
+  }
+
 }
 
 function closeHistory() {
@@ -2067,6 +2122,7 @@ window.closeHistory = closeHistory;
       collection,
       doc,
       getDoc,
+      getDocs,
       setDoc,
       updateDoc,
       onSnapshot,
