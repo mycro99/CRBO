@@ -2119,6 +2119,7 @@ window.closeHistory = closeHistory;
       getDocs,
       setDoc,
       updateDoc,
+      deleteDoc,
       onSnapshot,
       addDoc,
       query,
@@ -2274,6 +2275,31 @@ window.closeHistory = closeHistory;
   return await getDocs(q);
 
 };
+    async function cleanupHistoryLimit() {
+  try {
+    const q = query(
+      collection(db, "history"),
+      orderBy("date", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.size <= 1000) {
+      return;
+    }
+
+    const docsToDelete = snapshot.docs.slice(1000);
+
+    docsToDelete.forEach(async (oldDoc) => {
+      await deleteDoc(doc(db, "history", oldDoc.id));
+    });
+
+    console.log("Nettoyage historique effectué :", docsToDelete.length, "ancienne(s) entrée(s) supprimée(s).");
+
+  } catch (error) {
+    console.error("Erreur lors du nettoyage de l'historique :", error);
+  }
+}
 
     onAuthStateChanged(auth, user => {
       if (user) {
