@@ -125,6 +125,33 @@
       background: rgba(0,0,0,0.7);
       z-index: 1000;
     }
+    /* Modal historique */
+#historyModal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+}
+
+#historyContent {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  padding: 20px;
+  color: black;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}
     #recommandationContent {
       position: fixed;
       top: 50%;
@@ -1856,6 +1883,20 @@
       </div>
     </div>
   </div>
+  <!-- Modal historique -->
+<div id="historyModal">
+  <div id="historyContent">
+    <h2>Historique des modifications</h2>
+
+    <div id="historyList">
+      Chargement de l'historique...
+    </div>
+
+    <div class="button-container">
+      <button class="pdf-button" onclick="closeHistory()">Fermer</button>
+    </div>
+  </div>
+</div>
   
   <!-- Inclusions de jsPDF et html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1938,6 +1979,17 @@
       document.getElementById("recommandationModal").style.display = "none";
     }
     window.closeRecommendations = closeRecommendations;
+    
+    function showHistory() {
+  document.getElementById("historyModal").style.display = "block";
+}
+
+function closeHistory() {
+  document.getElementById("historyModal").style.display = "none";
+}
+
+window.showHistory = showHistory;
+window.closeHistory = closeHistory;
     
     // Ouvre le scanner (redirection vers scanner.html)
     function openScanner() {
