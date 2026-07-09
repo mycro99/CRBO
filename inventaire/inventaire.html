@@ -1987,7 +1987,7 @@
 
   try {
 
- const snapshot = await window.loadHistoryFromFirestore();
+ const snapshot = await window.loadHistoryFromFirestore("date");
 
     if (snapshot.empty) {
       historyList.innerHTML = "Aucun historique disponible.";
@@ -2264,8 +2264,15 @@ window.closeHistory = closeHistory;
     }
     window.loadInventoryFromFirestoreModule = loadInventoryFromFirestoreModule;
     window.loadHistoryFromFirestore = async function() {
-  const snapshot = await getDocs(collection(db, "history"));
-  return snapshot;
+
+  const q = query(
+    collection(db, "history"),
+    orderBy("date", "desc"),
+    limit(100)
+  );
+
+  return await getDocs(q);
+
 };
 
     onAuthStateChanged(auth, user => {
