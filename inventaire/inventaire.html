@@ -2039,6 +2039,18 @@ function closeHistory() {
 
 window.showHistory = showHistory;
 window.closeHistory = closeHistory;
+window.addEventListener("click", function(event) {
+  const recommandationModal = document.getElementById("recommandationModal");
+  const historyModal = document.getElementById("historyModal");
+
+  if (event.target === recommandationModal) {
+    closeRecommendations();
+  }
+
+  if (event.target === historyModal) {
+    closeHistory();
+  }
+});
     
     // Ouvre le scanner (redirection vers scanner.html)
     function openScanner() {
