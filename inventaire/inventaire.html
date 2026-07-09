@@ -2262,7 +2262,73 @@ window.addEventListener("click", function(event) {
     `;
   });
 }
-    
+   function enableDirectStockEdit() {
+  const stockCells = document.querySelectorAll('td[id^="stock-"]');
+
+  stockCells.forEach(cell => {
+    cell.style.cursor = "pointer";
+    cell.title = "Cliquer pour modifier la quantité";
+
+    cell.addEventListener("click", function() {
+      if (cell.querySelector("input")) return;
+
+      const itemId = cell.id.replace("stock-", "");
+      const oldStock = parseInt(cell.textContent) || 0;
+
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.value = oldStock;
+      input.style.width = "70px";
+      input.style.textAlign = "center";
+
+      cell.textContent = "";
+      cell.appendChild(input);
+      input.focus();
+      input.select();
+
+      let validated = false;
+
+      function validate() {
+        if (validated) return;
+        validated = true;
+        validateDirectStockEdit(cell, itemId, oldStock, input.value);
+      }
+
+      input.addEventListener("blur", validate);
+
+      input.addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+          validate();
+        }
+
+        if (event.key === "Escape") {
+          validated = true;
+          cell.textContent = oldStock;
+        }
+      });
+    });
+  });
+}
+
+function validateDirectStockEdit(cell, itemId, oldStock, newValue) {
+  let newStock = parseInt(newValue);
+
+  if (isNaN(newStock) || newStock < 0) {
+    cell.textContent = oldStock;
+    return;
+  }
+
+  const delta = newStock - oldStock;
+
+  if (delta === 0) {
+    cell.textContent = oldStock;
+    return;
+  }
+
+  cell.textContent = newStock;
+  updateStockFirestoreModule(itemId, delta);
+}
     function loadInventoryFromFirestoreModule() {
       const invCol = collection(db, "inventory");
       onSnapshot(invCol, snapshot => {
@@ -2277,6 +2343,7 @@ window.addEventListener("click", function(event) {
         });
       });
     }
+    
     window.loadInventoryFromFirestoreModule = loadInventoryFromFirestoreModule;
     window.loadHistoryFromFirestore = async function() {
 
@@ -2320,6 +2387,7 @@ window.addEventListener("click", function(event) {
         console.log("Utilisateur authentifié :", user.email);
         loadInventoryFromFirestoreModule();
         listenLastUpdate();
+        enableDirectStockEdit();
       } else {
         console.log("Aucun utilisateur authentifié, redirection vers index.");
         window.location.href = "index.html";
