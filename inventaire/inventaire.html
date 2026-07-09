@@ -2114,6 +2114,37 @@
     }
     window.updateStockAndFirestore = updateStockAndFirestore;
     
+    function listenLastUpdate() {
+  const lastUpdateRef = doc(db, "metadata", "lastUpdate");
+
+  onSnapshot(lastUpdateRef, (docSnap) => {
+    const box = document.getElementById("lastUpdateBox");
+
+    if (!box) return;
+
+    if (!docSnap.exists()) {
+      box.textContent = "Dernière modification : aucune pour le moment";
+      return;
+    }
+
+    const data = docSnap.data();
+
+    const date = data.date && data.date.toDate
+      ? data.date.toDate().toLocaleString("fr-BE")
+      : "date inconnue";
+
+    box.innerHTML = `
+      Dernière modification :
+      ${data.articleName || "Article inconnu"}
+      ${data.action || ""}
+      — Stock actuel : ${data.newStock ?? "?"}
+      <br>
+      Par ${data.userEmail || "Utilisateur inconnu"}
+      le ${date}
+    `;
+  });
+}
+    
     function loadInventoryFromFirestoreModule() {
       const invCol = collection(db, "inventory");
       onSnapshot(invCol, snapshot => {
@@ -2134,6 +2165,7 @@
       if (user) {
         console.log("Utilisateur authentifié :", user.email);
         loadInventoryFromFirestoreModule();
+        listenLastUpdate();
       } else {
         console.log("Aucun utilisateur authentifié, redirection vers index.");
         window.location.href = "index.html";
