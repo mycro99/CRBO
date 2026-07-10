@@ -173,6 +173,191 @@
   background: rgba(0,0,0,0.7);
   z-index: 1000;
 }
+/* ==========================
+   Modal des péremptions
+   ========================== */
+
+#expirationModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1100;
+}
+
+#expirationModalContent {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  background-color: #fff;
+  color: #000;
+
+  padding: 20px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}
+
+.expiration-modal-header {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.expiration-modal-header h2 {
+  margin: 0;
+}
+
+.expiration-modal-close {
+  position: absolute;
+  right: 0;
+  top: -8px;
+
+  width: 42px;
+  height: 42px;
+
+  border: none;
+  border-radius: 50%;
+
+  background-color: var(--primary-color);
+  color: #fff;
+
+  font-size: 28px;
+  line-height: 42px;
+  cursor: pointer;
+}
+
+.expiration-modal-close:hover {
+  background-color: #c82333;
+}
+
+#expirationModalSummary {
+  margin-bottom: 15px;
+  padding: 12px;
+
+  background-color: #e9ecef;
+  border: 2px solid #6c757d;
+  border-radius: var(--border-radius);
+
+  text-align: center;
+  font-weight: bold;
+}
+
+.expiration-modal-section-title {
+  margin: 20px 0 10px;
+  padding: 8px 12px;
+
+  border-radius: var(--border-radius);
+
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.expiration-section-expired {
+  background-color: #ff4d4d;
+  border: 3px solid #8b0000;
+  color: #fff;
+}
+
+.expiration-section-warning {
+  background-color: #ffd700;
+  border: 3px solid #ff8c00;
+  color: #000;
+}
+
+.expiration-modal-item {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 14px;
+
+  border-radius: var(--border-radius);
+  cursor: pointer;
+
+  text-align: left;
+  font-family: inherit;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.expiration-modal-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+.expiration-modal-item-expired {
+  background-color: #ffb3b3;
+  border: 3px solid #8b0000;
+  color: #000;
+}
+
+.expiration-modal-item-warning {
+  background-color: #ffe766;
+  border: 3px solid #ff8c00;
+  color: #000;
+}
+
+.expiration-modal-item-name {
+  display: block;
+  margin-bottom: 5px;
+
+  font-size: 17px;
+  font-weight: bold;
+}
+
+.expiration-modal-item-details {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  font-size: 14px;
+}
+
+.expiration-modal-empty {
+  padding: 20px;
+
+  border: 2px solid #28a745;
+  border-radius: var(--border-radius);
+
+  background-color: #7cfc00;
+  color: #000;
+
+  text-align: center;
+  font-weight: bold;
+}
+
+.expiration-banner {
+  cursor: pointer;
+}
+
+.expiration-banner:hover {
+  filter: brightness(0.95);
+}
+
+.expiration-banner:focus {
+  outline: 4px solid #005fcc;
+  outline-offset: 2px;
+}
+
+.expiration-banner-hint {
+  margin-top: 5px;
+  font-size: 13px;
+  font-weight: normal;
+  text-decoration: underline;
+}
 
 #historyContent {
   position: fixed;
@@ -302,11 +487,21 @@
     <div id="lastUpdateBox" class="last-update-box">
       Dernière modification : aucune pour le moment
     </div>
-  <div id="expirationBanner" class="expiration-banner expiration-banner-neutral">
-    <div id="expirationBannerText">
-      Analyse des péremptions en cours...
+     <div
+      id="expirationBanner"
+      class="expiration-banner expiration-banner-neutral"
+      role="button"
+      tabindex="0"
+      onclick="openExpirationModal()"
+      onkeydown="handleExpirationBannerKeydown(event)"
+      >
+      <div id="expirationBannerText">
+        Analyse des péremptions en cours...
+      </div>
+      <div class="expiration-banner-hint">
+        Cliquer pour afficher le détail
+      </div>
     </div>
-  </div>
     
     <!-- Panneau de contrôle -->
     <div class="control-panel">
@@ -1993,6 +2188,38 @@
     </div>
   </div>
 </div>
+  <div id="expirationModal">
+    <div id="expirationModalContent">
+
+    <div class="expiration-modal-header">
+      <h2>Péremptions</h2>
+
+      <button
+        type="button"
+        class="expiration-modal-close"
+        onclick="closeExpirationModal()"
+        aria-label="Fermer"
+      >
+        ×
+      </button>
+    </div>
+
+    <div id="expirationModalSummary"></div>
+
+    <div id="expirationModalList"></div>
+
+    <div class="button-container">
+      <button
+        type="button"
+        class="pdf-button"
+        onclick="closeExpirationModal()"
+      >
+        Fermer
+      </button>
+    </div>
+
+  </div>
+</div>
   
   <!-- Inclusions de jsPDF et html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -2573,18 +2800,7 @@ function validateDirectStockEdit(cell, itemId, oldStock, newValue) {
       }
     }
   }
-    
-  // Création automatique de la colonne Péremption pour tous les articles
-function initializeExpirationFields() {
-  const articleRows = document.querySelectorAll("tr.article-row");
-
-  articleRows.forEach(row => {
-    const articleId = row.getAttribute("data-id");
-
-    if (!articleId) {
-      return;
-    }
-  const ExpirationManager = {
+    const ExpirationManager = {
   warningDays: 30,
 
   normalizeDate(dateValue) {
@@ -2966,6 +3182,298 @@ window.ExpirationManager = ExpirationManager;
 
 window.updateExpirationBanner = updateExpirationBanner;
     
+    function formatExpirationDate(dateValue) {
+  if (!dateValue) {
+    return "Aucune date";
+  }
+
+  const date = new Date(dateValue + "T00:00:00");
+
+  if (Number.isNaN(date.getTime())) {
+    return dateValue;
+  }
+
+  return new Intl.DateTimeFormat("fr-BE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(date);
+}
+
+function getExpirationArticleStock(articleId) {
+  const stockElement = document.getElementById(
+    "stock-" + articleId
+  );
+
+  if (!stockElement) {
+    return "Non renseigné";
+  }
+
+  return stockElement.textContent.trim();
+}
+
+function createExpirationModalItem(article) {
+  const button = document.createElement("button");
+
+  button.type = "button";
+
+  button.className =
+    article.state === "warning"
+      ? "expiration-modal-item expiration-modal-item-warning"
+      : "expiration-modal-item expiration-modal-item-expired";
+
+  const articleName = document.createElement("span");
+  articleName.className = "expiration-modal-item-name";
+
+  articleName.textContent =
+    article.state === "warning"
+      ? "⚠ " + article.articleName
+      : "✖ " + article.articleName;
+
+  const details = document.createElement("span");
+  details.className = "expiration-modal-item-details";
+
+  const dateDetail = document.createElement("span");
+  dateDetail.textContent =
+    "Date : " +
+    formatExpirationDate(article.dateValue);
+
+  const delayDetail = document.createElement("span");
+  delayDetail.textContent = article.label;
+
+  const stockDetail = document.createElement("span");
+  stockDetail.textContent =
+    "Stock : " +
+    getExpirationArticleStock(article.articleId);
+
+  details.appendChild(dateDetail);
+  details.appendChild(delayDetail);
+  details.appendChild(stockDetail);
+
+  button.appendChild(articleName);
+  button.appendChild(details);
+
+  button.addEventListener("click", function () {
+    goToExpirationArticle(article.articleId);
+  });
+
+  return button;
+}
+
+function appendExpirationSection(
+  container,
+  title,
+  articles,
+  sectionClass
+) {
+  if (!articles.length) {
+    return;
+  }
+
+  const sectionTitle = document.createElement("div");
+
+  sectionTitle.className =
+    "expiration-modal-section-title " +
+    sectionClass;
+
+  sectionTitle.textContent =
+    title + " (" + articles.length + ")";
+
+  container.appendChild(sectionTitle);
+
+  articles.forEach(article => {
+    container.appendChild(
+      createExpirationModalItem(article)
+    );
+  });
+}
+
+function openExpirationModal() {
+  const modal = document.getElementById(
+    "expirationModal"
+  );
+
+  const summaryElement = document.getElementById(
+    "expirationModalSummary"
+  );
+
+  const listElement = document.getElementById(
+    "expirationModalList"
+  );
+
+  if (
+    !modal ||
+    !summaryElement ||
+    !listElement ||
+    !window.ExpirationManager
+  ) {
+    return;
+  }
+
+  const summary =
+    window.ExpirationManager.getSummary();
+
+  listElement.innerHTML = "";
+
+  summaryElement.textContent =
+    summary.expired.length +
+    " périmé(s) — " +
+    summary.warning.length +
+    " à moins de 30 jours";
+
+  appendExpirationSection(
+    listElement,
+    "Articles périmés",
+    summary.expired,
+    "expiration-section-expired"
+  );
+
+  appendExpirationSection(
+    listElement,
+    "Péremptions dans les 30 jours",
+    summary.warning,
+    "expiration-section-warning"
+  );
+
+  if (
+    summary.expired.length === 0 &&
+    summary.warning.length === 0
+  ) {
+    const emptyMessage =
+      document.createElement("div");
+
+    emptyMessage.className =
+      "expiration-modal-empty";
+
+    emptyMessage.textContent =
+      "✓ Aucun article périmé ou proche de la péremption.";
+
+    listElement.appendChild(emptyMessage);
+  }
+
+  modal.style.display = "block";
+
+  document.body.style.overflow = "hidden";
+}
+
+function closeExpirationModal() {
+  const modal = document.getElementById(
+    "expirationModal"
+  );
+
+  if (!modal) {
+    return;
+  }
+
+  modal.style.display = "none";
+
+  document.body.style.overflow = "";
+}
+
+function handleExpirationBannerKeydown(event) {
+  if (
+    event.key === "Enter" ||
+    event.key === " "
+  ) {
+    event.preventDefault();
+    openExpirationModal();
+  }
+}
+
+function getArticleCategory(row) {
+  const possibleCategories = [
+    "consommables",
+    "desinfection",
+    "divers",
+    "entretien",
+    "garage"
+  ];
+
+  return possibleCategories.find(category =>
+    row.classList.contains(category)
+  ) || null;
+}
+
+function clearExpirationArticleHighlight() {
+  document
+    .querySelectorAll("tr.article-row")
+    .forEach(row => {
+      if (
+        row.dataset.expirationHighlighted === "true"
+      ) {
+        row.style.backgroundColor = "";
+        delete row.dataset.expirationHighlighted;
+      }
+    });
+}
+
+function goToExpirationArticle(articleId) {
+  const row = document.querySelector(
+    `tr.article-row[data-id="${articleId}"]`
+  );
+
+  if (!row) {
+    console.error(
+      "Article introuvable :",
+      articleId
+    );
+    return;
+  }
+
+  closeExpirationModal();
+  clearExpirationArticleHighlight();
+
+  const category = getArticleCategory(row);
+
+  if (
+    category &&
+    typeof openCategory === "function"
+  ) {
+    openCategory(category);
+  }
+
+  row.style.display = "table-row";
+  row.style.backgroundColor = "#66ccff";
+  row.dataset.expirationHighlighted = "true";
+
+  row.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+
+  window.setTimeout(() => {
+    if (
+      row.dataset.expirationHighlighted === "true"
+    ) {
+      row.style.backgroundColor = "";
+      delete row.dataset.expirationHighlighted;
+    }
+  }, 5000);
+}
+
+window.openExpirationModal =
+  openExpirationModal;
+
+window.closeExpirationModal =
+  closeExpirationModal;
+
+window.handleExpirationBannerKeydown =
+  handleExpirationBannerKeydown;
+
+window.goToExpirationArticle =
+  goToExpirationArticle;
+    
+  // Création automatique de la colonne Péremption pour tous les articles
+function initializeExpirationFields() {
+  const articleRows = document.querySelectorAll("tr.article-row");
+
+  articleRows.forEach(row => {
+    const articleId = row.getAttribute("data-id");
+
+    if (!articleId) {
+      return;
+    }
+    
     // Vérifie si la cellule Péremption existe déjà
     let expirationCell = row.querySelector(".expiration-cell");
 
@@ -3029,9 +3537,27 @@ expirationInput.addEventListener("change", async function () {
     ExpirationManager.updateAppearance(expirationInput);
   });
 }
+  document.addEventListener("keydown", function(event) {
+  if (event.key === "Escape") {
+    closeExpirationModal();
+  }
+});
   document.addEventListener("DOMContentLoaded", function() {
       initializeExpirationFields();
       updateExpirationBanner();
+
+     const expirationModal = document.getElementById(
+    "expirationModal"
+  );
+
+  if (expirationModal) {
+    expirationModal.addEventListener("click", function(event) {
+      if (event.target === expirationModal) {
+        closeExpirationModal();
+      }
+    });
+  }
+    
     const params = new URLSearchParams(window.location.search);
     const scannedBarcode = params.get("barcode");
     const scannedCategory = params.get("category");
