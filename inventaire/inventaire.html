@@ -1811,6 +1811,21 @@
             <button class="stock-button" onclick="updateStockAndFirestore('divers-16b', -1)">-</button>
           </td>
         </tr>
+
+        <!-- DMP-->
+        <tr class="category-header" data-category="DMP" onclick="toggleCategory('DMP')">
+          <td colspan="6">DMP <span id="toggle-DMP" style="float:right;">[+]</span></td>
+        </tr>
+        <tr class="article-row DMP" data-id="DMP-1" data-barcode="" style="display: none;">
+          <td>casque test</td>
+          <td><img src="images/tablier.jpg" alt="Photo casque test" width="80"></td>
+          <td id="stock-DMP-1">0</td>
+          <td>20</td>
+          <td>
+            <button class="stock-button" onclick="updateStockAndFirestore('DMP-1', 1)">+</button>
+            <button class="stock-button" onclick="updateStockAndFirestore('DMP-1', -1)">-</button>
+          </td>
+        </tr>
         
         <!-- Entretien -->
         <tr class="category-header" data-category="entretien" onclick="toggleCategory('entretien')">
@@ -2152,20 +2167,6 @@
           </td>
         </tr>
         
-        <!-- DMP-->
-        <tr class="category-header" data-category="DMP" onclick="toggleCategory('DMP')">
-          <td colspan="6">DMP <span id="toggle-DMP" style="float:right;">[+]</span></td>
-        </tr>
-        <tr class="article-row DMP" data-id="DMP-1" data-barcode="" style="display: none;">
-          <td>casque test</td>
-          <td><img src="images/tablier.jpg" alt="Photo casque test" width="80"></td>
-          <td id="stock-DMP-1">0</td>
-          <td>20</td>
-          <td>
-            <button class="stock-button" onclick="updateStockAndFirestore('DMP-1', 1)">+</button>
-            <button class="stock-button" onclick="updateStockAndFirestore('DMP-1', -1)">-</button>
-          </td>
-        </tr>
 
         <!-- Vetement-->
         <tr class="category-header" data-category="vetements" onclick="toggleCategory('vetements')">
