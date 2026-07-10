@@ -244,14 +244,69 @@
   box-shadow: var(--box-shadow);
   font-weight: bold;
 }
+    /* ==========================
+   Bandeau des péremptions
+   ========================== */
+
+.expiration-banner {
+  background-color: #fff;
+  color: #000;
+  border: 3px solid #6c757d;
+  border-radius: var(--border-radius);
+  padding: 14px 18px;
+  margin-bottom: 15px;
+  text-align: center;
+  box-shadow: var(--box-shadow);
+  font-weight: bold;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.expiration-banner-neutral {
+  background-color: #e9ecef;
+  border-color: #6c757d;
+  color: #212529;
+}
+
+.expiration-banner-ok {
+  background-color: #7cfc00;
+  border-color: #008000;
+  color: #000;
+}
+
+.expiration-banner-warning {
+  background-color: #ffd700;
+  border-color: #ff8c00;
+  color: #000;
+}
+
+.expiration-banner-danger {
+  background-color: #ff4d4d;
+  border-color: #8b0000;
+  color: #fff;
+}
+
+.expiration-banner-line {
+  display: block;
+}
+
+.expiration-banner-details {
+  margin-top: 5px;
+  font-size: 14px;
+}
   </style>
 </head>
 <body>
 <div id="pdfContent">
     <h1>Inventaire réserve - CS Oupeye ©</h1>
     <div id="lastUpdateBox" class="last-update-box">
-  Dernière modification : aucune pour le moment
-</div>
+      Dernière modification : aucune pour le moment
+    </div>
+  <div id="expirationBanner" class="expiration-banner expiration-banner-neutral">
+    <div id="expirationBannerText">
+      Analyse des péremptions en cours...
+    </div>
+  </div>
     
     <!-- Panneau de contrôle -->
     <div class="control-panel">
@@ -2438,8 +2493,15 @@ function validateDirectStockEdit(cell, itemId, oldStock, newValue) {
             typeof window.ExpirationManager.updateAppearance ===
               "function"
           ) {
-            window.ExpirationManager.updateAppearance(expirationInput);
+            window.ExpirationManager.updateAppearance(
+              expirationInput
+            );
            }
+          if (
+            typeof window.updateExpirationBanner === "function"
+          ) {
+            window.updateExpirationBanner();
+            }
           }
         }
     });
@@ -2753,6 +2815,157 @@ function initializeExpirationFields() {
 };
 
 window.ExpirationManager = ExpirationManager;
+    
+    function updateExpirationBanner() {
+  const banner = document.getElementById("expirationBanner");
+  const bannerText = document.getElementById(
+    "expirationBannerText"
+  );
+
+  if (!banner || !bannerText) {
+    return;
+  }
+
+  if (
+    !window.ExpirationManager ||
+    typeof window.ExpirationManager.getSummary !== "function"
+  ) {
+    banner.className =
+      "expiration-banner expiration-banner-neutral";
+
+    bannerText.textContent =
+      "La gestion des péremptions est indisponible.";
+
+    return;
+  }
+
+  const summary = window.ExpirationManager.getSummary();
+
+  const expiredCount = summary.expired.length;
+  const warningCount = summary.warning.length;
+  const withoutDateCount = summary.withoutDate.length;
+  const okCount = summary.ok.length;
+
+  banner.className = "expiration-banner";
+
+  if (expiredCount > 0) {
+    banner.classList.add("expiration-banner-danger");
+
+    bannerText.innerHTML = `
+      <span class="expiration-banner-line">
+        ✖ ${expiredCount}
+        ${expiredCount === 1
+          ? "article est périmé"
+          : "articles sont périmés"}
+      </span>
+
+      ${
+        warningCount > 0
+          ? `
+            <span class="expiration-banner-line">
+              ⚠ ${warningCount}
+              ${
+                warningCount === 1
+                  ? "article arrive à péremption dans les 30 jours"
+                  : "articles arrivent à péremption dans les 30 jours"
+              }
+            </span>
+          `
+          : ""
+      }
+
+      ${
+        withoutDateCount > 0
+          ? `
+            <span class="expiration-banner-details">
+              ${withoutDateCount}
+              ${
+                withoutDateCount === 1
+                  ? "article sans date renseignée"
+                  : "articles sans date renseignée"
+              }
+            </span>
+          `
+          : ""
+      }
+    `;
+
+    return;
+  }
+
+  if (warningCount > 0) {
+    banner.classList.add("expiration-banner-warning");
+
+    bannerText.innerHTML = `
+      <span class="expiration-banner-line">
+        ⚠ ${warningCount}
+        ${
+          warningCount === 1
+            ? "article arrive à péremption dans les 30 jours"
+            : "articles arrivent à péremption dans les 30 jours"
+        }
+      </span>
+
+      ${
+        withoutDateCount > 0
+          ? `
+            <span class="expiration-banner-details">
+              ${withoutDateCount}
+              ${
+                withoutDateCount === 1
+                  ? "article sans date renseignée"
+                  : "articles sans date renseignée"
+              }
+            </span>
+          `
+          : ""
+      }
+    `;
+
+    return;
+  }
+
+  if (withoutDateCount > 0) {
+    banner.classList.add("expiration-banner-neutral");
+
+    bannerText.innerHTML = `
+      <span class="expiration-banner-line">
+        ℹ Aucune péremption urgente
+      </span>
+
+      <span class="expiration-banner-details">
+        ${withoutDateCount}
+        ${
+          withoutDateCount === 1
+            ? "article ne possède pas encore de date"
+            : "articles ne possèdent pas encore de date"
+        }
+      </span>
+    `;
+
+    return;
+  }
+
+  banner.classList.add("expiration-banner-ok");
+
+  bannerText.innerHTML = `
+    <span class="expiration-banner-line">
+      ✓ Toutes les péremptions sont en ordre
+    </span>
+
+    <span class="expiration-banner-details">
+      ${okCount}
+      ${
+        okCount === 1
+          ? "article contrôlé"
+          : "articles contrôlés"
+      }
+    </span>
+  `;
+}
+
+window.updateExpirationBanner = updateExpirationBanner;
+    
     // Vérifie si la cellule Péremption existe déjà
     let expirationCell = row.querySelector(".expiration-cell");
 
@@ -2783,6 +2996,7 @@ expirationInput.addEventListener("change", async function () {
   const selectedDate = expirationInput.value;
   const valueToSave = selectedDate || null;
   ExpirationManager.updateAppearance(expirationInput);
+  updateExpirationBanner();
 
   if (
     typeof window.updateInventoryFieldFirestore !== "function"
@@ -2817,6 +3031,7 @@ expirationInput.addEventListener("change", async function () {
 }
   document.addEventListener("DOMContentLoaded", function() {
       initializeExpirationFields();
+      updateExpirationBanner();
     const params = new URLSearchParams(window.location.search);
     const scannedBarcode = params.get("barcode");
     const scannedCategory = params.get("category");
