@@ -92,6 +92,43 @@
     .stock-button:hover {
       background-color: #c82333;
     }
+    .expiration-input {
+  width: 145px;
+  padding: 7px;
+  border: 2px solid #6c757d;
+  border-radius: var(--border-radius);
+  font-family: inherit;
+  font-weight: bold;
+  text-align: center;
+  box-sizing: border-box;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.expiration-empty {
+  background-color: #f1f3f5;
+  border-color: #adb5bd;
+  color: #495057;
+}
+
+.expiration-ok {
+  background-color: #d4edda;
+  border-color: #28a745;
+  color: #155724;
+}
+
+.expiration-warning {
+  background-color: #fff3cd;
+  border-color: #f0ad00;
+  color: #856404;
+}
+
+.expiration-expired {
+  background-color: #f8d7da;
+  border-color: #dc3545;
+  color: #721c24;
+}
     /* Styles pour les modaux */
     #scannerModal, #recommandationModal {
       display: none;
@@ -2395,8 +2432,16 @@ function validateDirectStockEdit(cell, itemId, oldStock, newValue) {
         if (expirationInput) {
           expirationInput.value =
             data.expirationDate || "";
+
+          if (
+            window.ExpirationManager &&
+            typeof window.ExpirationManager.updateAppearance ===
+              "function"
+          ) {
+            window.ExpirationManager.updateAppearance(expirationInput);
+           }
+          }
         }
-      }
     });
   });
 }
@@ -2466,6 +2511,7 @@ function validateDirectStockEdit(cell, itemId, oldStock, newValue) {
       }
     }
   }
+    
   // Création automatique de la colonne Péremption pour tous les articles
 function initializeExpirationFields() {
   const articleRows = document.querySelectorAll("tr.article-row");
@@ -2476,7 +2522,237 @@ function initializeExpirationFields() {
     if (!articleId) {
       return;
     }
+  const ExpirationManager = {
+  warningDays: 30,
 
+  normalizeDate(dateValue) {
+    if (!dateValue) {
+      return null;
+    }
+
+    const date = new Date(dateValue + "T00:00:00");
+
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+
+    return date;
+  },
+
+  getToday() {
+    const today = new Date();
+
+    today.setHours(0, 0, 0, 0);
+
+    return today;
+  },
+
+  calculate(dateValue) {
+    const expirationDate = this.normalizeDate(dateValue);
+
+    if (!expirationDate) {
+      return {
+        dateValue: "",
+        expirationDate: null,
+        daysRemaining: null,
+        state: "empty",
+        label: "Aucune date renseignée",
+        cssClass: "expiration-empty",
+        priority: 3
+      };
+    }
+
+    const today = this.getToday();
+    const millisecondsPerDay = 1000 * 60 * 60 * 24;
+
+    const daysRemaining = Math.round(
+      (expirationDate.getTime() - today.getTime()) /
+      millisecondsPerDay
+    );
+
+    if (daysRemaining < 0) {
+      const daysExpired = Math.abs(daysRemaining);
+
+      return {
+        dateValue: dateValue,
+        expirationDate: expirationDate,
+        daysRemaining: daysRemaining,
+        state: "expired",
+        label:
+          daysExpired === 1
+            ? "Périmé depuis 1 jour"
+            : `Périmé depuis ${daysExpired} jours`,
+        cssClass: "expiration-expired",
+        priority: 0
+      };
+    }
+
+    if (daysRemaining === 0) {
+      return {
+        dateValue: dateValue,
+        expirationDate: expirationDate,
+        daysRemaining: 0,
+        state: "expired-today",
+        label: "Périme aujourd’hui",
+        cssClass: "expiration-expired",
+        priority: 0
+      };
+    }
+
+    if (daysRemaining <= this.warningDays) {
+      return {
+        dateValue: dateValue,
+        expirationDate: expirationDate,
+        daysRemaining: daysRemaining,
+        state: "warning",
+        label:
+          daysRemaining === 1
+            ? "Périme demain"
+            : `Périme dans ${daysRemaining} jours`,
+        cssClass: "expiration-warning",
+        priority: 1
+      };
+    }
+
+    return {
+      dateValue: dateValue,
+      expirationDate: expirationDate,
+      daysRemaining: daysRemaining,
+      state: "ok",
+      label: `Périme dans ${daysRemaining} jours`,
+      cssClass: "expiration-ok",
+      priority: 2
+    };
+  },
+
+  updateAppearance(inputElement) {
+    if (!inputElement) {
+      return null;
+    }
+
+    const expirationInfo = this.calculate(inputElement.value);
+
+    inputElement.classList.remove(
+      "expiration-empty",
+      "expiration-ok",
+      "expiration-warning",
+      "expiration-expired"
+    );
+
+    inputElement.classList.add(expirationInfo.cssClass);
+    inputElement.title = expirationInfo.label;
+    inputElement.dataset.expirationState = expirationInfo.state;
+
+    if (expirationInfo.daysRemaining !== null) {
+      inputElement.dataset.daysRemaining =
+        expirationInfo.daysRemaining;
+    } else {
+      delete inputElement.dataset.daysRemaining;
+    }
+
+    return expirationInfo;
+  },
+
+  getAllArticles() {
+    const articles = [];
+
+    document
+      .querySelectorAll("tr.article-row")
+      .forEach(row => {
+        const articleId = row.getAttribute("data-id");
+        const expirationInput = row.querySelector(
+          ".expiration-input"
+        );
+
+        if (!articleId || !expirationInput) {
+          return;
+        }
+
+        const articleName =
+          row.cells[0]?.textContent.trim() ||
+          articleId;
+
+        const expirationInfo = this.calculate(
+          expirationInput.value
+        );
+
+        articles.push({
+          articleId: articleId,
+          articleName: articleName,
+          row: row,
+          input: expirationInput,
+          ...expirationInfo
+        });
+      });
+
+    return articles.sort((articleA, articleB) => {
+      if (articleA.priority !== articleB.priority) {
+        return articleA.priority - articleB.priority;
+      }
+
+      if (
+        articleA.daysRemaining === null &&
+        articleB.daysRemaining === null
+      ) {
+        return articleA.articleName.localeCompare(
+          articleB.articleName,
+          "fr"
+        );
+      }
+
+      if (articleA.daysRemaining === null) {
+        return 1;
+      }
+
+      if (articleB.daysRemaining === null) {
+        return -1;
+      }
+
+      return (
+        articleA.daysRemaining -
+        articleB.daysRemaining
+      );
+    });
+  },
+
+  getSummary() {
+    const articles = this.getAllArticles();
+
+    return {
+      total: articles.length,
+
+      withoutDate: articles.filter(
+        article => article.state === "empty"
+      ),
+
+      expired: articles.filter(
+        article =>
+          article.state === "expired" ||
+          article.state === "expired-today"
+      ),
+
+      warning: articles.filter(
+        article => article.state === "warning"
+      ),
+
+      ok: articles.filter(
+        article => article.state === "ok"
+      )
+    };
+  },
+
+  refreshAll() {
+    document
+      .querySelectorAll(".expiration-input")
+      .forEach(inputElement => {
+        this.updateAppearance(inputElement);
+      });
+
+    return this.getSummary();
+  }
+};
+
+window.ExpirationManager = ExpirationManager;
     // Vérifie si la cellule Péremption existe déjà
     let expirationCell = row.querySelector(".expiration-cell");
 
@@ -2506,6 +2782,7 @@ expirationInput.setAttribute("data-id", articleId);
 expirationInput.addEventListener("change", async function () {
   const selectedDate = expirationInput.value;
   const valueToSave = selectedDate || null;
+  ExpirationManager.updateAppearance(expirationInput);
 
   if (
     typeof window.updateInventoryFieldFirestore !== "function"
@@ -2534,7 +2811,8 @@ expirationInput.addEventListener("change", async function () {
   }
 });
 
-expirationCell.appendChild(expirationInput);
+    expirationCell.appendChild(expirationInput);  
+    ExpirationManager.updateAppearance(expirationInput);
   });
 }
   document.addEventListener("DOMContentLoaded", function() {
