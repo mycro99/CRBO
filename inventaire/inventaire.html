@@ -2332,15 +2332,33 @@
           ? data.date.toDate().toLocaleString("fr-BE")
           : "Date inconnue";
 
-        html += `
-          <div style="margin-bottom:10px;border-bottom:1px solid #ccc;padding-bottom:5px;">
-            ${date}<br>
-            ${data.userEmail}<br>
-            ${data.articleName}<br>
-            Action : ${data.action}<br>
-            Stock : ${data.newStock}
-          </div>
-        `;
+        if (data.type === "expiration") {
+  const expirationText = data.expirationDate
+    ? new Date(
+        data.expirationDate + "T00:00:00"
+      ).toLocaleDateString("fr-BE")
+    : "Aucune date";
+
+  html += `
+    <div style="margin-bottom:10px;border-bottom:1px solid #ccc;padding-bottom:5px;">
+      ${date}<br>
+      ${data.userEmail || "Utilisateur inconnu"}<br>
+      ${data.articleName || "Article inconnu"}<br>
+      📅 ${data.action || "Péremption modifiée"}<br>
+      Date : ${expirationText}
+    </div>
+  `;
+} else {
+  html += `
+    <div style="margin-bottom:10px;border-bottom:1px solid #ccc;padding-bottom:5px;">
+      ${date}<br>
+      ${data.userEmail || "Utilisateur inconnu"}<br>
+      ${data.articleName || "Article inconnu"}<br>
+      📦 Action : ${data.action || ""}<br>
+      Stock : ${data.newStock ?? "?"}
+    </div>
+  `;
+}
 
       });
 
@@ -2574,6 +2592,24 @@ window.addEventListener("click", function(event) {
       lastModifiedBy: userEmail,
       lastModifiedAt: serverTimestamp()
     }, { merge: true });
+
+    if (fieldName === "expirationDate") {
+      const articleName = getArticleName(productId);
+
+      await addDoc(collection(db, "history"), {
+        type: "expiration",
+        articleId: productId,
+        articleName: articleName,
+        action: fieldValue
+          ? "Péremption modifiée"
+          : "Péremption supprimée",
+        expirationDate: fieldValue || null,
+        userEmail: userEmail,
+        date: serverTimestamp()
+      });
+
+      cleanupHistoryLimit();
+    }
 
     console.log(
       `Champ "${fieldName}" enregistré pour ${productId} :`,
