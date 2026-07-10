@@ -2322,47 +2322,160 @@
       historyList.innerHTML = "Aucun historique disponible.";
     } else {
 
-      let html = "";
+      const historyEntries = [];
 
-      snapshot.forEach(doc => {
+snapshot.forEach(historyDoc => {
+  const data = historyDoc.data();
 
-        const data = doc.data();
+  const javascriptDate =
+    data.date && data.date.toDate
+      ? data.date.toDate()
+      : null;
 
-        const date = data.date && data.date.toDate
-          ? data.date.toDate().toLocaleString("fr-BE")
-          : "Date inconnue";
+  historyEntries.push({
+    ...data,
+    javascriptDate: javascriptDate
+  });
+});
 
-        if (data.type === "expiration") {
-  const expirationText = data.expirationDate
-    ? new Date(
-        data.expirationDate + "T00:00:00"
-      ).toLocaleDateString("fr-BE")
-    : "Aucune date";
+const groupedEntries = [];
+const groupingDelay = 2 * 60 * 1000; // 2 minutes
+
+historyEntries.forEach(entry => {
+  const lastGroup =
+    groupedEntries[groupedEntries.length - 1];
+
+  const sameArticle =
+    lastGroup &&
+    lastGroup.articleId === entry.articleId;
+
+  const sameUser =
+    lastGroup &&
+    lastGroup.userEmail === entry.userEmail;
+
+  const datesAvailable =
+    lastGroup &&
+    lastGroup.javascriptDate &&
+    entry.javascriptDate;
+
+  const timeDifference = datesAvailable
+    ? Math.abs(
+        lastGroup.javascriptDate.getTime() -
+        entry.javascriptDate.getTime()
+      )
+    : Infinity;
+
+  const closeInTime =
+    timeDifference <= groupingDelay;
+
+  if (sameArticle && sameUser && closeInTime) {
+    if (entry.type === "expiration") {
+      lastGroup.expirationAction =
+        entry.action || "Péremption modifiée";
+
+      lastGroup.expirationDate =
+        entry.expirationDate || null;
+    } else {
+      lastGroup.stockAction =
+        entry.action || "";
+
+      lastGroup.newStock =
+        entry.newStock;
+    }
+
+    return;
+  }
+
+  const newGroup = {
+    articleId: entry.articleId,
+    articleName:
+      entry.articleName || "Article inconnu",
+
+    userEmail:
+      entry.userEmail || "Utilisateur inconnu",
+
+    javascriptDate: entry.javascriptDate,
+
+    stockAction: null,
+    newStock: null,
+
+    expirationAction: null,
+    expirationDate: null
+  };
+
+  if (entry.type === "expiration") {
+    newGroup.expirationAction =
+      entry.action || "Péremption modifiée";
+
+    newGroup.expirationDate =
+      entry.expirationDate || null;
+  } else {
+    newGroup.stockAction =
+      entry.action || "";
+
+    newGroup.newStock =
+      entry.newStock;
+  }
+
+  groupedEntries.push(newGroup);
+});
+
+let html = "";
+
+groupedEntries.forEach(group => {
+  const displayedDate = group.javascriptDate
+    ? group.javascriptDate.toLocaleString("fr-BE")
+    : "Date inconnue";
+
+  let stockHtml = "";
+
+  if (group.stockAction !== null) {
+    stockHtml = `
+      <div style="margin-top:6px;">
+        📦 Action stock : ${group.stockAction}<br>
+        Stock actuel : ${group.newStock ?? "?"}
+      </div>
+    `;
+  }
+
+  let expirationHtml = "";
+
+  if (group.expirationAction !== null) {
+    const displayedExpirationDate =
+      group.expirationDate
+        ? new Date(
+            group.expirationDate + "T00:00:00"
+          ).toLocaleDateString("fr-BE")
+        : "Aucune date";
+
+    expirationHtml = `
+      <div style="margin-top:6px;">
+        📅 ${group.expirationAction}<br>
+        Péremption : ${displayedExpirationDate}
+      </div>
+    `;
+  }
 
   html += `
-    <div style="margin-bottom:10px;border-bottom:1px solid #ccc;padding-bottom:5px;">
-      ${date}<br>
-      ${data.userEmail || "Utilisateur inconnu"}<br>
-      ${data.articleName || "Article inconnu"}<br>
-      📅 ${data.action || "Péremption modifiée"}<br>
-      Date : ${expirationText}
+    <div
+      style="
+        margin-bottom:12px;
+        border-bottom:1px solid #ccc;
+        padding-bottom:10px;
+      "
+    >
+      <strong>${group.articleName}</strong><br>
+      ${displayedDate}<br>
+      ${group.userEmail}
+
+      ${stockHtml}
+      ${expirationHtml}
     </div>
   `;
-} else {
-  html += `
-    <div style="margin-bottom:10px;border-bottom:1px solid #ccc;padding-bottom:5px;">
-      ${date}<br>
-      ${data.userEmail || "Utilisateur inconnu"}<br>
-      ${data.articleName || "Article inconnu"}<br>
-      📦 Action : ${data.action || ""}<br>
-      Stock : ${data.newStock ?? "?"}
-    </div>
-  `;
-}
+});
 
-      });
-
-      historyList.innerHTML = html;
+historyList.innerHTML =
+  html || "Aucun historique disponible.";
 
     }
 
