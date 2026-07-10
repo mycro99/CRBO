@@ -39,12 +39,30 @@
     #reader video {
       filter: contrast(1.2) brightness(1.1);
     }
+    #back-btn {
+  display: block;
+  margin: 10px auto 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background: #6c757d;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#back-btn:hover {
+  background: #5a6268;
+}
   </style>
 </head>
 <body>
   <h1>Scanner de code‑barres</h1>
   <div id="reader"></div>
   <button id="start-btn">Démarrer le scan</button>
+  <button id="back-btn" onclick="window.location.href='inventaire.html'">
+  Retour à l’inventaire
+</button>
   <div id="message"></div>
   
   <!-- Chargement de la bibliothèque html5‑qrcode depuis un CDN -->
