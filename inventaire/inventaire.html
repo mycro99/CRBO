@@ -129,6 +129,37 @@
   border: 3px solid #8B0000;
   color: #fff;
 }
+    .expiration-cell {
+  min-width: 165px;
+}
+
+.expiration-na-button {
+  display: block;
+  width: 145px;
+  margin: 6px auto 0;
+  padding: 6px;
+  border: 2px solid #6c757d;
+  border-radius: var(--border-radius);
+  background-color: #e9ecef;
+  color: #212529;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.expiration-na-button.active {
+  background-color: #005fcc;
+  border-color: #003f88;
+  color: #fff;
+}
+
+.expiration-not-applicable {
+  background-color: #d6e4ff;
+  border-color: #005fcc;
+  color: #212529;
+  opacity: 0.75;
+}
     /* Styles pour les modaux */
     #scannerModal, #recommandationModal {
       display: none;
@@ -4139,6 +4170,28 @@ function validateDirectStockEdit(cell, itemId, oldStock, newValue) {
         if (expirationInput) {
           expirationInput.value =
             data.expirationDate || "";
+          const noExpiration =
+  data.noExpiration === true;
+
+expirationInput.dataset.noExpiration =
+  noExpiration ? "true" : "false";
+
+expirationInput.disabled = noExpiration;
+
+const expirationCell =
+  expirationInput.closest(".expiration-cell");
+
+const noExpirationButton =
+  expirationCell?.querySelector(
+    ".expiration-na-button"
+  );
+
+if (noExpirationButton) {
+  noExpirationButton.classList.toggle(
+    "active",
+    noExpiration
+  );
+}
 
           if (
             window.ExpirationManager &&
@@ -4250,9 +4303,20 @@ function validateDirectStockEdit(cell, itemId, oldStock, newValue) {
     return today;
   },
 
-  calculate(dateValue) {
-    const expirationDate = this.normalizeDate(dateValue);
+  calculate(dateValue, noExpiration = false) {
+  if (noExpiration) {
+    return {
+      dateValue: "",
+      expirationDate: null,
+      daysRemaining: null,
+      state: "not-applicable",
+      label: "Article sans date de péremption",
+      cssClass: "expiration-not-applicable",
+      priority: 4
+    };
+  }
 
+  const expirationDate = this.normalizeDate(dateValue);
     if (!expirationDate) {
       return {
         dateValue: "",
@@ -4333,13 +4397,20 @@ function validateDirectStockEdit(cell, itemId, oldStock, newValue) {
       return null;
     }
 
-    const expirationInfo = this.calculate(inputElement.value);
+   const noExpiration =
+  inputElement.dataset.noExpiration === "true";
+
+const expirationInfo = this.calculate(
+  inputElement.value,
+  noExpiration
+);
 
     inputElement.classList.remove(
       "expiration-empty",
       "expiration-ok",
       "expiration-warning",
-      "expiration-expired"
+      "expiration-expired",
+      "expiration-not-applicable"
     );
 
     inputElement.classList.add(expirationInfo.cssClass);
@@ -4375,10 +4446,13 @@ function validateDirectStockEdit(cell, itemId, oldStock, newValue) {
           row.cells[0]?.textContent.trim() ||
           articleId;
 
-        const expirationInfo = this.calculate(
-          expirationInput.value
-        );
+       const noExpiration =
+  expirationInput.dataset.noExpiration === "true";
 
+const expirationInfo = this.calculate(
+  expirationInput.value,
+  noExpiration
+);
         articles.push({
           articleId: articleId,
           articleName: articleName,
@@ -4427,6 +4501,9 @@ function validateDirectStockEdit(cell, itemId, oldStock, newValue) {
       withoutDate: articles.filter(
         article => article.state === "empty"
       ),
+      notApplicable: articles.filter(
+  article => article.state === "not-applicable"
+),
 
       expired: articles.filter(
         article =>
@@ -4810,8 +4887,10 @@ function getArticleCategory(row) {
     "consommables",
     "desinfection",
     "divers",
+    "DMP",
     "entretien",
-    "garage"
+    "garage",
+    "vetements"
   ];
 
   return possibleCategories.find(category =>
@@ -4958,8 +5037,62 @@ expirationInput.addEventListener("change", async function () {
   }
 });
 
-    expirationCell.appendChild(expirationInput);  
-    ExpirationManager.updateAppearance(expirationInput);
+    const noExpirationButton = document.createElement("button");
+
+noExpirationButton.type = "button";
+noExpirationButton.className = "expiration-na-button";
+noExpirationButton.textContent = "Sans péremption";
+noExpirationButton.setAttribute("data-id", articleId);
+
+noExpirationButton.addEventListener("click", async function() {
+  const isCurrentlyActive =
+    expirationInput.dataset.noExpiration === "true";
+
+  const newState = !isCurrentlyActive;
+
+  expirationInput.dataset.noExpiration =
+    newState ? "true" : "false";
+
+  expirationInput.disabled = newState;
+
+  noExpirationButton.classList.toggle(
+    "active",
+    newState
+  );
+
+  if (newState) {
+    expirationInput.value = "";
+  }
+
+  ExpirationManager.updateAppearance(expirationInput);
+  updateExpirationBanner();
+
+  try {
+    await window.updateInventoryFieldFirestore(
+      articleId,
+      "noExpiration",
+      newState
+    );
+
+    if (newState) {
+      await window.updateInventoryFieldFirestore(
+        articleId,
+        "expirationDate",
+        null
+      );
+    }
+  } catch (error) {
+    console.error(
+      "Erreur lors de la modification du statut de péremption :",
+      error
+    );
+  }
+});
+
+expirationCell.appendChild(expirationInput);
+expirationCell.appendChild(noExpirationButton);
+
+ExpirationManager.updateAppearance(expirationInput);
   });
 }
   document.addEventListener("keydown", function(event) {
@@ -5009,7 +5142,7 @@ expirationInput.addEventListener("change", async function () {
       if (rowFound) {
         // Déterminer la catégorie de la ligne trouvée
         let category = null;
-        const possibleCategories = ["consommables", "desinfection", "divers", "entretien", "garage"];
+        const possibleCategories = ["consommables", "desinfection", "divers", "DMP", "entretien", "garage", "vetements"];
         possibleCategories.forEach(cat => {
           if (rowFound.classList.contains(cat)) {
             category = cat;
