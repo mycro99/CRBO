@@ -484,7 +484,14 @@
 <body>
 <div id="pdfContent">
     <h1>Inventaire réserve - CS Oupeye ©</h1>
-    <div id="lastUpdateBox" class="last-update-box">
+    <div
+      id="lastUpdateBox"
+      class="last-update-box"
+      role="button"
+      tabindex="0"
+      onclick="showHistory()"
+      onkeydown="handleHistoryBannerKeydown(event)"
+    >
       Dernière modification : aucune pour le moment
     </div>
      <div
@@ -510,7 +517,6 @@
         <button class="pdf-button" onclick="collapseAll()">Replier</button>
         <input type="text" id="searchInput" placeholder="Recherche..." onkeyup="searchArticles()">
         <button class="pdf-button" onclick="showRecommendations()">À recommander</button>
-        <button class="pdf-button" onclick="showHistory()">Historique</button>
       </div>
       <div class="right-controls">
         <button class="pdf-button" onclick="openScanner()">Scanner</button>
@@ -2359,9 +2365,18 @@
 function closeHistory() {
   document.getElementById("historyModal").style.display = "none";
 }
+function handleHistoryBannerKeydown(event) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    showHistory();
+  }
+}
 
 window.showHistory = showHistory;
 window.closeHistory = closeHistory;
+window.handleHistoryBannerKeydown =
+  handleHistoryBannerKeydown;
+
 window.addEventListener("click", function(event) {
   const recommandationModal = document.getElementById("recommandationModal");
   const historyModal = document.getElementById("historyModal");
@@ -3540,6 +3555,7 @@ expirationInput.addEventListener("change", async function () {
   document.addEventListener("keydown", function(event) {
   if (event.key === "Escape") {
     closeExpirationModal();
+    closeHistory();
   }
 });
   document.addEventListener("DOMContentLoaded", function() {
