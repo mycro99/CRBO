@@ -237,19 +237,23 @@
           <th>Photo</th>
           <th>Quantité en stock</th>
           <th>Quantité minimum</th>
+          <th>Péremption</th>
           <th>Gestion</th>
         </tr>
       </thead>
       <tbody id="inventoryTable">
         <!-- Exemple d'articles pour la catégorie consommables -->
         <tr class="category-header" data-category="consommables" onclick="toggleCategory('consommables')">
-          <td colspan="5">Consommables <span id="toggle-consommables" style="float:right;">[+]</span></td>
+          <td colspan="6">Consommables <span id="toggle-consommables" style="float:right;">[+]</span></td>
         </tr>
         <tr class="article-row consommables" data-id="consommables-1" data-barcode="4015630006038" style="display: none;">
           <td>Accu‑check</td>
           <td><img src="images/Accu-check.jpg" alt="Photo Accu‑check" width="80"></td>
           <td id="stock-consommables-1">0</td>
           <td>2</td>
+          <td class="expiration-cell"
+            data-id="consommables-1">
+          </td>
           <td>
             <button class="stock-button" onclick="updateStockAndFirestore('consommables-1', 1)">+</button>
             <button class="stock-button" onclick="updateStockAndFirestore('consommables-1', -1)">-</button>
@@ -1257,7 +1261,7 @@
 </tr> 
         <!-- Désinfection -->
         <tr class="category-header" data-category="desinfection" onclick="toggleCategory('desinfection')">
-          <td colspan="5">Désinfection <span id="toggle-desinfection" style="float:right;">[+]</span></td>
+          <td colspan="6">Désinfection <span id="toggle-desinfection" style="float:right;">[+]</span></td>
         </tr>
         <tr class="article-row desinfection" data-id="desinfection-1" data-barcode="5425037710947" style="display: none;">
           <td>air citrea</td>
@@ -1332,7 +1336,7 @@
         
         <!-- Divers -->
         <tr class="category-header" data-category="divers" onclick="toggleCategory('divers')">
-          <td colspan="5">Divers <span id="toggle-divers" style="float:right;">[+]</span></td>
+          <td colspan="6">Divers <span id="toggle-divers" style="float:right;">[+]</span></td>
         </tr>
         <tr class="article-row divers" data-id="divers-1" data-barcode="01008220450010531020230109, 01008220450010531020230116" style="display: none;">
           <td>attelle sam</td>
@@ -1517,7 +1521,7 @@
         
         <!-- Entretien -->
         <tr class="category-header" data-category="entretien" onclick="toggleCategory('entretien')">
-          <td colspan="5">Entretien <span id="toggle-entretien" style="float:right;">[+]</span></td>
+          <td colspan="6">Entretien <span id="toggle-entretien" style="float:right;">[+]</span></td>
         </tr>
         <tr class="article-row entretien" data-id="entretien-1" data-barcode="5400141546606" style="display: none;">
           <td>adoucissant</td>
@@ -1752,7 +1756,7 @@
         
         <!-- Garage -->
         <tr class="category-header" data-category="garage" onclick="toggleCategory('garage')">
-          <td colspan="5">Garage <span id="toggle-garage" style="float:right;">[+]</span></td>
+          <td colspan="6">Garage <span id="toggle-garage" style="float:right;">[+]</span></td>
         </tr>
         <tr class="article-row garage" data-id="garage-1" data-barcode="3701239300011" style="display: none;">
           <td>ad blue</td>
@@ -2221,6 +2225,39 @@ window.addEventListener("click", function(event) {
     console.error("Erreur lors de la mise à jour du stock:", error);
   }
 }
+   async function updateInventoryFieldFirestore(
+  productId,
+  fieldName,
+  fieldValue
+) {
+  const productRef = doc(db, "inventory", productId);
+  const user = auth.currentUser;
+  const userEmail = user ? user.email : "Utilisateur inconnu";
+
+  try {
+    await setDoc(productRef, {
+      [fieldName]: fieldValue,
+      lastModifiedBy: userEmail,
+      lastModifiedAt: serverTimestamp()
+    }, { merge: true });
+
+    console.log(
+      `Champ "${fieldName}" enregistré pour ${productId} :`,
+      fieldValue
+    );
+
+  } catch (error) {
+    console.error(
+      `Erreur lors de l'enregistrement du champ "${fieldName}" :`,
+      error
+    );
+
+    throw error;
+  }
+}
+
+window.updateInventoryFieldFirestore =
+  updateInventoryFieldFirestore;
     
     function updateStockAndFirestore(itemId, delta) {
       const stockElem = document.getElementById("stock-" + itemId);
@@ -2330,19 +2367,39 @@ function validateDirectStockEdit(cell, itemId, oldStock, newValue) {
   updateStockFirestoreModule(itemId, delta);
 }
     function loadInventoryFromFirestoreModule() {
-      const invCol = collection(db, "inventory");
-      onSnapshot(invCol, snapshot => {
-        snapshot.docChanges().forEach(change => {
-          if (change.type === "added" || change.type === "modified") {
-            const data = change.doc.data();
-            const stockElem = document.getElementById("stock-" + change.doc.id);
-            if (stockElem) {
-              stockElem.textContent = data.stock;
-            }
-          }
-        });
-      });
-    }
+  const invCol = collection(db, "inventory");
+
+  onSnapshot(invCol, snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (
+        change.type === "added" ||
+        change.type === "modified"
+      ) {
+        const articleId = change.doc.id;
+        const data = change.doc.data();
+
+        // Chargement du stock
+        const stockElem = document.getElementById(
+          "stock-" + articleId
+        );
+
+        if (stockElem && data.stock !== undefined) {
+          stockElem.textContent = data.stock;
+        }
+
+        // Chargement de la date de péremption
+        const expirationInput = document.getElementById(
+          "expiration-" + articleId
+        );
+
+        if (expirationInput) {
+          expirationInput.value =
+            data.expirationDate || "";
+        }
+      }
+    });
+  });
+}
     
     window.loadInventoryFromFirestoreModule = loadInventoryFromFirestoreModule;
     window.loadHistoryFromFirestore = async function() {
@@ -2409,8 +2466,79 @@ function validateDirectStockEdit(cell, itemId, oldStock, newValue) {
       }
     }
   }
-  
+  // Création automatique de la colonne Péremption pour tous les articles
+function initializeExpirationFields() {
+  const articleRows = document.querySelectorAll("tr.article-row");
+
+  articleRows.forEach(row => {
+    const articleId = row.getAttribute("data-id");
+
+    if (!articleId) {
+      return;
+    }
+
+    // Vérifie si la cellule Péremption existe déjà
+    let expirationCell = row.querySelector(".expiration-cell");
+
+    // Si elle n'existe pas, on la crée avant la colonne Gestion
+    if (!expirationCell) {
+      expirationCell = document.createElement("td");
+      expirationCell.className = "expiration-cell";
+      expirationCell.setAttribute("data-id", articleId);
+
+      const gestionCell = row.lastElementChild;
+      row.insertBefore(expirationCell, gestionCell);
+    }
+
+    // Évite de créer deux calendriers dans la même cellule
+    if (expirationCell.querySelector(".expiration-input")) {
+      return;
+    }
+
+    const expirationInput = document.createElement("input");
+
+    expirationInput.type = "date";
+expirationInput.className = "expiration-input";
+expirationInput.id = "expiration-" + articleId;
+expirationInput.setAttribute("data-id", articleId);
+
+// Sauvegarde automatique de la date dans Firestore
+expirationInput.addEventListener("change", async function () {
+  const selectedDate = expirationInput.value;
+  const valueToSave = selectedDate || null;
+
+  if (
+    typeof window.updateInventoryFieldFirestore !== "function"
+  ) {
+    console.error(
+      "La fonction générique de mise à jour Firestore est indisponible."
+    );
+    return;
+  }
+
+  expirationInput.disabled = true;
+
+  try {
+    await window.updateInventoryFieldFirestore(
+      articleId,
+      "expirationDate",
+      valueToSave
+    );
+  } catch (error) {
+    console.error(
+      "La date de péremption n'a pas pu être enregistrée.",
+      error
+    );
+  } finally {
+    expirationInput.disabled = false;
+  }
+});
+
+expirationCell.appendChild(expirationInput);
+  });
+}
   document.addEventListener("DOMContentLoaded", function() {
+      initializeExpirationFields();
     const params = new URLSearchParams(window.location.search);
     const scannedBarcode = params.get("barcode");
     const scannedCategory = params.get("category");
