@@ -2368,23 +2368,54 @@ historyEntries.forEach(entry => {
   const closeInTime =
     timeDifference <= groupingDelay;
 
-  if (sameArticle && sameUser && closeInTime) {
-    if (entry.type === "expiration") {
-      lastGroup.expirationAction =
-        entry.action || "Péremption modifiée";
+ const entryIsExpiration =
+  entry.type === "expiration";
 
-      lastGroup.expirationDate =
-        entry.expirationDate || null;
-    } else {
-      lastGroup.stockAction =
-        entry.action || "";
+const entryIsStock =
+  entry.type !== "expiration";
 
-      lastGroup.newStock =
-        entry.newStock;
-    }
+const groupAlreadyHasExpiration =
+  lastGroup &&
+  lastGroup.expirationAction !== null;
 
-    return;
+const groupAlreadyHasStock =
+  lastGroup &&
+  lastGroup.stockAction !== null;
+
+const complementaryActions =
+  (
+    entryIsExpiration &&
+    !groupAlreadyHasExpiration &&
+    groupAlreadyHasStock
+  ) ||
+  (
+    entryIsStock &&
+    !groupAlreadyHasStock &&
+    groupAlreadyHasExpiration
+  );
+
+if (
+  sameArticle &&
+  sameUser &&
+  closeInTime &&
+  complementaryActions
+) {
+  if (entryIsExpiration) {
+    lastGroup.expirationAction =
+      entry.action || "Péremption modifiée";
+
+    lastGroup.expirationDate =
+      entry.expirationDate || null;
+  } else {
+    lastGroup.stockAction =
+      entry.action || "";
+
+    lastGroup.newStock =
+      entry.newStock;
   }
+
+  return;
+}
 
   const newGroup = {
     articleId: entry.articleId,
