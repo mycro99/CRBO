@@ -516,10 +516,11 @@
         <button class="pdf-button" onclick="expandAll()">Tout dérouler</button>
         <button class="pdf-button" onclick="collapseAll()">Replier</button>
         <input type="text" id="searchInput" placeholder="Recherche..." onkeyup="searchArticles()">
-        <button class="pdf-button" onclick="showRecommendations()">À recommander</button>
+        <button class="pdf-button" onclick="showRecommendations()">📦 À recommander</button>
+        <button class="pdf-button" onclick="goHome()">🏠 Accueil</button>
       </div>
       <div class="right-controls">
-        <button class="pdf-button" onclick="openScanner()">Scanner</button>
+        <button class="pdf-button" onclick="openScanner()">📷 Scanner</button>
       </div>
     </div>
     
@@ -3774,6 +3775,12 @@ window.addEventListener("click", function(event) {
     closeHistory();
   }
 });
+    // bouton acceuil (redirection vers index.html)
+    function goHome() {
+  window.location.href = "index.html";
+}
+
+window.goHome = goHome;
     
     // Ouvre le scanner (redirection vers scanner.html)
     function openScanner() {
