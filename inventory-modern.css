@@ -97,3 +97,37 @@
   background: #7cfc00 !important;
   color: #001f00 !important;
 }
+
+/* Barre de commandes alignée sur une seule ligne sur ordinateur */
+@media (min-width: 901px) {
+  .control-panel {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 14px !important;
+  }
+  .left-controls {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+  }
+  .left-controls .pdf-button,
+  .right-controls .pdf-button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    white-space: nowrap !important;
+  }
+  .control-panel input[type="text"] {
+    flex: 1 1 260px !important;
+    width: auto !important;
+    min-width: 170px !important;
+  }
+  .right-controls {
+    display: flex !important;
+    width: auto !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+  }
+}
