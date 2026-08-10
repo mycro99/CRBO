@@ -2,8 +2,13 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>not working</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071d32">
+  <meta name="description" content="Page temporairement indisponible - CS Oupeye">
+  <title>Page temporairement indisponible - CS Oupeye®</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --primary-color: #dc3545;
@@ -55,16 +60,34 @@
       margin: 10px 0 0;
     }
   </style>
+  <link rel="stylesheet" href="../final-pages-modern.css">
 </head>
-<body>
-  <div class="container">
-    <img src="images/unicorn_image.jpg" alt="unicorn_image.jpg" class="bg-image">
-    <div class="overlay">
-      <h1>Under maintenance;</h1>
-      <p>Check later...</p>
-      <p>or</p>
-      <p>contact your administrator :)</p>
+<body class="nowork-page">
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="../index.html">CS Oupeye®</a>
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a class="nav-link" href="../index.html">Accueil</a>
+        <a class="nav-link" href="../operation.html">Documentation</a>
+        <a class="nav-link" href="../checklist.html">Checklists</a>
+      </nav>
+      <a class="header-back" href="../index.html"><span aria-hidden="true">←</span> Retour à l’accueil</a>
     </div>
-  </div>
+  </header>
+
+  <main class="maintenance-main">
+    <section class="maintenance-card" aria-labelledby="maintenance-title">
+      <div class="maintenance-visual"><img src="images/unicorn_image.jpg" alt="Illustration de maintenance"></div>
+      <div class="maintenance-copy">
+        <span class="maintenance-badge">Maintenance en cours</span>
+        <h1 id="maintenance-title">Cette page revient bientôt.</h1>
+        <p>La ressource demandée est temporairement indisponible. Réessayez un peu plus tard ou contactez l’administrateur du portail.</p>
+        <div class="maintenance-actions">
+          <a class="maintenance-button" href="../index.html">Retour à l’accueil</a>
+          <a class="maintenance-button secondary" href="javascript:history.back()">Page précédente</a>
+        </div>
+      </div>
+    </section>
+  </main>
 </body>
 </html>
