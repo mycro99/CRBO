@@ -2,8 +2,13 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071d32">
+  <meta name="description" content="Listing des volontaires du CS Oupeye">
   <title>Listing des Volontaires - CS Oupeye®</title>
-  <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --primary-color: #dc3545;
@@ -179,11 +184,33 @@
       background-color: rgba(0,0,0,0.1);
     }
   </style>
+  <link rel="stylesheet" href="../final-pages-modern.css">
 </head>
 <body>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="../index.html">CS Oupeye®</a>
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a class="nav-link" href="../index.html">Accueil</a>
+        <a class="nav-link" href="../operation.html">Documentation</a>
+        <a class="nav-link" href="../checklist.html">Checklists</a>
+        <a class="nav-link active" href="../staff.html" aria-current="page">Staff</a>
+      </nav>
+      <a class="header-back" href="../staff.html"><span aria-hidden="true">←</span> Retour à l’espace staff</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero" aria-labelledby="listing-page-title">
+      <div class="hero-art" aria-hidden="true"><img src="../crbo-hero-ambulance.png" alt=""></div>
+      <div class="hero-content"><div class="hero-copy"><p class="eyebrow">Gestion de l’équipe</p><h1 id="listing-page-title">Listing des<br>volontaires</h1><p>Recherchez, ajoutez et mettez à jour les informations des membres de l’équipe.</p></div></div>
+    </section>
+
+    <div class="listing-area">
   <div id="content">
     <h1>Listing des Volontaires - CS Oupeye®</h1>
-    
+
+    <div class="listing-toolbar">
     <!-- Zone de recherche -->
     <div id="searchContainer">
       <input type="text" id="searchInput" placeholder="Rechercher...">
@@ -192,6 +219,7 @@
     <!-- Bouton pour afficher/masquer le formulaire d'ajout -->
     <div id="addFormToggle">
       <button class="pdf-button">Ajouter un Volontaire</button>
+    </div>
     </div>
 
     <!-- Formulaire d'ajout de volontaire (caché par défaut) -->
@@ -258,6 +286,7 @@
     </div>
 
     <!-- Tableau des volontaires -->
+    <div class="volunteer-table-wrap">
     <table id="volunteerTable">
       <thead>
         <tr>
@@ -278,7 +307,10 @@
         <!-- Les lignes seront générées dynamiquement -->
       </tbody>
     </table>
+    </div>
   </div>
+    </div>
+  </main>
 
   <script type="module">
     // Importation des modules Firebase nécessaires
