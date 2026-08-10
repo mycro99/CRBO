@@ -16,3 +16,84 @@
 @media(max-width:580px){.brand{font-size:1.38rem}.header-back{font-size:0}.header-back span{font-size:1.1rem}.page-hero h1{font-size:clamp(2.25rem,12vw,3.1rem)}.hero-art img{object-position:72% center;opacity:.36}#pdfContent{padding:16px;border-radius:19px}#pdfContent>h1{font-size:1.65rem}.last-update-box{align-items:flex-start;flex-direction:column}.last-update-box::before{margin:0}.left-controls{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}.left-controls .pdf-button,.left-controls input{width:100%!important}.left-controls input{grid-column:span 2}.right-controls{display:grid!important}.pdf-button{padding:0 10px!important}.inventory-table{min-width:900px}}
 @media print{.site-header,.page-hero{display:none!important}body{background:#fff!important}.inventory-area{width:100%;margin:0;padding:0}#pdfContent{border:0;box-shadow:none}.control-panel,#pdfContent>.button-container{display:none!important}.inventory-table-wrap{overflow:visible;border:0}.inventory-table{min-width:0}.inventory-table th{position:static}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+/* Renforcement de la lisibilité des catégories */
+.inventory-table tbody tr.category-header td,
+.inventory-table tbody tr.category-header td span {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65) !important;
+}
+
+/* Indicateurs de péremption volontairement très contrastés */
+.expiration-banner-ok {
+  border: 3px solid #008000 !important;
+  background: #7cfc00 !important;
+  color: #001f00 !important;
+  box-shadow: 0 0 0 4px rgba(0, 128, 0, 0.14) !important;
+}
+.expiration-banner-warning {
+  border: 3px solid #ff8c00 !important;
+  background: #ffd700 !important;
+  color: #211500 !important;
+  box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.16) !important;
+}
+.expiration-banner-danger {
+  border: 3px solid #8b0000 !important;
+  background: #ff3f4f !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(139, 0, 0, 0.16) !important;
+}
+.expiration-input {
+  border-width: 3px !important;
+  font-weight: 800 !important;
+}
+.expiration-empty {
+  border-color: #6c757d !important;
+  background: #e9ecef !important;
+  color: #212529 !important;
+}
+.expiration-ok {
+  border-color: #008000 !important;
+  background: #7cfc00 !important;
+  color: #001f00 !important;
+  box-shadow: 0 0 0 3px rgba(0, 128, 0, 0.14) !important;
+}
+.expiration-warning {
+  border-color: #ff8c00 !important;
+  background: #ffd700 !important;
+  color: #211500 !important;
+  box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.16) !important;
+}
+.expiration-expired {
+  border-color: #8b0000 !important;
+  background: #ff3f4f !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.16) !important;
+}
+.expiration-na-button.active {
+  border: 2px solid #003f88 !important;
+  background: #005fcc !important;
+  color: #ffffff !important;
+}
+.expiration-modal-item {
+  border-width: 3px !important;
+  font-weight: 700 !important;
+}
+.expiration-modal-item-expired,
+.expiration-section-expired {
+  border: 3px solid #8b0000 !important;
+  background: #ff3f4f !important;
+  color: #ffffff !important;
+}
+.expiration-modal-item-warning,
+.expiration-section-warning {
+  border: 3px solid #ff8c00 !important;
+  background: #ffd700 !important;
+  color: #211500 !important;
+}
+.expiration-modal-empty {
+  border: 3px solid #008000 !important;
+  background: #7cfc00 !important;
+  color: #001f00 !important;
+}
