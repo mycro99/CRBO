@@ -2,105 +2,753 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Staff</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071d32">
+  <meta name="description" content="Espace Staff du CS Oupeye">
+  <title>Staff - CS Oupeye</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
     :root {
-      --primary-color: #dc3545;
-      --bg-color: #f5f5f5;
-      --text-color: #333;
-      --border-radius: 6px;
-      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      --button-width: 250px;
-      --button-gap: 60px;
+      --navy: #071d32;
+      --red: #e52f3f;
+      --red-dark: #c92332;
+      --blue: #087ff5;
+      --blue-dark: #006bd5;
+      --green: #12a64a;
+      --green-dark: #0c8c3c;
+      --ink: #071a34;
+      --muted: #526078;
+      --line: #dfe7f0;
+      --background: #f5f8fb;
+      --shadow: 0 18px 45px rgba(20, 44, 76, 0.10);
+      --page-width: 1390px;
     }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
     body {
-      font-family: 'Roboto', sans-serif;
       margin: 0;
-      padding: 20px;
-      background-color: var(--bg-color);
-      color: var(--text-color);
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--background);
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
-    .container {
-      max-width: 900px;
-      margin: auto;
-      text-align: center;
+
+    body.modal-open { overflow: hidden; }
+    a { color: inherit; }
+    button, input { font: inherit; }
+    button { border: 0; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: linear-gradient(90deg, #061b2f 0%, #08243e 60%, #071d32 100%);
+      box-shadow: 0 8px 25px rgba(1, 17, 31, 0.14);
     }
-    h1 {
-      color: var(--primary-color);
-      margin-bottom: 20px;
-    }
-    /* Conteneur pour disposer les boutons côte à côte */
-    .columns {
+
+    .nav-shell {
+      width: min(var(--page-width), calc(100% - 48px));
+      min-height: 96px;
+      margin: 0 auto;
       display: flex;
-      justify-content: center;
-      gap: var(--button-gap);
-      margin-bottom: 40px;
+      align-items: center;
+      gap: 56px;
     }
-    .column {
+
+    .brand {
+      flex: 0 0 auto;
+      color: #fff;
+      font-size: clamp(1.45rem, 2.1vw, 2.05rem);
+      font-weight: 800;
+      letter-spacing: -0.045em;
+      text-decoration: none;
+    }
+
+    .main-nav {
+      align-self: stretch;
+      display: flex;
+      align-items: stretch;
+      gap: 38px;
+    }
+
+    .nav-link {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      color: rgba(255, 255, 255, 0.90);
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 180ms ease;
+    }
+
+    .nav-link:hover,
+    .nav-link:focus-visible { color: #fff; }
+
+    .nav-link.active {
+      color: #ff4654;
+      font-weight: 700;
+    }
+
+    .nav-link.active::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 6px;
+      border-radius: 6px 6px 0 0;
+      background: #ff4654;
+    }
+
+    .portal-pill {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 18px;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.10);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .portal-pill::before {
+      content: "✓";
+      display: grid;
+      width: 25px;
+      height: 25px;
+      place-items: center;
+      border: 2px solid rgba(255, 255, 255, 0.85);
+      border-radius: 8px 8px 11px 11px;
+      font-size: 0.8rem;
+    }
+
+    main { overflow: hidden; }
+
+    .hero {
+      position: relative;
+      isolation: isolate;
+      min-height: 390px;
+      border-bottom: 1px solid rgba(192, 207, 224, 0.65);
+      background: linear-gradient(105deg, #f8fbff 0%, #f2f8fe 58%, #eaf4fd 100%);
+    }
+
+    .hero-art {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .hero-art::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(248, 251, 255, 0.26) 0%, transparent 58%),
+        linear-gradient(180deg, transparent 62%, rgba(245, 248, 251, 0.76) 100%);
+    }
+
+    .hero-art img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center center;
+      opacity: 0.67;
+      filter: saturate(0.84) contrast(0.96);
+    }
+
+    .hero-content {
+      width: min(var(--page-width), calc(100% - 48px));
+      min-height: 390px;
+      margin: 0 auto;
+      padding: 72px 0 105px;
+      display: flex;
+      align-items: center;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 2;
+      max-width: 780px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 16px;
+      color: var(--green-dark);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--green);
+    }
+
+    .hero h1 {
+      max-width: 780px;
+      margin: 0;
+      font-size: clamp(2.7rem, 5vw, 4.55rem);
+      line-height: 1.03;
+      letter-spacing: -0.06em;
+    }
+
+    .hero-message {
+      max-width: 720px;
+      margin: 22px 0 0;
+      color: #42516a;
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      line-height: 1.7;
+    }
+
+    .staff-section {
+      position: relative;
+      z-index: 5;
+      width: min(1040px, calc(100% - 48px));
+      margin: -58px auto 0;
+      padding-bottom: 72px;
+    }
+
+    .section-heading {
+      margin: 0 0 22px;
+      padding: 0 4px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: 1.12rem;
+      letter-spacing: -0.02em;
+    }
+
+    .section-heading p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .staff-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px;
+    }
+
+    .staff-card {
+      position: relative;
+      min-height: 385px;
+      padding: 36px 34px 31px;
       display: flex;
       flex-direction: column;
-      gap: 30px;
-      width: var(--button-width);
+      overflow: hidden;
+      border: 1px solid rgba(214, 224, 235, 0.92);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: var(--shadow);
+      transition: transform 220ms ease, box-shadow 220ms ease;
     }
-    a.button {
-      display: inline-block;
-      padding: 16px 32px;
-      font-size: 18px;
-      background-color: #28a745;
+
+    .staff-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: 5px;
+      background: var(--accent);
+    }
+
+    .staff-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 25px 55px rgba(20, 44, 76, 0.15);
+    }
+
+    .staff-card.green { --accent: var(--green); --accent-dark: var(--green-dark); --accent-soft: #e9f8ef; }
+    .staff-card.blue { --accent: var(--blue); --accent-dark: var(--blue-dark); --accent-soft: #eaf4ff; }
+
+    .staff-icon {
+      display: grid;
+      width: 92px;
+      height: 92px;
+      margin-bottom: 27px;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+    }
+
+    .staff-card h3 {
+      margin: 0;
+      font-size: 1.55rem;
+      line-height: 1.25;
+      letter-spacing: -0.045em;
+    }
+
+    .staff-card p {
+      margin: 14px 0 27px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .security-note {
+      margin-top: -10px !important;
+      color: var(--green-dark) !important;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .staff-button {
+      width: 100%;
+      min-height: 58px;
+      margin-top: auto;
+      padding: 12px 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border-radius: 12px;
       color: #fff;
+      background: var(--accent);
+      font-weight: 700;
       text-decoration: none;
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
-      transition: background-color 0.3s;
+      cursor: pointer;
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    .staff-button::after {
+      content: "→";
+      font-size: 1.15rem;
+      transition: transform 180ms ease;
+    }
+
+    .staff-button:hover,
+    .staff-button:focus-visible {
+      transform: translateY(-2px);
+      background: var(--accent-dark);
+    }
+
+    .staff-button:hover::after,
+    .staff-button:focus-visible::after { transform: translateX(3px); }
+
+    .page-actions {
+      margin-top: 25px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 12px 35px rgba(20, 44, 76, 0.06);
+    }
+
+    .page-actions p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .home-button {
+      flex: 0 0 auto;
+      min-height: 48px;
+      padding: 0 19px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 1px solid #cbd8e5;
+      border-radius: 11px;
+      background: #fff;
+      color: var(--navy);
+      font-weight: 700;
+      text-decoration: none;
+      transition: border-color 180ms ease, transform 180ms ease;
+    }
+
+    .home-button:hover,
+    .home-button:focus-visible {
+      transform: translateY(-2px);
+      border-color: var(--blue);
+    }
+
+    .site-footer {
+      padding: 0 24px 28px;
+      color: #738095;
+      font-size: 0.82rem;
       text-align: center;
     }
-    a.button:hover {
-      background-color: #218838;
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      padding: 20px;
+      display: none;
+      place-items: center;
+      background: rgba(3, 16, 29, 0.68);
+      backdrop-filter: blur(10px);
+    }
+
+    .modal-backdrop.open { display: grid; }
+
+    .pin-modal {
+      width: min(100%, 440px);
+      padding: 34px;
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: 0 30px 80px rgba(0, 10, 20, 0.32);
+    }
+
+    .modal-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .modal-heading h2 {
+      margin: 0;
+      font-size: 1.55rem;
+      letter-spacing: -0.04em;
+    }
+
+    .modal-heading p {
+      margin: 9px 0 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .modal-close {
+      flex: 0 0 auto;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      color: var(--ink);
+      background: #edf2f7;
+      font-size: 1.35rem;
+      cursor: pointer;
+    }
+
+    .pin-form {
+      margin-top: 26px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .pin-form label {
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .pin-input {
+      width: 100%;
+      min-height: 56px;
+      padding: 0 14px;
+      border: 1px solid #cfdbe8;
+      border-radius: 11px;
+      color: var(--ink);
+      background: #fbfdff;
+      font-size: 1.25rem;
+      letter-spacing: 0.28em;
+      text-align: center;
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .pin-input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 4px rgba(18, 166, 74, 0.12);
+    }
+
+    .pin-submit {
+      min-height: 54px;
+      border-radius: 11px;
+      color: #fff;
+      background: var(--green);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .pin-submit:hover,
+    .pin-submit:focus-visible { background: var(--green-dark); }
+
+    .pin-error {
+      min-height: 1.3em;
+      margin: 0;
+      color: #b51f2d;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    :focus-visible {
+      outline: 3px solid rgba(0, 127, 245, 0.45);
+      outline-offset: 3px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-shell { gap: 28px; }
+      .main-nav { gap: 23px; }
+      .staff-section { width: min(100% - 40px, 1040px); }
+    }
+
+    @media (max-width: 790px) {
+      .nav-shell {
+        width: min(100% - 32px, var(--page-width));
+        min-height: auto;
+        padding: 16px 0;
+        flex-wrap: wrap;
+      }
+
+      .main-nav {
+        order: 3;
+        width: 100%;
+        min-height: 46px;
+        overflow-x: auto;
+        gap: 26px;
+      }
+
+      .nav-link { min-height: 46px; white-space: nowrap; }
+      .portal-pill { padding: 10px 12px; font-size: 0.82rem; }
+      .portal-pill::before { width: 21px; height: 21px; }
+      .hero, .hero-content { min-height: 440px; }
+
+      .hero-content {
+        width: min(100% - 34px, var(--page-width));
+        padding: 58px 0 125px;
+        align-items: flex-start;
+      }
+
+      .hero-art img { object-position: 65% center; opacity: 0.50; }
+      .staff-section { width: min(100% - 30px, 1040px); }
+
+      .section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .staff-grid { grid-template-columns: 1fr; }
+      .staff-card { min-height: 350px; }
+    }
+
+    @media (max-width: 580px) {
+      .brand { font-size: 1.45rem; }
+      .portal-pill { gap: 7px; }
+      .portal-pill::before { display: none; }
+      .hero h1 { font-size: clamp(2.35rem, 12vw, 3.15rem); }
+      .hero-art img { object-position: 70% center; opacity: 0.36; }
+      .staff-card { min-height: 330px; padding: 30px 24px 25px; }
+      .page-actions { align-items: stretch; flex-direction: column; }
+      .home-button { width: 100%; }
+      .pin-modal { padding: 27px 22px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <div class="columns">
-      <div class="column">
-        <a href="inventaire/inventaire.html" class="button">Check Inventaire</a>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="index.html" aria-label="Accueil CS Oupeye">CS Oupeye®</a>
+
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a class="nav-link" href="index.html">Accueil</a>
+        <a class="nav-link" href="operation.html" data-safe-nav>Documentation</a>
+        <a class="nav-link" href="checklist.html" data-safe-nav>Checklists</a>
+        <a class="nav-link active" href="staff.html" aria-current="page">Staff</a>
+      </nav>
+
+      <span class="portal-pill">Accès réservé</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-art" aria-hidden="true">
+        <img src="crbo-hero-ambulance.png" alt="">
       </div>
-      <div class="column">
-        <a href="listing/listing.html" class="button">Listing volontaire</a>
+
+      <div class="hero-content">
+        <div class="hero-copy">
+          <p class="eyebrow">CS Oupeye</p>
+          <h1 id="hero-title">Espace<br>staff</h1>
+          <p class="hero-message">Inventaire et ressources réservées aux membres de l’équipe.</p>
+        </div>
       </div>
+    </section>
+
+    <section class="staff-section" aria-labelledby="staff-title">
+      <div class="section-heading">
+        <h2 id="staff-title">Outils de l’équipe</h2>
+        <p>Deux accès aux ressources internes.</p>
+      </div>
+
+      <div class="staff-grid">
+        <article class="staff-card green">
+          <div class="staff-icon" aria-hidden="true">INV</div>
+          <h3>Check Inventaire</h3>
+          <p>Accéder au contrôle et au suivi de l’inventaire opérationnel.</p>
+          <p class="security-note">Accès protégé par code PIN</p>
+          <a class="staff-button" href="inventaire/inventaire.html" data-pin-link>Accéder</a>
+        </article>
+
+        <article class="staff-card blue">
+          <div class="staff-icon" aria-hidden="true">LIST</div>
+          <h3>Listing volontaire</h3>
+          <p>Consulter et gérer les informations utiles relatives aux volontaires.</p>
+          <a class="staff-button" href="listing/listing.html" data-safe-nav>Consulter</a>
+        </article>
+      </div>
+
+      <div class="page-actions">
+        <p>Les liens indisponibles sont automatiquement redirigés vers la page d’information.</p>
+        <a class="home-button" href="index.html"><span aria-hidden="true">←</span> Retour à l’accueil</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">CS Oupeye® — Espace Staff</footer>
+
+  <div class="modal-backdrop" id="pinModal" role="dialog" aria-modal="true" aria-labelledby="pinTitle" aria-hidden="true">
+    <div class="pin-modal">
+      <div class="modal-heading">
+        <div>
+          <h2 id="pinTitle">Accès Inventaire</h2>
+          <p>Saisissez votre code PIN pour continuer.</p>
+        </div>
+        <button class="modal-close" id="closePinModal" type="button" aria-label="Fermer">×</button>
+      </div>
+
+      <form class="pin-form" id="pinForm">
+        <label for="pinInput">Code PIN</label>
+        <input class="pin-input" id="pinInput" name="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" required>
+        <p class="pin-error" id="pinError" role="alert" aria-live="polite"></p>
+        <button class="pin-submit" type="submit">Vérifier et accéder</button>
+      </form>
     </div>
   </div>
 
   <script>
-    // Interception du clic sur chaque bouton pour vérifier la disponibilité de la page cible
-    document.querySelectorAll("a.button").forEach(link => {
-      link.addEventListener("click", function(e) {
-        e.preventDefault();
-        const href = this.getAttribute("href");
-        
-        // Pour le bouton Check Inventaire, demander le code PIN
-        if (href === "inventaire/inventaire.html") {
-          var pin = prompt("Veuillez entrer le code PIN:");
-          if (pin !== "9851") {
-            alert("Code PIN incorrect.");
-            return;
-          }
+    const fallbackPage = "nowork/notwork.html";
+    const inventoryPinHash = "caf8135c0f01e2a33aebfa0e31c46b24de456f39514e112fa4d6915de1f094a6";
+    const pinModal = document.getElementById("pinModal");
+    const pinForm = document.getElementById("pinForm");
+    const pinInput = document.getElementById("pinInput");
+    const pinError = document.getElementById("pinError");
+    let protectedDestination = "inventaire/inventaire.html";
+
+    async function pageIsAvailable(href) {
+      try {
+        const response = await fetch(href, { method: "HEAD", cache: "no-store" });
+        return response.ok;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    async function navigateIfAvailable(event) {
+      event.preventDefault();
+      const href = event.currentTarget.getAttribute("href");
+      window.location.href = await pageIsAvailable(href) ? href : fallbackPage;
+    }
+
+    function openPinModal(event) {
+      event.preventDefault();
+      protectedDestination = event.currentTarget.getAttribute("href") || "inventaire/inventaire.html";
+      pinError.textContent = "";
+      pinModal.classList.add("open");
+      pinModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+      window.setTimeout(() => pinInput.focus(), 50);
+    }
+
+    function closePinModal() {
+      pinModal.classList.remove("open");
+      pinModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+      pinForm.reset();
+      pinError.textContent = "";
+    }
+
+    async function sha256(value) {
+      const bytes = new TextEncoder().encode(value);
+      const digest = await crypto.subtle.digest("SHA-256", bytes);
+      return Array.from(new Uint8Array(digest))
+        .map(byte => byte.toString(16).padStart(2, "0"))
+        .join("");
+    }
+
+    document.querySelectorAll("[data-safe-nav]").forEach(link => {
+      link.addEventListener("click", navigateIfAvailable);
+    });
+
+    document.querySelectorAll("[data-pin-link]").forEach(link => {
+      link.addEventListener("click", openPinModal);
+    });
+
+    document.getElementById("closePinModal").addEventListener("click", closePinModal);
+
+    pinModal.addEventListener("click", event => {
+      if (event.target === pinModal) closePinModal();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && pinModal.classList.contains("open")) {
+        closePinModal();
+      }
+    });
+
+    pinForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      pinError.textContent = "";
+
+      try {
+        const submittedHash = await sha256(pinInput.value);
+
+        if (submittedHash !== inventoryPinHash) {
+          pinError.textContent = "Code PIN incorrect.";
+          pinInput.select();
+          return;
         }
-        
-        // Vérification de la disponibilité de la page via une requête HEAD
-        fetch(href, { method: "HEAD" })
-          .then(response => {
-            if (response.ok) {
-              window.location.href = href;
-            } else {
-              window.location.href = "nowork/notwork.html";
-            }
-          })
-          .catch(error => {
-            window.location.href = "nowork/notwork.html";
-          });
-      });
+
+        window.location.href = await pageIsAvailable(protectedDestination)
+          ? protectedDestination
+          : fallbackPage;
+      } catch (error) {
+        pinError.textContent = "La vérification est momentanément indisponible.";
+      }
     });
   </script>
 </body>

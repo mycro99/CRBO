@@ -2,107 +2,577 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071d32">
+  <meta name="description" content="Documents opérationnels du CS Oupeye">
   <title>Portail Doc. Opérationnel - CS Oupeye</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
     :root {
-      --primary-color: #dc3545;
-      --secondary-color: #007bff;
-      --bg-color: #f5f5f5;
-      --text-color: #333;
-      --border-radius: 6px;
-      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      --button-width: 250px;
-      --button-height: 80px;
-      --button-gap: 30px;
+      --navy: #071d32;
+      --red: #e52f3f;
+      --red-dark: #c92332;
+      --blue: #087ff5;
+      --blue-dark: #006bd5;
+      --amber: #f59e0b;
+      --amber-dark: #d98700;
+      --green: #12a64a;
+      --green-dark: #0c8c3c;
+      --ink: #071a34;
+      --muted: #526078;
+      --line: #dfe7f0;
+      --background: #f5f8fb;
+      --shadow: 0 18px 45px rgba(20, 44, 76, 0.10);
+      --page-width: 1390px;
     }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
     body {
-      font-family: 'Roboto', sans-serif;
       margin: 0;
-      padding: 20px;
-      background-color: var(--bg-color);
-      color: var(--text-color);
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--background);
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: linear-gradient(90deg, #061b2f 0%, #08243e 60%, #071d32 100%);
+      box-shadow: 0 8px 25px rgba(1, 17, 31, 0.14);
+    }
+
+    .nav-shell {
+      width: min(var(--page-width), calc(100% - 48px));
+      min-height: 96px;
+      margin: 0 auto;
       display: flex;
       align-items: center;
-      justify-content: center;
-      min-height: 100vh;
+      gap: 56px;
     }
-    .container {
-      max-width: 900px;
-      width: 100%;
-      margin: auto;
-      text-align: center;
-      background-color: #fff;
-      padding: 40px;
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
-    }
-    h1 {
-      color: var(--primary-color);
-      margin-bottom: 40px;
-      font-size: 2.5rem;
-    }
-    .grid-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(var(--button-width), 1fr));
-      gap: var(--button-gap);
-      justify-items: center;
-    }
-    a.button {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: var(--button-width);
-      height: var(--button-height);
-      font-size: 1.2rem;
-      font-weight: 500;
-      background-color: var(--primary-color);
+
+    .brand {
+      flex: 0 0 auto;
       color: #fff;
+      font-size: clamp(1.45rem, 2.1vw, 2.05rem);
+      font-weight: 800;
+      letter-spacing: -0.045em;
       text-decoration: none;
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
-      transition: background-color 0.3s;
     }
-    a.button:hover {
-      background-color: #c82333;
+
+    .main-nav {
+      align-self: stretch;
+      display: flex;
+      align-items: stretch;
+      gap: 38px;
+    }
+
+    .nav-link {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      color: rgba(255, 255, 255, 0.90);
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 180ms ease;
+    }
+
+    .nav-link:hover,
+    .nav-link:focus-visible { color: #fff; }
+
+    .nav-link.active {
+      color: #ff4654;
+      font-weight: 700;
+    }
+
+    .nav-link.active::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 6px;
+      border-radius: 6px 6px 0 0;
+      background: #ff4654;
+    }
+
+    .portal-pill {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 18px;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.10);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .portal-pill::before {
+      content: "✓";
+      display: grid;
+      width: 25px;
+      height: 25px;
+      place-items: center;
+      border: 2px solid rgba(255, 255, 255, 0.85);
+      border-radius: 8px 8px 11px 11px;
+      font-size: 0.8rem;
+    }
+
+    main { overflow: hidden; }
+
+    .hero {
+      position: relative;
+      isolation: isolate;
+      min-height: 390px;
+      border-bottom: 1px solid rgba(192, 207, 224, 0.65);
+      background: linear-gradient(105deg, #f8fbff 0%, #f2f8fe 58%, #eaf4fd 100%);
+    }
+
+    .hero-art {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .hero-art::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(248, 251, 255, 0.26) 0%, transparent 58%),
+        linear-gradient(180deg, transparent 62%, rgba(245, 248, 251, 0.76) 100%);
+    }
+
+    .hero-art img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center center;
+      opacity: 0.70;
+      filter: saturate(0.88) contrast(0.97);
+    }
+
+    .hero-content {
+      width: min(var(--page-width), calc(100% - 48px));
+      min-height: 390px;
+      margin: 0 auto;
+      padding: 72px 0 105px;
+      display: flex;
+      align-items: center;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 2;
+      max-width: 780px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 16px;
+      color: var(--red-dark);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--red);
+    }
+
+    .hero h1 {
+      max-width: 780px;
+      margin: 0;
+      font-size: clamp(2.7rem, 5vw, 4.55rem);
+      line-height: 1.03;
+      letter-spacing: -0.06em;
+    }
+
+    .hero-message {
+      max-width: 720px;
+      margin: 22px 0 0;
+      color: #42516a;
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      line-height: 1.7;
+    }
+
+    .documents-section {
+      position: relative;
+      z-index: 5;
+      width: min(var(--page-width), calc(100% - 48px));
+      margin: -58px auto 0;
+      padding-bottom: 72px;
+    }
+
+    .section-heading {
+      margin: 0 0 22px;
+      padding: 0 4px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: 1.12rem;
+      letter-spacing: -0.02em;
+    }
+
+    .section-heading p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .document-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .document-card {
+      position: relative;
+      min-height: 300px;
+      padding: 30px 28px 27px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid rgba(214, 224, 235, 0.92);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: var(--shadow);
+      transition: transform 220ms ease, box-shadow 220ms ease;
+    }
+
+    .document-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: 5px;
+      background: var(--accent);
+    }
+
+    .document-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 25px 55px rgba(20, 44, 76, 0.15);
+    }
+
+    .document-card.blue { --accent: var(--blue); --accent-dark: var(--blue-dark); --accent-soft: #eaf4ff; }
+    .document-card.red { --accent: var(--red); --accent-dark: var(--red-dark); --accent-soft: #ffebed; }
+    .document-card.amber { --accent: var(--amber); --accent-dark: var(--amber-dark); --accent-soft: #fff5df; }
+    .document-card.green { --accent: var(--green); --accent-dark: var(--green-dark); --accent-soft: #e9f8ef; }
+
+    .document-icon {
+      display: grid;
+      width: 76px;
+      height: 76px;
+      margin-bottom: 22px;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 0.93rem;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+    }
+
+    .document-card h3 {
+      margin: 0;
+      font-size: 1.28rem;
+      line-height: 1.25;
+      letter-spacing: -0.04em;
+    }
+
+    .document-card p {
+      margin: 12px 0 23px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .document-button {
+      width: 100%;
+      min-height: 52px;
+      margin-top: auto;
+      padding: 11px 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border-radius: 11px;
+      color: #fff;
+      background: var(--accent);
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    .document-button::after {
+      content: "→";
+      font-size: 1.1rem;
+      transition: transform 180ms ease;
+    }
+
+    .document-button:hover,
+    .document-button:focus-visible {
+      transform: translateY(-2px);
+      background: var(--accent-dark);
+    }
+
+    .document-button:hover::after,
+    .document-button:focus-visible::after { transform: translateX(3px); }
+
+    .page-actions {
+      margin-top: 25px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 12px 35px rgba(20, 44, 76, 0.06);
+    }
+
+    .page-actions p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .home-button {
+      flex: 0 0 auto;
+      min-height: 48px;
+      padding: 0 19px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 1px solid #cbd8e5;
+      border-radius: 11px;
+      background: #fff;
+      color: var(--navy);
+      font-weight: 700;
+      text-decoration: none;
+      transition: border-color 180ms ease, transform 180ms ease;
+    }
+
+    .home-button:hover,
+    .home-button:focus-visible {
+      transform: translateY(-2px);
+      border-color: var(--blue);
+    }
+
+    .site-footer {
+      padding: 0 24px 28px;
+      color: #738095;
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    :focus-visible {
+      outline: 3px solid rgba(0, 127, 245, 0.45);
+      outline-offset: 3px;
+    }
+
+    @media (max-width: 1050px) {
+      .nav-shell { gap: 30px; }
+      .main-nav { gap: 25px; }
+      .document-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 790px) {
+      .nav-shell {
+        width: min(100% - 32px, var(--page-width));
+        min-height: auto;
+        padding: 16px 0;
+        flex-wrap: wrap;
+      }
+
+      .main-nav {
+        order: 3;
+        width: 100%;
+        min-height: 46px;
+        overflow-x: auto;
+        gap: 26px;
+      }
+
+      .nav-link { min-height: 46px; white-space: nowrap; }
+      .portal-pill { padding: 10px 12px; font-size: 0.82rem; }
+      .portal-pill::before { width: 21px; height: 21px; }
+      .hero, .hero-content { min-height: 440px; }
+
+      .hero-content {
+        width: min(100% - 34px, var(--page-width));
+        padding: 58px 0 125px;
+        align-items: flex-start;
+      }
+
+      .hero-art img { object-position: 65% center; opacity: 0.52; }
+      .documents-section { width: min(100% - 30px, var(--page-width)); }
+
+      .section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+    }
+
+    @media (max-width: 580px) {
+      .brand { font-size: 1.45rem; }
+      .portal-pill { gap: 7px; }
+      .portal-pill::before { display: none; }
+      .hero h1 { font-size: clamp(2.35rem, 12vw, 3.15rem); }
+      .hero-art img { object-position: 70% center; opacity: 0.38; }
+      .document-grid { grid-template-columns: 1fr; }
+      .document-card { min-height: 285px; }
+      .page-actions { align-items: stretch; flex-direction: column; }
+      .home-button { width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <h1>Documents Opérationnels</h1>
-    <div class="grid-container">
-      <!-- Bouton vers le document de permutation -->
-      <a href="opérationnel/permutation.html" class="button">Permutation</a>
-      <a href="opérationnel/105.html" class="button">Feuille de route 105</a>
-      <a href="opérationnel/112.html" class="button">Feuille de route 112</a>
-      <a href="opérationnel/accident_salariés.html" class="button">Accident de travail - salariés</a>
-      <a href="opérationnel/accident_vol.html" class="button">Accident de travail - volontaires</a>
-      <a href="opérationnel/tenues.html" class="button">Commande de tenues</a>
-      <!-- Ajoutez autant de boutons que nécessaire -->
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="index.html" aria-label="Accueil CS Oupeye">CS Oupeye®</a>
+
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a class="nav-link" href="index.html">Accueil</a>
+        <a class="nav-link active" href="operation.html" aria-current="page">Documentation</a>
+        <a class="nav-link" href="checklist.html" data-safe-nav>Checklists</a>
+      </nav>
+
+      <span class="portal-pill">Portail interne</span>
     </div>
-  </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-art" aria-hidden="true">
+        <img src="crbo-hero-ambulance.png" alt="">
+      </div>
+
+      <div class="hero-content">
+        <div class="hero-copy">
+          <p class="eyebrow">CS Oupeye</p>
+          <h1 id="hero-title">Documents<br>opérationnels</h1>
+          <p class="hero-message">Accédez rapidement aux procédures, feuilles de route et formulaires essentiels.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="documents-section" aria-labelledby="documents-title">
+      <div class="section-heading">
+        <h2 id="documents-title">Ressources disponibles</h2>
+        <p>Six accès directs aux documents utiles.</p>
+      </div>
+
+      <div class="document-grid">
+        <article class="document-card blue">
+          <div class="document-icon" aria-hidden="true">⇄</div>
+          <h3>Permutation</h3>
+          <p>Accéder au formulaire et aux informations relatives aux permutations.</p>
+          <a class="document-button" href="opérationnel/permutation.html" data-safe-nav>Consulter</a>
+        </article>
+
+        <article class="document-card red">
+          <div class="document-icon" aria-hidden="true">105</div>
+          <h3>Feuille de route 105</h3>
+          <p>Consulter et compléter la feuille de route dédiée au service 105.</p>
+          <a class="document-button" href="opérationnel/105.html" data-safe-nav>Consulter</a>
+        </article>
+
+        <article class="document-card red">
+          <div class="document-icon" aria-hidden="true">112</div>
+          <h3>Feuille de route 112</h3>
+          <p>Consulter et compléter la feuille de route dédiée au service 112.</p>
+          <a class="document-button" href="opérationnel/112.html" data-safe-nav>Consulter</a>
+        </article>
+
+        <article class="document-card amber">
+          <div class="document-icon" aria-hidden="true">AT</div>
+          <h3>Accident de travail</h3>
+          <p>Déclaration et procédure destinée aux membres du personnel salarié.</p>
+          <a class="document-button" href="opérationnel/accident_salariés.html" data-safe-nav>Salariés</a>
+        </article>
+
+        <article class="document-card amber">
+          <div class="document-icon" aria-hidden="true">AT</div>
+          <h3>Accident de travail</h3>
+          <p>Déclaration et procédure destinée aux membres volontaires.</p>
+          <a class="document-button" href="opérationnel/accident_vol.html" data-safe-nav>Volontaires</a>
+        </article>
+
+        <article class="document-card green">
+          <div class="document-icon" aria-hidden="true">TEN</div>
+          <h3>Commande de tenues</h3>
+          <p>Accéder au formulaire de commande des vêtements et équipements.</p>
+          <a class="document-button" href="opérationnel/tenues.html" data-safe-nav>Commander</a>
+        </article>
+      </div>
+
+      <div class="page-actions">
+        <p>Les liens indisponibles sont automatiquement redirigés vers la page d’information.</p>
+        <a class="home-button" href="index.html"><span aria-hidden="true">←</span> Retour à l’accueil</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">CS Oupeye® — Documents opérationnels</footer>
+
   <script>
-    // Interception du clic sur chaque bouton pour vérifier la disponibilité de la page cible
-    document.querySelectorAll("a.button").forEach(link => {
-      link.addEventListener("click", function(e) {
-        e.preventDefault();
-        
-        
-        const href = this.getAttribute("href");
-        // Vérification de la disponibilité de la page via une requête HEAD
-        fetch(href, { method: "HEAD" })
-          .then(response => {
-            if(response.ok) {
-              window.location.href = href;
-            } else {
-              window.location.href = "nowork/notwork.html";
-            }
-          })
-          .catch(error => {
-            window.location.href = "nowork/notwork.html";
-          });
-      });
+    const fallbackPage = "nowork/notwork.html";
+
+    async function navigateIfAvailable(event) {
+      event.preventDefault();
+      const href = event.currentTarget.getAttribute("href");
+
+      try {
+        const response = await fetch(href, { method: "HEAD", cache: "no-store" });
+        window.location.href = response.ok ? href : fallbackPage;
+      } catch (error) {
+        window.location.href = fallbackPage;
+      }
+    }
+
+    document.querySelectorAll("[data-safe-nav]").forEach(link => {
+      link.addEventListener("click", navigateIfAvailable);
     });
   </script>
 </body>
