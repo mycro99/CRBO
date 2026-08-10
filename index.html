@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071d32">
+  <meta name="description" content="Portail opérationnel du CS Oupeye">
+  <title>Portail CS Oupeye</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --navy: #071d32;
+      --navy-soft: #102c47;
+      --red: #e52f3f;
+      --red-dark: #c92332;
+      --blue: #087ff5;
+      --blue-dark: #006bd5;
+      --green: #12a64a;
+      --green-dark: #0c8c3c;
+      --ink: #071a34;
+      --muted: #526078;
+      --line: #dfe7f0;
+      --surface: #ffffff;
+      --background: #f5f8fb;
+      --shadow: 0 18px 45px rgba(20, 44, 76, 0.10);
+      --radius: 22px;
+      --page-width: 1390px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--background);
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    a,
+    button,
+    input {
+      font: inherit;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    button {
+      border: 0;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: linear-gradient(90deg, #061b2f 0%, #08243e 60%, #071d32 100%);
+      box-shadow: 0 8px 25px rgba(1, 17, 31, 0.14);
+    }
+
+    .nav-shell {
+      width: min(var(--page-width), calc(100% - 48px));
+      min-height: 96px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 56px;
+    }
+
+    .brand {
+      flex: 0 0 auto;
+      color: #fff;
+      font-size: clamp(1.45rem, 2.1vw, 2.05rem);
+      font-weight: 800;
+      letter-spacing: -0.045em;
+      text-decoration: none;
+    }
+
+    .main-nav {
+      align-self: stretch;
+      display: flex;
+      align-items: stretch;
+      gap: 38px;
+    }
+
+    .nav-link {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      color: rgba(255, 255, 255, 0.90);
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 180ms ease;
+    }
+
+    .nav-link:hover,
+    .nav-link:focus-visible,
+    .nav-link.active {
+      color: #fff;
+    }
+
+    .nav-link.active {
+      color: #ff4654;
+      font-weight: 700;
+    }
+
+    .nav-link.active::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 6px;
+      border-radius: 6px 6px 0 0;
+      background: #ff4654;
+    }
+
+    .portal-pill {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 18px;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.10);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .portal-pill::before {
+      content: "✓";
+      display: grid;
+      width: 25px;
+      height: 25px;
+      place-items: center;
+      border: 2px solid rgba(255, 255, 255, 0.85);
+      border-radius: 8px 8px 11px 11px;
+      font-size: 0.8rem;
+    }
+
+    main {
+      overflow: hidden;
+    }
+
+    .hero {
+      position: relative;
+      isolation: isolate;
+      min-height: 410px;
+      border-bottom: 1px solid rgba(192, 207, 224, 0.65);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(63, 151, 255, 0.10), transparent 35%),
+        linear-gradient(105deg, #f8fbff 0%, #f2f8fe 58%, #eaf4fd 100%);
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      opacity: 0.26;
+      background-image:
+        linear-gradient(30deg, transparent 48%, #9fc5ed 49%, #9fc5ed 50%, transparent 51%),
+        linear-gradient(150deg, transparent 48%, #9fc5ed 49%, #9fc5ed 50%, transparent 51%);
+      background-size: 170px 98px;
+      mask-image: linear-gradient(90deg, #000 0%, transparent 56%, #000 100%);
+    }
+
+    .hero-art {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 48%;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+      mask-image:
+        linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.40) 20%, #000 44%),
+        linear-gradient(180deg, #000 0%, #000 72%, transparent 100%);
+      mask-composite: intersect;
+    }
+
+    .hero-art img {
+      position: absolute;
+      top: -67px;
+      right: -22px;
+      width: 1050px;
+      max-width: none;
+      opacity: 0.98;
+      filter: saturate(0.92) contrast(0.98);
+    }
+
+    .hero-content {
+      width: min(var(--page-width), calc(100% - 48px));
+      min-height: 410px;
+      margin: 0 auto;
+      padding: 88px 0 105px;
+      display: flex;
+      align-items: center;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 2;
+      max-width: 780px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 16px;
+      color: var(--red-dark);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--red);
+    }
+
+    .hero h1 {
+      max-width: 760px;
+      margin: 0;
+      font-size: clamp(2.7rem, 5vw, 4.55rem);
+      line-height: 1.03;
+      letter-spacing: -0.06em;
+    }
+
+    .hero-copy > p:last-child {
+      max-width: 760px;
+      margin: 24px 0 0;
+      color: #42516a;
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      line-height: 1.7;
+    }
+
+    .portal-content {
+      position: relative;
+      z-index: 5;
+      width: min(var(--page-width), calc(100% - 48px));
+      margin: -54px auto 0;
+      padding-bottom: 70px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+    }
+
+    .portal-card {
+      min-height: 365px;
+      padding: 34px 38px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid rgba(214, 224, 235, 0.90);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow: var(--shadow);
+      text-align: center;
+      transition: transform 220ms ease, box-shadow 220ms ease;
+    }
+
+    .portal-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 24px 52px rgba(20, 44, 76, 0.15);
+    }
+
+    .card-icon {
+      display: grid;
+      width: 100px;
+      height: 100px;
+      margin-bottom: 22px;
+      place-items: center;
+      border-radius: 50%;
+      font-size: 2.8rem;
+      line-height: 1;
+    }
+
+    .card-icon.blue {
+      color: var(--blue);
+      background: #eaf4ff;
+    }
+
+    .card-icon.red {
+      color: var(--red);
+      background: #ffebed;
+    }
+
+    .card-icon.green {
+      color: var(--green);
+      background: #e9f8ef;
+    }
+
+    .portal-card h2 {
+      margin: 0;
+      font-size: clamp(1.25rem, 2vw, 1.52rem);
+      letter-spacing: -0.035em;
+    }
+
+    .portal-card p {
+      max-width: 330px;
+      margin: 14px auto 26px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .card-button {
+      width: 100%;
+      min-height: 60px;
+      margin-top: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 10px 22px rgba(15, 36, 58, 0.10);
+      transition: transform 180ms ease, background 180ms ease;
+      cursor: pointer;
+    }
+
+    .card-button:hover,
+    .card-button:focus-visible {
+      transform: translateY(-2px);
+    }
+
+    .card-button.blue {
+      background: var(--blue);
+    }
+
+    .card-button.blue:hover,
+    .card-button.blue:focus-visible {
+      background: var(--blue-dark);
+    }
+
+    .card-button.red {
+      background: var(--red);
+    }
+
+    .card-button.red:hover,
+    .card-button.red:focus-visible {
+      background: var(--red-dark);
+    }
+
+    .card-button.green {
+      background: var(--green);
+    }
+
+    .card-button.green:hover,
+    .card-button.green:focus-visible {
+      background: var(--green-dark);
+    }
+
+    .quick-access {
+      margin-top: 26px;
+      padding: 22px 26px;
+      display: grid;
+      grid-template-columns: auto repeat(4, minmax(0, 1fr));
+      align-items: center;
+      gap: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 12px 35px rgba(20, 44, 76, 0.06);
+    }
+
+    .quick-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-right: 10px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .quick-title span {
+      color: var(--blue);
+      font-size: 1.8rem;
+    }
+
+    .quick-link {
+      min-height: 56px;
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid #dce5ef;
+      border-radius: 12px;
+      background: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-align: center;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(24, 52, 84, 0.04);
+      transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .quick-link:hover,
+    .quick-link:focus-visible {
+      transform: translateY(-2px);
+      border-color: #9dc8f6;
+      box-shadow: 0 8px 20px rgba(24, 52, 84, 0.09);
+    }
+
+    .quick-symbol {
+      color: var(--blue);
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+
+    .quick-link:nth-of-type(3) .quick-symbol {
+      color: var(--red);
+    }
+
+    .quick-link:nth-of-type(4) .quick-symbol {
+      color: var(--green);
+    }
+
+    .site-footer {
+      padding: 0 24px 28px;
+      color: #738095;
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      padding: 20px;
+      display: none;
+      place-items: center;
+      background: rgba(3, 16, 29, 0.68);
+      backdrop-filter: blur(10px);
+    }
+
+    .modal-backdrop.open {
+      display: grid;
+    }
+
+    .auth-modal {
+      width: min(100%, 460px);
+      padding: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: 0 30px 80px rgba(0, 10, 20, 0.32);
+    }
+
+    .modal-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .modal-heading h2 {
+      margin: 0;
+      font-size: 1.55rem;
+      letter-spacing: -0.04em;
+    }
+
+    .modal-heading p {
+      margin: 9px 0 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .modal-close {
+      flex: 0 0 auto;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      color: var(--ink);
+      background: #edf2f7;
+      font-size: 1.35rem;
+      cursor: pointer;
+    }
+
+    .auth-form {
+      margin-top: 26px;
+      display: grid;
+      gap: 17px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label {
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .field input {
+      width: 100%;
+      min-height: 52px;
+      padding: 0 14px;
+      border: 1px solid #cfdbe8;
+      border-radius: 11px;
+      color: var(--ink);
+      background: #fbfdff;
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .field input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 4px rgba(18, 166, 74, 0.12);
+    }
+
+    .auth-submit {
+      min-height: 54px;
+      margin-top: 4px;
+      border-radius: 11px;
+      color: #fff;
+      background: var(--green);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .auth-submit:hover,
+    .auth-submit:focus-visible {
+      background: var(--green-dark);
+    }
+
+    .auth-submit:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
+    .auth-error {
+      min-height: 1.3em;
+      margin: 0;
+      color: #b51f2d;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    :focus-visible {
+      outline: 3px solid rgba(0, 127, 245, 0.45);
+      outline-offset: 3px;
+    }
+
+    @media (max-width: 1050px) {
+      .nav-shell {
+        gap: 30px;
+      }
+
+      .main-nav {
+        gap: 24px;
+      }
+
+      .hero-art {
+        left: 43%;
+        opacity: 0.62;
+      }
+
+      .hero-copy {
+        max-width: 660px;
+      }
+
+      .cards {
+        gap: 16px;
+      }
+
+      .portal-card {
+        padding-inline: 24px;
+      }
+
+      .quick-access {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .quick-title {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 790px) {
+      .nav-shell {
+        width: min(100% - 32px, var(--page-width));
+        min-height: auto;
+        padding: 16px 0;
+        flex-wrap: wrap;
+      }
+
+      .main-nav {
+        order: 3;
+        width: 100%;
+        min-height: 46px;
+        overflow-x: auto;
+        gap: 26px;
+      }
+
+      .nav-link {
+        min-height: 46px;
+        white-space: nowrap;
+      }
+
+      .portal-pill {
+        padding: 10px 12px;
+        font-size: 0.82rem;
+      }
+
+      .portal-pill::before {
+        width: 21px;
+        height: 21px;
+      }
+
+      .hero,
+      .hero-content {
+        min-height: 460px;
+      }
+
+      .hero-content {
+        width: min(100% - 34px, var(--page-width));
+        padding: 60px 0 125px;
+        align-items: flex-start;
+      }
+
+      .hero-art {
+        top: 120px;
+        left: 30%;
+        opacity: 0.35;
+      }
+
+      .hero-art img {
+        top: -40px;
+        right: -160px;
+        width: 900px;
+      }
+
+      .hero-copy > p:last-child {
+        max-width: 550px;
+      }
+
+      .portal-content {
+        width: min(100% - 30px, var(--page-width));
+      }
+
+      .cards {
+        grid-template-columns: 1fr;
+      }
+
+      .portal-card {
+        min-height: 330px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .brand {
+        font-size: 1.45rem;
+      }
+
+      .portal-pill {
+        gap: 7px;
+      }
+
+      .portal-pill::before {
+        display: none;
+      }
+
+      .hero h1 {
+        font-size: clamp(2.35rem, 12vw, 3.15rem);
+      }
+
+      .hero-art {
+        left: 2%;
+        opacity: 0.24;
+      }
+
+      .portal-card {
+        padding: 29px 22px 24px;
+      }
+
+      .quick-access {
+        grid-template-columns: 1fr;
+        padding: 20px;
+      }
+
+      .quick-title {
+        grid-column: auto;
+      }
+
+      .auth-modal {
+        padding: 26px 22px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="index.html" aria-label="Accueil CS Oupeye">CS Oupeye®</a>
+
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a class="nav-link active" href="index.html" aria-current="page">Accueil</a>
+        <a class="nav-link" href="operation.html" data-safe-nav>Documentation</a>
+        <a class="nav-link" href="checklist.html" data-safe-nav>Checklists</a>
+        <a class="nav-link" href="staff.html" data-staff-link>Staff</a>
+      </nav>
+
+      <span class="portal-pill">Portail interne</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-art" aria-hidden="true">
+        <!-- Placez crbo-maquette-ambulance-jaune-damier.png à côté de index.html -->
+        <img src="crbo-maquette-ambulance-jaune-damier.png" alt="">
+      </div>
+
+      <div class="hero-content">
+        <div class="hero-copy">
+          <p class="eyebrow">CS Oupeye</p>
+          <h1 id="hero-title">Le portail opérationnel<br>du CS Oupeye</h1>
+          <p>Accédez rapidement à vos documents, checklists et outils d’équipe.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="portal-content" aria-label="Accès au portail">
+      <div class="cards">
+        <article class="portal-card">
+          <div class="card-icon blue" aria-hidden="true">▣</div>
+          <h2>Documentation opérationnelle</h2>
+          <p>Procédures, feuilles de route et formulaires essentiels.</p>
+          <a class="card-button blue" href="operation.html" data-safe-nav>Consulter</a>
+        </article>
+
+        <article class="portal-card">
+          <div class="card-icon red" aria-hidden="true">☑</div>
+          <h2>Portail des checklists</h2>
+          <p>Vérifications ambulance, TPMR, péremptions et matériel.</p>
+          <a class="card-button red" href="checklist.html" data-safe-nav>Ouvrir</a>
+        </article>
+
+        <article class="portal-card">
+          <div class="card-icon green" aria-hidden="true">♟</div>
+          <h2>Espace staff</h2>
+          <p>Inventaire et ressources réservées à l’équipe.</p>
+          <a class="card-button green" href="staff.html" data-staff-link>Accéder</a>
+        </article>
+      </div>
+
+      <div class="quick-access" aria-label="Accès rapide">
+        <div class="quick-title"><span aria-hidden="true">ϟ</span> Accès rapide</div>
+
+        <a class="quick-link" href="opérationnel/permutation.html" data-safe-nav>
+          <span class="quick-symbol" aria-hidden="true">⇄</span>
+          Permutation
+        </a>
+
+        <a class="quick-link" href="opérationnel/105.html" data-safe-nav>
+          <span class="quick-symbol" aria-hidden="true">▤</span>
+          Feuille de route 105
+        </a>
+
+        <a class="quick-link" href="opérationnel/112.html" data-safe-nav>
+          <span class="quick-symbol" aria-hidden="true">▤</span>
+          Feuille de route 112
+        </a>
+
+        <a class="quick-link" href="opérationnel/tenues.html" data-safe-nav>
+          <span class="quick-symbol" aria-hidden="true">♟</span>
+          Commande de tenues
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">CS Oupeye® — Portail opérationnel</footer>
+
+  <div class="modal-backdrop" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle" aria-hidden="true">
+    <div class="auth-modal">
+      <div class="modal-heading">
+        <div>
+          <h2 id="authTitle">Connexion Staff</h2>
+          <p>Identifiez-vous pour accéder aux ressources réservées.</p>
+        </div>
+        <button class="modal-close" id="closeModal" type="button" aria-label="Fermer">×</button>
+      </div>
+
+      <form class="auth-form" id="authForm">
+        <div class="field">
+          <label for="staffEmail">Adresse e-mail</label>
+          <input id="staffEmail" name="email" type="email" autocomplete="username" required>
+        </div>
+
+        <div class="field">
+          <label for="staffPassword">Mot de passe</label>
+          <input id="staffPassword" name="password" type="password" autocomplete="current-password" required>
+        </div>
+
+        <p class="auth-error" id="authError" role="alert" aria-live="polite"></p>
+        <button class="auth-submit" id="authSubmit" type="submit">Se connecter</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Firebase : configuration reprise de votre index actuel -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU",
+      authDomain: "listing-44b2b.firebaseapp.com",
+      projectId: "listing-44b2b",
+      storageBucket: "listing-44b2b.firebasestorage.app",
+      messagingSenderId: "310030019842",
+      appId: "1:310030019842:web:c8a50b61f3dfbcb867e61b",
+      measurementId: "G-419VVR3NHE"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    window.firebaseSignIn = (email, password) => {
+      return signInWithEmailAndPassword(auth, email, password);
+    };
+  </script>
+
+  <script>
+    const fallbackPage = "nowork/notwork.html";
+    const authModal = document.getElementById("authModal");
+    const authForm = document.getElementById("authForm");
+    const authError = document.getElementById("authError");
+    const authSubmit = document.getElementById("authSubmit");
+    const emailField = document.getElementById("staffEmail");
+    let staffDestination = "staff.html";
+
+    async function navigateIfAvailable(event) {
+      event.preventDefault();
+      const href = event.currentTarget.getAttribute("href");
+
+      try {
+        const response = await fetch(href, { method: "HEAD", cache: "no-store" });
+        window.location.href = response.ok ? href : fallbackPage;
+      } catch (error) {
+        window.location.href = fallbackPage;
+      }
+    }
+
+    function openAuthModal(event) {
+      event.preventDefault();
+      staffDestination = event.currentTarget.getAttribute("href") || "staff.html";
+      authError.textContent = "";
+      authModal.classList.add("open");
+      authModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+      window.setTimeout(() => emailField.focus(), 50);
+    }
+
+    function closeAuthModal() {
+      authModal.classList.remove("open");
+      authModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+      authForm.reset();
+      authError.textContent = "";
+    }
+
+    document.querySelectorAll("[data-safe-nav]").forEach(link => {
+      link.addEventListener("click", navigateIfAvailable);
+    });
+
+    document.querySelectorAll("[data-staff-link]").forEach(link => {
+      link.addEventListener("click", openAuthModal);
+    });
+
+    document.getElementById("closeModal").addEventListener("click", closeAuthModal);
+
+    authModal.addEventListener("click", event => {
+      if (event.target === authModal) closeAuthModal();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && authModal.classList.contains("open")) {
+        closeAuthModal();
+      }
+    });
+
+    authForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      authError.textContent = "";
+      authSubmit.disabled = true;
+      authSubmit.textContent = "Connexion…";
+
+      try {
+        if (typeof window.firebaseSignIn !== "function") {
+          throw new Error("Le service de connexion n’est pas encore disponible.");
+        }
+
+        await window.firebaseSignIn(
+          authForm.elements.email.value.trim(),
+          authForm.elements.password.value
+        );
+
+        window.location.href = staffDestination;
+      } catch (error) {
+        authError.textContent = "Connexion refusée. Vérifiez votre e-mail et votre mot de passe.";
+        authSubmit.disabled = false;
+        authSubmit.textContent = "Se connecter";
+      }
+    });
+  </script>
+</body>
+</html>
