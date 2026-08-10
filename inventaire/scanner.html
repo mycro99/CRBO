@@ -9,57 +9,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Roboto', sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
-      color: #333;
-    }
-    h1 {
-      text-align: center;
-      color: #dc3545;
-    }
-    #reader {
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    #message {
-      text-align: center;
-      margin-top: 20px;
-      color: #dc3545;
-    }
-    #start-btn {
-      display: block;
-      margin: 20px auto;
-      padding: 10px 20px;
-      font-size: 16px;
-      background: #dc3545;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    #reader video {
-      filter: contrast(1.2) brightness(1.1);
-    }
-    #back-btn {
-  display: block;
-  margin: 10px auto 20px;
-  padding: 10px 20px;
-  font-size: 16px;
-  background: #6c757d;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-#back-btn:hover {
-  background: #5a6268;
-}
-  </style>
   <link rel="stylesheet" href="../final-pages-modern.css">
 </head>
 <body>
@@ -89,17 +38,26 @@
         <div class="scanner-stage">
           <div id="reader"></div>
           <div class="scanner-actions">
-            <button id="start-btn">Démarrer le scan</button>
-            <button id="back-btn" onclick="window.location.href='inventaire.html'">Retour à l’inventaire</button>
+            <button id="start-btn" type="button">Démarrer le scan</button>
+            <button id="torch-btn" type="button" hidden>Activer la lampe</button>
+            <button id="back-btn" type="button">Retour à l’inventaire</button>
           </div>
-          <div id="message">Le scanner est prêt à démarrer.</div>
+          <div id="message" class="scanner-message scanner-message--info" role="status" aria-live="polite">Le scanner est prêt à démarrer.</div>
+          <div class="manual-scan">
+            <label for="manual-barcode">Le code ne passe pas ? Saisissez-le manuellement</label>
+            <div class="manual-row">
+              <input id="manual-barcode" type="text" inputmode="numeric" autocomplete="off" placeholder="Numéro du code-barres" aria-describedby="manual-help">
+              <button id="manual-submit-btn" type="button">Rechercher</button>
+            </div>
+            <small id="manual-help">Les espaces et tirets sont automatiquement ignorés.</small>
+          </div>
         </div>
       </section>
     </div>
   </main>
   
   <!-- Chargement de la bibliothèque html5‑qrcode depuis un CDN -->
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
     const startBtn = document.getElementById("start-btn");
     const messageDiv = document.getElementById("message");
@@ -111,7 +69,7 @@
      const categoryMapping = {
       consommables:
         [ "4015630006038", "9000010000001", "9000010000002", "9000010000003", "9000010000004", "9000010000005", "9000010000006", "9000010000007", "9000010000008", "9000010000009", "9000010000010", "5400519001171", "8033622546177", "1726110010015", "10100732094314618", "4052199606699", "4031815710811", "5400141560756", "8430655000353", "4049500257800", "8430655000339", "134010717531731330633", "5021791005512", "4250478422941", "3205379007", "3760059239550", "3389360016072", "4031815901615", "8717484000540", "10107045432105575100922", "0105060107836228", "0105056271508283", "0105056271508221", "0104026704348008172703281122042210220722", "01008220450002161020230508", "10104034342261153" ,"0105413760145303172607001024174", "010084399701312311231001102324043252414325", "01040545967778421729121710107579224", "8711000329931", "5404009106452", "4002427000362", "3760011957003", "0108428820030175112401011727122710240058", "01064186850134081125012217300122101121716", "3661040010083", "845111", "845131", "845121", "7290011042035", "7290011042066", "762470995353", "4031815901417", "4049500987387", "4049500974745", "4049500974738", "780800", "850633000003", "5410708009123", "107701668", "107701651", "107701645", "107701639", "107701622", "107701616", "107701674", "107701680", "107701697", "4031815711320", "4031815710521", "5411651260043", "98001033", "4049500658911", "4049500727181", "4052199606637", "4049500727037", "4044941040707", "00732094314618", "5021791709151", "4052199309132", "4052199308906", "4052199308852", "4052199309163", "2247849", "4044941040028", "3401046569679", "4030539076227", "2409365", "103799328", "103799305", "103072193", "103498489", "10104034342261177", "6973081843337", "4049500967785", "4049500967754", "010088483802370317270207102408070953", "4008496882076", "5000394149199", "5000394203907", "4250478405005", "4002427000362", "4002427000386", "5021791708123", "780412" ],
-      désinfection:
+      desinfection:
         [ "5410036309551", "8718158263049", "4031678041970", "5425037713122", "5425037710527", "5425037713184", "5425037710947", "4031678086856", "5425037713061" ],
       divers:
         [ "01008220450010531020230109", "01008220450010531020230116", "7042284609213", "5420024600119", "5420013500291", "2639136", "82001107", "4007123647576", "1010084399701328411230901216000169255", "8033622546177", "065353" ],
@@ -120,101 +78,225 @@
       garage:
         [ "3701239300011", "0113760061176840", "3254381260110", "4262431120016", "5412235020336", "5412235165211", "4260095090355", "8712602000518"]
     };
+    const torchBtn = document.getElementById("torch-btn");
+    const backBtn = document.getElementById("back-btn");
+    const manualBarcodeInput = document.getElementById("manual-barcode");
+    const manualSubmitBtn = document.getElementById("manual-submit-btn");
+    let scannerRunning = false;
+    let scanLocked = false;
+    let torchEnabled = false;
+
     /**
-     * Cette fonction tente d'extraire un code GS1-128 à partir d'une chaîne brute.
-     * Si la chaîne contient les identificateurs d'application "(01)" et "(10)",
-     * elle renvoie la concaténation des 14 chiffres suivant "(01)" et des 4 premiers chiffres suivant "(10)".
-     * Sinon, elle supprime tous les caractères non numériques.
+     * Conserve la règle GS1 déjà utilisée par l'inventaire et nettoie les autres
+     * formats pour ne garder que les chiffres utiles à la recherche.
      */
     function normalizeBarcode(rawCode) {
-      // Première tentative : rechercher un code au format GS1-128
-      let match = rawCode.match(/\(01\)(\d{14})\(10\)(\d{1,20})/);
-      if(match) {
-        // On renvoie la partie GTIN (14 chiffres) suivie des 4 premiers chiffres du numéro de lot.
+      const value = String(rawCode || "").trim();
+      const match = value.match(/\(01\)(\d{14})\(10\)(\d{1,20})/);
+      if (match) {
         return match[1] + match[2].substring(0, 4);
       }
-      // Sinon, on supprime tout caractère non numérique.
-      // Vous pouvez ici adapter la règle (par exemple, si vous souhaitez forcer une longueur donnée).
-      let digits = rawCode.replace(/\D/g, "");
-      return digits;
+      return value.replace(/\D/g, "");
     }
 
-    // Fonction de mapping : on compare le code scanné normalisé avec chacun des codes du mapping,
-    // en appliquant la normalisation aux deux côtés pour éviter les problèmes de format.
-    function mapCodeToCategory(scannedCode) {
-      // On suppose que scannedCode est déjà normalisé (uniquement des chiffres)
-      for (let category in categoryMapping) {
-        for (let code of categoryMapping[category]) {
-          // On normalise le code stocké pour comparaison
-          if (normalizeBarcode(code) === scannedCode) {
-            return category;
-          }
+    // L'index est calculé une seule fois au chargement, au lieu de parcourir
+    // tous les codes à chaque image analysée par la caméra.
+    const barcodeIndex = new Map();
+    Object.entries(categoryMapping).forEach(([category, codes]) => {
+      codes.forEach(code => {
+        const normalizedCode = normalizeBarcode(code);
+        if (normalizedCode && !barcodeIndex.has(normalizedCode)) {
+          barcodeIndex.set(normalizedCode, category);
         }
-      }
-      return "";
-    }
-
-    // Callback appelé lorsqu'un code est détecté
-    function onScanSuccess(decodedText, decodedResult) {
-      // Normalisation du code scanné
-      const normalizedCode = normalizeBarcode(decodedText);
-      messageDiv.innerText = "Code détecté (normalisé) : " + normalizedCode;
-      console.log("Code détecté (normalisé) :", normalizedCode);
-      
-      const category = mapCodeToCategory(normalizedCode);
-      
-      if (category === "") {
-        alert("Aucun article correspondant trouvé pour le code : " + normalizedCode);
-        // Vous pouvez relancer le scan ici si besoin
-        return;
-      }
-      
-      // On arrête le scanner, puis on redirige
-      html5QrcodeScanner.stop().then(() => {
-        console.log("Scanner arrêté, redirection en cours...");
-        messageDiv.innerText = "Scanner arrêté, redirection...";
-        window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
-                                 "&barcode=" + encodeURIComponent(normalizedCode);
-      }).catch(err => {
-        console.error("Erreur à l'arrêt du scanner :", err);
-        messageDiv.innerText = "Erreur à l'arrêt du scanner : " + err;
-      });
-    }
-
-    // Callback pour afficher les erreurs de scan (pour info)
-    function onScanFailure(error) {
-      console.warn("Échec du scan : " + error);
-    }
-
-    // Démarrage du scan au clic sur le bouton
-    startBtn.addEventListener("click", function(){
-      startBtn.style.display = "none";
-      messageDiv.innerText = "Initialisation du scanner…";
-      
-      html5QrcodeScanner = new Html5Qrcode("reader");
-      const config = {
-        fps: 10,      // images par seconde
-        qrbox: 300,   // zone de détection fixée à 300 pixels
-        videoConstraints: {
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          facingMode: "environment"
-        },
-        rememberLastUsedCamera: true
-      };
-
-      html5QrcodeScanner.start(
-        { facingMode: "environment" },
-        config,
-        onScanSuccess,
-        onScanFailure
-      ).then(() => {
-        messageDiv.innerText = "Scanner initialisé. Présentez un code‑barres.";
-      }).catch(err => {
-        console.error("Erreur lors de l'initialisation : ", err);
-        messageDiv.innerText = "Erreur lors de l'initialisation : " + err;
       });
     });
+
+    function mapCodeToCategory(scannedCode) {
+      return barcodeIndex.get(scannedCode) || "";
+    }
+
+    function setMessage(text, state = "info") {
+      messageDiv.textContent = text;
+      messageDiv.className = "scanner-message scanner-message--" + state;
+    }
+
+    function vibrate(pattern) {
+      if ("vibrate" in navigator) {
+        navigator.vibrate(pattern);
+      }
+    }
+
+    function getResponsiveScanBox(viewfinderWidth, viewfinderHeight) {
+      const width = Math.floor(Math.min(viewfinderWidth * 0.9, 520));
+      const height = Math.floor(Math.min(viewfinderHeight * 0.36, width * 0.34));
+      return {
+        width: Math.max(140, width),
+        height: Math.max(80, height)
+      };
+    }
+
+    async function stopScanner() {
+      if (!html5QrcodeScanner || !scannerRunning) {
+        return;
+      }
+
+      scannerRunning = false;
+      torchEnabled = false;
+      torchBtn.hidden = true;
+
+      try {
+        await html5QrcodeScanner.stop();
+        html5QrcodeScanner.clear();
+      } catch (error) {
+        // La page peut se fermer avant que la caméra ait fini de s'arrêter.
+      }
+    }
+
+    async function processBarcode(rawCode) {
+      if (scanLocked) {
+        return;
+      }
+
+      const normalizedCode = normalizeBarcode(rawCode);
+      if (!normalizedCode) {
+        setMessage("Saisissez ou présentez un code-barres valide.", "error");
+        vibrate([40, 50, 40]);
+        return;
+      }
+
+      scanLocked = true;
+      const category = mapCodeToCategory(normalizedCode);
+
+      if (!category) {
+        setMessage("Aucun article trouvé pour le code " + normalizedCode + ". Vous pouvez réessayer.", "error");
+        vibrate([50, 60, 50]);
+        window.setTimeout(() => {
+          scanLocked = false;
+        }, 1100);
+        return;
+      }
+
+      setMessage("Article trouvé. Ouverture de l'inventaire…", "success");
+      vibrate(120);
+      await stopScanner();
+      window.location.href = "inventaire.html?category=" + encodeURIComponent(category) +
+        "&barcode=" + encodeURIComponent(normalizedCode);
+    }
+
+    function onScanSuccess(decodedText) {
+      processBarcode(decodedText);
+    }
+
+    function onScanFailure() {
+      // Les échecs intermédiaires sont normaux pendant que la caméra cherche le code.
+    }
+
+    async function configureTorchButton() {
+      if (!html5QrcodeScanner || typeof html5QrcodeScanner.getRunningTrackCapabilities !== "function") {
+        return;
+      }
+
+      try {
+        const capabilities = html5QrcodeScanner.getRunningTrackCapabilities();
+        torchBtn.hidden = !capabilities || !capabilities.torch;
+      } catch (error) {
+        torchBtn.hidden = true;
+      }
+    }
+
+    startBtn.addEventListener("click", async function () {
+      if (scannerRunning) {
+        return;
+      }
+
+      startBtn.disabled = true;
+      setMessage("Initialisation de la caméra…", "info");
+
+      const supportedFormats = [
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.ITF,
+        Html5QrcodeSupportedFormats.DATA_MATRIX,
+        Html5QrcodeSupportedFormats.RSS_14,
+        Html5QrcodeSupportedFormats.RSS_EXPANDED
+      ];
+
+      html5QrcodeScanner = new Html5Qrcode("reader", {
+        formatsToSupport: supportedFormats,
+        useBarCodeDetectorIfSupported: true,
+        verbose: false
+      });
+
+      const cameraPreference = { facingMode: { ideal: "environment" } };
+      const config = {
+        fps: 10,
+        qrbox: getResponsiveScanBox,
+        videoConstraints: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: { ideal: "environment" }
+        }
+      };
+
+      try {
+        await html5QrcodeScanner.start(cameraPreference, config, onScanSuccess, onScanFailure);
+        scannerRunning = true;
+        startBtn.hidden = true;
+        setMessage("Scanner actif. Placez le code-barres dans le cadre.", "success");
+        await configureTorchButton();
+      } catch (error) {
+        try {
+          html5QrcodeScanner.clear();
+        } catch (clearError) {
+          // Rien à nettoyer si la caméra n'a jamais démarré.
+        }
+        html5QrcodeScanner = null;
+        startBtn.disabled = false;
+        setMessage("Impossible d'ouvrir la caméra. Vérifiez son autorisation ou utilisez la saisie manuelle.", "error");
+      }
+    });
+
+    torchBtn.addEventListener("click", async function () {
+      if (!html5QrcodeScanner || !scannerRunning) {
+        return;
+      }
+
+      const nextState = !torchEnabled;
+      try {
+        await html5QrcodeScanner.applyVideoConstraints({
+          advanced: [{ torch: nextState }]
+        });
+        torchEnabled = nextState;
+        torchBtn.textContent = torchEnabled ? "Éteindre la lampe" : "Activer la lampe";
+      } catch (error) {
+        torchBtn.hidden = true;
+        setMessage("La lampe n'est pas disponible sur cet appareil.", "info");
+      }
+    });
+
+    function submitManualBarcode() {
+      processBarcode(manualBarcodeInput.value);
+    }
+
+    manualSubmitBtn.addEventListener("click", submitManualBarcode);
+    manualBarcodeInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        submitManualBarcode();
+      }
+    });
+
+    backBtn.addEventListener("click", async function () {
+      await stopScanner();
+      window.location.href = "inventaire.html";
+    });
+
+    window.addEventListener("pagehide", stopScanner);
   </script>
 </body>
 </html>
