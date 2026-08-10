@@ -2,8 +2,13 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071d32">
+  <meta name="description" content="Scanner de codes-barres de l’inventaire du CS Oupeye">
   <title>Scanner de code‑barres avec html5‑qrcode</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Roboto', sans-serif;
@@ -55,15 +60,43 @@
   background: #5a6268;
 }
   </style>
+  <link rel="stylesheet" href="../final-pages-modern.css">
 </head>
 <body>
-  <h1>Scanner de code‑barres</h1>
-  <div id="reader"></div>
-  <button id="start-btn">Démarrer le scan</button>
-  <button id="back-btn" onclick="window.location.href='inventaire.html'">
-  Retour à l’inventaire
-</button>
-  <div id="message"></div>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="../index.html">CS Oupeye®</a>
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a class="nav-link" href="../index.html">Accueil</a>
+        <a class="nav-link" href="../operation.html">Documentation</a>
+        <a class="nav-link" href="../checklist.html">Checklists</a>
+        <a class="nav-link active" href="../staff.html" aria-current="page">Staff</a>
+      </nav>
+      <a class="header-back" href="inventaire.html"><span aria-hidden="true">←</span> Retour à l’inventaire</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero" aria-labelledby="scanner-page-title">
+      <div class="hero-art" aria-hidden="true"><img src="../crbo-hero-ambulance.png" alt=""></div>
+      <div class="hero-content"><div class="hero-copy"><p class="eyebrow">Gestion de la réserve</p><h1 id="scanner-page-title">Scanner un<br>code-barres</h1><p>Utilisez l’appareil photo du téléphone pour retrouver rapidement un article.</p></div></div>
+    </section>
+
+    <div class="scanner-area">
+      <section class="scanner-card">
+        <h1>Scanner de code‑barres</h1>
+        <p class="scanner-intro">Autorisez l’accès à la caméra, puis placez le code-barres au centre de la zone de lecture.</p>
+        <div class="scanner-stage">
+          <div id="reader"></div>
+          <div class="scanner-actions">
+            <button id="start-btn">Démarrer le scan</button>
+            <button id="back-btn" onclick="window.location.href='inventaire.html'">Retour à l’inventaire</button>
+          </div>
+          <div id="message">Le scanner est prêt à démarrer.</div>
+        </div>
+      </section>
+    </div>
+  </main>
   
   <!-- Chargement de la bibliothèque html5‑qrcode depuis un CDN -->
   <script src="https://unpkg.com/html5-qrcode"></script>
