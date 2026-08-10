@@ -2,117 +2,663 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071d32">
+  <meta name="description" content="Portail des checklists du CS Oupeye">
   <title>Portail des Checks - CS Oupeye</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
     :root {
-      --primary-color: #dc3545;
-      --secondary-color: #6c757d;
-      --bg-color: #f5f5f5;
-      --text-color: #333;
-      --border-radius: 6px;
-      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      --button-width: 250px;
-      --button-gap: 60px;
+      --navy: #071d32;
+      --navy-soft: #102c47;
+      --red: #e52f3f;
+      --red-dark: #c92332;
+      --blue: #087ff5;
+      --blue-dark: #006bd5;
+      --amber: #f59e0b;
+      --amber-dark: #d98700;
+      --green: #12a64a;
+      --green-dark: #0c8c3c;
+      --ink: #071a34;
+      --muted: #526078;
+      --line: #dfe7f0;
+      --surface: #ffffff;
+      --background: #f5f8fb;
+      --shadow: 0 18px 45px rgba(20, 44, 76, 0.10);
+      --page-width: 1390px;
     }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
-      font-family: 'Roboto', sans-serif;
       margin: 0;
-      padding: 20px;
-      background-color: var(--bg-color);
-      color: var(--text-color);
+      min-width: 320px;
+      color: var(--ink);
+      background: var(--background);
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
-    .container {
-      max-width: 900px;
-      margin: auto;
-      text-align: center;
+
+    a {
+      color: inherit;
     }
-    h1 {
-      color: var(--primary-color);
-      margin-bottom: 20px;
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: linear-gradient(90deg, #061b2f 0%, #08243e 60%, #071d32 100%);
+      box-shadow: 0 8px 25px rgba(1, 17, 31, 0.14);
     }
-    /* Conteneur des colonnes pour les boutons existants */
-    .columns {
+
+    .nav-shell {
+      width: min(var(--page-width), calc(100% - 48px));
+      min-height: 96px;
+      margin: 0 auto;
       display: flex;
-      justify-content: center;
-      gap: var(--button-gap);
-      margin-bottom: 40px; /* Espace avant le bouton Inventaire */
+      align-items: center;
+      gap: 56px;
     }
-    /* Chaque colonne */
-    .column {
+
+    .brand {
+      flex: 0 0 auto;
+      color: #fff;
+      font-size: clamp(1.45rem, 2.1vw, 2.05rem);
+      font-weight: 800;
+      letter-spacing: -0.045em;
+      text-decoration: none;
+    }
+
+    .main-nav {
+      align-self: stretch;
+      display: flex;
+      align-items: stretch;
+      gap: 38px;
+    }
+
+    .nav-link {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      color: rgba(255, 255, 255, 0.90);
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 180ms ease;
+    }
+
+    .nav-link:hover,
+    .nav-link:focus-visible,
+    .nav-link.active {
+      color: #fff;
+    }
+
+    .nav-link.active {
+      color: #ff4654;
+      font-weight: 700;
+    }
+
+    .nav-link.active::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 6px;
+      border-radius: 6px 6px 0 0;
+      background: #ff4654;
+    }
+
+    .portal-pill {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 18px;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.10);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .portal-pill::before {
+      content: "✓";
+      display: grid;
+      width: 25px;
+      height: 25px;
+      place-items: center;
+      border: 2px solid rgba(255, 255, 255, 0.85);
+      border-radius: 8px 8px 11px 11px;
+      font-size: 0.8rem;
+    }
+
+    main {
+      overflow: hidden;
+    }
+
+    .hero {
+      position: relative;
+      isolation: isolate;
+      min-height: 380px;
+      border-bottom: 1px solid rgba(192, 207, 224, 0.65);
+      background: linear-gradient(105deg, #f8fbff 0%, #f2f8fe 58%, #eaf4fd 100%);
+    }
+
+    .hero-art {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .hero-art::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(248, 251, 255, 0.26) 0%, transparent 58%),
+        linear-gradient(180deg, transparent 62%, rgba(245, 248, 251, 0.76) 100%);
+    }
+
+    .hero-art img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center center;
+      opacity: 0.72;
+      filter: saturate(0.88) contrast(0.97);
+    }
+
+    .hero-content {
+      width: min(var(--page-width), calc(100% - 48px));
+      min-height: 380px;
+      margin: 0 auto;
+      padding: 72px 0 100px;
+      display: flex;
+      align-items: center;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 2;
+      max-width: 780px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 16px;
+      color: var(--red-dark);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--red);
+    }
+
+    .hero h1 {
+      max-width: 770px;
+      margin: 0;
+      font-size: clamp(2.7rem, 5vw, 4.55rem);
+      line-height: 1.03;
+      letter-spacing: -0.06em;
+    }
+
+    .hero-message {
+      max-width: 720px;
+      margin: 22px 0 0;
+      color: #42516a;
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      line-height: 1.7;
+    }
+
+    .checks-section {
+      position: relative;
+      z-index: 5;
+      width: min(var(--page-width), calc(100% - 48px));
+      margin: -58px auto 0;
+      padding-bottom: 72px;
+    }
+
+    .section-heading {
+      margin: 0 0 22px;
+      padding: 0 4px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: 1.12rem;
+      letter-spacing: -0.02em;
+    }
+
+    .section-heading p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .check-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .check-card {
+      position: relative;
+      min-height: 350px;
+      padding: 32px 28px 28px;
       display: flex;
       flex-direction: column;
-      gap: 30px;
-      width: var(--button-width);
+      overflow: hidden;
+      border: 1px solid rgba(214, 224, 235, 0.92);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: var(--shadow);
+      transition: transform 220ms ease, box-shadow 220ms ease;
     }
-    a.button {
-      display: inline-block;
-      padding: 16px 32px;
-      font-size: 18px;
-      background-color: var(--primary-color);
+
+    .check-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: 5px;
+      background: var(--accent);
+    }
+
+    .check-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 25px 55px rgba(20, 44, 76, 0.15);
+    }
+
+    .check-card.red {
+      --accent: var(--red);
+      --accent-dark: var(--red-dark);
+      --accent-soft: #ffebed;
+    }
+
+    .check-card.blue {
+      --accent: var(--blue);
+      --accent-dark: var(--blue-dark);
+      --accent-soft: #eaf4ff;
+    }
+
+    .check-card.amber {
+      --accent: var(--amber);
+      --accent-dark: var(--amber-dark);
+      --accent-soft: #fff5df;
+    }
+
+    .check-card.green {
+      --accent: var(--green);
+      --accent-dark: var(--green-dark);
+      --accent-soft: #e9f8ef;
+    }
+
+    .check-icon {
+      display: grid;
+      width: 86px;
+      height: 86px;
+      margin-bottom: 25px;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+    }
+
+    .check-card h3 {
+      margin: 0;
+      font-size: 1.35rem;
+      letter-spacing: -0.04em;
+    }
+
+    .check-card p {
+      margin: 13px 0 26px;
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.65;
+    }
+
+    .check-button {
+      width: 100%;
+      min-height: 56px;
+      margin-top: auto;
+      padding: 12px 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border-radius: 12px;
       color: #fff;
+      background: var(--accent);
+      font-weight: 700;
+      text-align: center;
       text-decoration: none;
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
-      transition: background-color 0.3s;
+      box-shadow: 0 10px 22px rgba(15, 36, 58, 0.10);
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    .check-button::after {
+      content: "→";
+      font-size: 1.15rem;
+      transition: transform 180ms ease;
+    }
+
+    .check-button:hover,
+    .check-button:focus-visible {
+      transform: translateY(-2px);
+      background: var(--accent-dark);
+    }
+
+    .check-button:hover::after,
+    .check-button:focus-visible::after {
+      transform: translateX(3px);
+    }
+
+    .page-actions {
+      margin-top: 25px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 12px 35px rgba(20, 44, 76, 0.06);
+    }
+
+    .page-actions p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .home-button {
+      flex: 0 0 auto;
+      min-height: 48px;
+      padding: 0 19px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 1px solid #cbd8e5;
+      border-radius: 11px;
+      background: #fff;
+      color: var(--navy);
+      font-weight: 700;
+      text-decoration: none;
+      transition: border-color 180ms ease, transform 180ms ease;
+    }
+
+    .home-button:hover,
+    .home-button:focus-visible {
+      transform: translateY(-2px);
+      border-color: var(--blue);
+    }
+
+    .site-footer {
+      padding: 0 24px 28px;
+      color: #738095;
+      font-size: 0.82rem;
       text-align: center;
     }
-    a.button:hover {
-      background-color: #c82333;
+
+    :focus-visible {
+      outline: 3px solid rgba(0, 127, 245, 0.45);
+      outline-offset: 3px;
     }
-    /* Style spécifique pour le bouton Inventaire */
-    a.button.inventaire {
-      background-color: #28a745;
-      color: #fff;
+
+    @media (max-width: 1100px) {
+      .nav-shell {
+        gap: 30px;
+      }
+
+      .main-nav {
+        gap: 25px;
+      }
+
+      .check-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .check-card {
+        min-height: 320px;
+      }
     }
-    a.button.inventaire:hover {
-      background-color: #218838;
+
+    @media (max-width: 790px) {
+      .nav-shell {
+        width: min(100% - 32px, var(--page-width));
+        min-height: auto;
+        padding: 16px 0;
+        flex-wrap: wrap;
+      }
+
+      .main-nav {
+        order: 3;
+        width: 100%;
+        min-height: 46px;
+        overflow-x: auto;
+        gap: 26px;
+      }
+
+      .nav-link {
+        min-height: 46px;
+        white-space: nowrap;
+      }
+
+      .portal-pill {
+        padding: 10px 12px;
+        font-size: 0.82rem;
+      }
+
+      .portal-pill::before {
+        width: 21px;
+        height: 21px;
+      }
+
+      .hero,
+      .hero-content {
+        min-height: 430px;
+      }
+
+      .hero-content {
+        width: min(100% - 34px, var(--page-width));
+        padding: 58px 0 120px;
+        align-items: flex-start;
+      }
+
+      .hero-art img {
+        object-position: 65% center;
+        opacity: 0.53;
+      }
+
+      .checks-section {
+        width: min(100% - 30px, var(--page-width));
+      }
+
+      .section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
     }
-    /* Conteneur du bouton Inventaire centré et étendu sur deux boutons */
-    .inventaire-container {
-      text-align: center;
+
+    @media (max-width: 580px) {
+      .brand {
+        font-size: 1.45rem;
+      }
+
+      .portal-pill {
+        gap: 7px;
+      }
+
+      .portal-pill::before {
+        display: none;
+      }
+
+      .hero h1 {
+        font-size: clamp(2.35rem, 12vw, 3.15rem);
+      }
+
+      .hero-art img {
+        object-position: 70% center;
+        opacity: 0.38;
+      }
+
+      .check-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .check-card {
+        min-height: 310px;
+      }
+
+      .page-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .home-button {
+        width: 100%;
+      }
     }
-    .inventaire-container a.button.inventaire {
-      width: calc(2 * var(--button-width) + var(--button-gap));
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <h1>Portail des Checks - CS Oupeye&reg;</h1>
-    <h1>Bienvenue et bonne journée.</h1>
-    <div class="columns">
-      <div class="column">
-        <a href="ambu/ambu.html" class="button">Check Ambulance</a>
-        <a href="tpmr/tpmr.html" class="button">Check TPMR</a>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="index.html" aria-label="Accueil CS Oupeye">CS Oupeye®</a>
+
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a class="nav-link" href="index.html">Accueil</a>
+        <a class="nav-link" href="operation.html" data-safe-nav>Documentation</a>
+        <a class="nav-link active" href="checklist.html" aria-current="page">Checklists</a>
+      </nav>
+
+      <span class="portal-pill">Portail interne</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-art" aria-hidden="true">
+        <!-- Placez crbo-hero-ambulance.png à côté de checklist.html -->
+        <img src="crbo-hero-ambulance.png" alt="">
       </div>
-      <div class="column">
-        <a href="peremption/peremption.html" class="button">Check Péremption</a>
-        <a href="fit/fit.html" class="button">Check Fit</a>
+
+      <div class="hero-content">
+        <div class="hero-copy">
+          <p class="eyebrow">CS Oupeye</p>
+          <h1 id="hero-title">Portail des<br>checklists</h1>
+          <p class="hero-message">Bienvenue et bonne journée. Sélectionnez le contrôle à réaliser.</p>
+        </div>
       </div>
-  </div>
+    </section>
+
+    <section class="checks-section" aria-labelledby="checks-title">
+      <div class="section-heading">
+        <h2 id="checks-title">Choisissez une checklist</h2>
+        <p>Quatre accès rapides aux contrôles opérationnels.</p>
+      </div>
+
+      <div class="check-grid">
+        <article class="check-card red">
+          <div class="check-icon" aria-hidden="true">AMB</div>
+          <h3>Check Ambulance</h3>
+          <p>Contrôle du véhicule, du matériel et des équipements nécessaires aux interventions.</p>
+          <a class="check-button" href="ambu/ambu.html" data-safe-nav>Ouvrir</a>
+        </article>
+
+        <article class="check-card blue">
+          <div class="check-icon" aria-hidden="true">TPMR</div>
+          <h3>Check TPMR</h3>
+          <p>Vérification du véhicule et des équipements dédiés au transport adapté.</p>
+          <a class="check-button" href="tpmr/tpmr.html" data-safe-nav>Ouvrir</a>
+        </article>
+
+        <article class="check-card amber">
+          <div class="check-icon" aria-hidden="true">EXP</div>
+          <h3>Check Péremption</h3>
+          <p>Suivi des dates de péremption du matériel et des consommables opérationnels.</p>
+          <a class="check-button" href="peremption/peremption.html" data-safe-nav>Ouvrir</a>
+        </article>
+
+        <article class="check-card green">
+          <div class="check-icon" aria-hidden="true">FIT</div>
+          <h3>Check FIT</h3>
+          <p>Accès à la checklist dédiée au véhicule FIT et à son équipement.</p>
+          <a class="check-button" href="fit/fit.html" data-safe-nav>Ouvrir</a>
+        </article>
+      </div>
+
+      <div class="page-actions">
+        <p>Les liens indisponibles sont automatiquement redirigés vers la page d’information.</p>
+        <a class="home-button" href="index.html"><span aria-hidden="true">←</span> Retour à l’accueil</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">CS Oupeye® — Portail des checklists</footer>
 
   <script>
-    // Interception du clic sur chaque bouton pour vérifier la disponibilité de la page cible
-    document.querySelectorAll("a.button").forEach(link => {
-      link.addEventListener("click", function(e) {
-        e.preventDefault();
-        
-        
-        const href = this.getAttribute("href");
-        // Vérification de la disponibilité de la page via une requête HEAD
-        fetch(href, { method: "HEAD" })
-          .then(response => {
-            if(response.ok) {
-              window.location.href = href;
-            } else {
-              window.location.href = "nowork/notwork.html";
-            }
-          })
-          .catch(error => {
-            window.location.href = "nowork/notwork.html";
-          });
-      });
+    const fallbackPage = "nowork/notwork.html";
+
+    async function navigateIfAvailable(event) {
+      event.preventDefault();
+      const href = event.currentTarget.getAttribute("href");
+
+      try {
+        const response = await fetch(href, { method: "HEAD", cache: "no-store" });
+        window.location.href = response.ok ? href : fallbackPage;
+      } catch (error) {
+        window.location.href = fallbackPage;
+      }
+    }
+
+    document.querySelectorAll("[data-safe-nav]").forEach(link => {
+      link.addEventListener("click", navigateIfAvailable);
     });
   </script>
 </body>
