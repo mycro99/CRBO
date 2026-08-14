@@ -390,11 +390,17 @@
       background: var(--green-dark);
     }
 
+    .button-lock {
+      margin-right: 9px;
+      font-size: 1.05rem;
+      line-height: 1;
+    }
+
     .quick-access {
       margin-top: 26px;
       padding: 22px 26px;
       display: grid;
-      grid-template-columns: auto repeat(4, minmax(0, 1fr));
+      grid-template-columns: auto repeat(5, minmax(0, 1fr));
       align-items: center;
       gap: 16px;
       border: 1px solid var(--line);
@@ -457,6 +463,39 @@
       color: var(--green);
     }
 
+    .quick-link.organigramme .quick-symbol {
+      color: #7c3aed;
+    }
+
+    .quick-link.organigramme {
+      border-color: #cfc3fb;
+      color: #40247a;
+      background: linear-gradient(135deg, #faf8ff, #f1edff);
+      cursor: pointer;
+    }
+
+    .quick-link.organigramme:hover,
+    .quick-link.organigramme:focus-visible {
+      border-color: #9579ea;
+      box-shadow: 0 10px 24px rgba(85, 54, 160, 0.15);
+    }
+
+    .quick-copy {
+      display: grid;
+      gap: 2px;
+      text-align: left;
+    }
+
+    .quick-copy strong {
+      font-size: 0.9rem;
+    }
+
+    .quick-copy small {
+      color: #725e9e;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
     .site-footer {
       padding: 0 24px 28px;
       color: #738095;
@@ -486,6 +525,100 @@
       border-radius: 24px;
       background: #fff;
       box-shadow: 0 30px 80px rgba(0, 10, 20, 0.32);
+    }
+
+    .organigramme-modal {
+      width: min(100%, 1380px);
+      max-height: calc(100vh - 32px);
+      max-height: calc(100dvh - 32px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: 0 30px 90px rgba(0, 10, 20, 0.38);
+    }
+
+    .organigramme-modal .modal-heading {
+      padding: 20px 22px;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .organigramme-modal .modal-heading p {
+      margin-top: 4px;
+      font-size: 0.84rem;
+    }
+
+    .organigramme-toolbar {
+      padding: 10px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fbfe;
+    }
+
+    .organigramme-hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .zoom-button {
+      min-width: 38px;
+      min-height: 38px;
+      padding: 0 10px;
+      border: 1px solid #d6e0ea;
+      border-radius: 9px;
+      color: var(--navy);
+      background: #fff;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .zoom-button:hover,
+    .zoom-button:focus-visible {
+      border-color: #9dc8f6;
+      background: #eef7ff;
+    }
+
+    .zoom-level {
+      min-width: 55px;
+      color: #485970;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .organigramme-viewer {
+      min-height: 0;
+      padding: 16px;
+      flex: 1 1 auto;
+      overflow: auto;
+      background: #eaf0f6;
+      overscroll-behavior: contain;
+      touch-action: pan-x pan-y pinch-zoom;
+    }
+
+    .organigramme-image {
+      width: 100%;
+      max-width: none;
+      height: auto;
+      display: block;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(20, 44, 76, 0.13);
     }
 
     .modal-heading {
@@ -716,6 +849,36 @@
       .auth-modal {
         padding: 26px 22px;
       }
+
+      .modal-backdrop {
+        padding: 8px;
+      }
+
+      .organigramme-modal {
+        max-height: calc(100vh - 16px);
+        max-height: calc(100dvh - 16px);
+        border-radius: 17px;
+      }
+
+      .organigramme-modal .modal-heading {
+        padding: 14px;
+      }
+
+      .organigramme-modal .modal-heading p {
+        display: none;
+      }
+
+      .organigramme-toolbar {
+        padding: 9px 12px;
+      }
+
+      .organigramme-hint {
+        display: none;
+      }
+
+      .organigramme-viewer {
+        padding: 9px;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -781,7 +944,10 @@
           <div class="card-icon green" aria-hidden="true">♟</div>
           <h2>Espace staff</h2>
           <p>Inventaire et ressources réservées à l’équipe.</p>
-          <a class="card-button green" href="staff.html" data-staff-link>Accéder</a>
+          <a class="card-button green" href="staff.html" data-staff-link aria-label="Accéder à l’espace staff verrouillé">
+            <span class="button-lock" aria-hidden="true">🔒</span>
+            <span>Accéder</span>
+          </a>
         </article>
       </div>
 
@@ -806,6 +972,14 @@
         <a class="quick-link" href="opérationnel/tenues.html" data-safe-nav>
           <span class="quick-symbol" aria-hidden="true">♟</span>
           Commande de tenues
+        </a>
+
+        <a class="quick-link organigramme" id="openOrganigramme" href="documents/organigramme.jpg" aria-haspopup="dialog" aria-controls="organigrammeModal">
+          <span class="quick-symbol" aria-hidden="true">▦</span>
+          <span class="quick-copy">
+            <strong>Organigramme</strong>
+            <small>Afficher l’équipe</small>
+          </span>
         </a>
       </div>
     </section>
@@ -840,6 +1014,32 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="organigrammeModal" role="dialog" aria-modal="true" aria-labelledby="organigrammeTitle" aria-hidden="true">
+    <section class="organigramme-modal">
+      <div class="modal-heading">
+        <div>
+          <h2 id="organigrammeTitle">Organigramme du CS Oupeye</h2>
+          <p>Utilisez le zoom ou faites défiler l’image pour consulter les différents responsables.</p>
+        </div>
+        <button class="modal-close" id="closeOrganigramme" type="button" aria-label="Fermer l’organigramme">×</button>
+      </div>
+
+      <div class="organigramme-toolbar" aria-label="Commandes de zoom">
+        <p class="organigramme-hint">Sur téléphone, vous pouvez également déplacer l’image avec le doigt.</p>
+        <div class="zoom-controls">
+          <button class="zoom-button" id="zoomOut" type="button" aria-label="Réduire l’organigramme">−</button>
+          <span class="zoom-level" id="zoomLevel" aria-live="polite">100 %</span>
+          <button class="zoom-button" id="zoomIn" type="button" aria-label="Agrandir l’organigramme">+</button>
+          <button class="zoom-button" id="zoomReset" type="button">Ajuster</button>
+        </div>
+      </div>
+
+      <div class="organigramme-viewer" id="organigrammeViewer">
+        <img class="organigramme-image" id="organigrammeImage" src="documents/organigramme.jpg" alt="Organigramme de la Croix-Rouge d’Oupeye avec les responsables et leurs fonctions">
+      </div>
+    </section>
+  </div>
+
   <!-- Firebase : configuration reprise de votre index actuel -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js";
@@ -870,6 +1070,12 @@
     const authError = document.getElementById("authError");
     const authSubmit = document.getElementById("authSubmit");
     const emailField = document.getElementById("staffEmail");
+    const organigrammeTrigger = document.getElementById("openOrganigramme");
+    const organigrammeModal = document.getElementById("organigrammeModal");
+    const organigrammeViewer = document.getElementById("organigrammeViewer");
+    const organigrammeImage = document.getElementById("organigrammeImage");
+    const zoomLevel = document.getElementById("zoomLevel");
+    let organigrammeZoom = 1;
     let staffDestination = "staff.html";
 
     async function navigateIfAvailable(event) {
@@ -902,6 +1108,35 @@
       authError.textContent = "";
     }
 
+    function updateOrganigrammeZoom(centerImage = false) {
+      organigrammeImage.style.width = `${Math.round(organigrammeZoom * 100)}%`;
+      zoomLevel.textContent = `${Math.round(organigrammeZoom * 100)} %`;
+
+      if (centerImage) {
+        window.requestAnimationFrame(() => {
+          organigrammeViewer.scrollLeft = Math.max(0, (organigrammeViewer.scrollWidth - organigrammeViewer.clientWidth) / 2);
+          organigrammeViewer.scrollTop = 0;
+        });
+      }
+    }
+
+    function openOrganigramme(event) {
+      event.preventDefault();
+      organigrammeZoom = window.innerWidth <= 700 ? 2.25 : 1;
+      updateOrganigrammeZoom(true);
+      organigrammeModal.classList.add("open");
+      organigrammeModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+      window.setTimeout(() => document.getElementById("closeOrganigramme").focus(), 50);
+    }
+
+    function closeOrganigramme() {
+      organigrammeModal.classList.remove("open");
+      organigrammeModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+      organigrammeTrigger.focus();
+    }
+
     document.querySelectorAll("[data-safe-nav]").forEach(link => {
       link.addEventListener("click", navigateIfAvailable);
     });
@@ -912,13 +1147,36 @@
 
     document.getElementById("closeModal").addEventListener("click", closeAuthModal);
 
+    organigrammeTrigger.addEventListener("click", openOrganigramme);
+    document.getElementById("closeOrganigramme").addEventListener("click", closeOrganigramme);
+    document.getElementById("zoomIn").addEventListener("click", () => {
+      organigrammeZoom = Math.min(3.5, organigrammeZoom + 0.25);
+      updateOrganigrammeZoom();
+    });
+    document.getElementById("zoomOut").addEventListener("click", () => {
+      organigrammeZoom = Math.max(1, organigrammeZoom - 0.25);
+      updateOrganigrammeZoom();
+    });
+    document.getElementById("zoomReset").addEventListener("click", () => {
+      organigrammeZoom = window.innerWidth <= 700 ? 2.25 : 1;
+      updateOrganigrammeZoom(true);
+    });
+
     authModal.addEventListener("click", event => {
       if (event.target === authModal) closeAuthModal();
     });
 
+    organigrammeModal.addEventListener("click", event => {
+      if (event.target === organigrammeModal) closeOrganigramme();
+    });
+
     document.addEventListener("keydown", event => {
-      if (event.key === "Escape" && authModal.classList.contains("open")) {
-        closeAuthModal();
+      if (event.key === "Escape") {
+        if (organigrammeModal.classList.contains("open")) {
+          closeOrganigramme();
+        } else if (authModal.classList.contains("open")) {
+          closeAuthModal();
+        }
       }
     });
 
