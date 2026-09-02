@@ -7,8 +7,11 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#f5f8fb",
   "theme_color": "#071d32",
+  "categories": ["medical", "productivity", "utilities"],
   "icons": [
     {
       "src": "icons/icon-192.png",
