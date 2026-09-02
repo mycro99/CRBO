@@ -13,6 +13,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="../checklist-email.js"></script>
 
   <style>
     :root {
@@ -711,6 +712,15 @@
 
     .pdf-button:hover,
     .pdf-button:focus-visible { background: var(--red-dark); }
+
+    .email-button {
+      background: var(--blue);
+      box-shadow: 0 10px 22px rgba(8, 127, 245, 0.24);
+    }
+
+    .email-button:hover,
+    .email-button:focus-visible { background: var(--blue-dark); }
+
     .pdf-button:disabled { opacity: 0.65; cursor: wait; }
 
     :focus-visible {
@@ -1322,10 +1332,11 @@
       </div>
 
       <div class="action-bar">
-        <p class="action-info" id="actionStatus">Le rapport PDF reprendra toutes les informations visibles ci-dessus.</p>
+        <p class="action-info" id="actionStatus">Téléchargez le rapport ou envoyez-le directement par e-mail.</p>
         <div class="action-buttons">
           <a class="back-button" href="../checklist.html">Retour</a>
-          <button class="pdf-button" id="pdfButton" type="button" onclick="generatePDF()">Générer le PDF</button>
+          <button class="pdf-button" id="pdfButton" type="button" onclick="generatePDF()">Télécharger le PDF</button>
+          <button class="pdf-button email-button" id="emailButton" type="button" onclick="sendPDF()">Générer et envoyer</button>
         </div>
       </div>
     </form>
@@ -1514,16 +1525,10 @@
       }
     }
 
-    async function generatePDF() {
+    async function buildPDF() {
       const element = document.getElementById("pdfContent");
-      const button = document.getElementById("pdfButton");
       const status = document.getElementById("actionStatus");
-      const originalText = button.textContent;
       let exportCopy = null;
-
-      button.disabled = true;
-      button.textContent = "Création du PDF…";
-      status.textContent = "Préparation du rapport complet…";
 
       try {
         if (document.fonts && document.fonts.ready) await document.fonts.ready;
@@ -1585,16 +1590,28 @@
           }
         }
 
-        pdf.save("checklist_ambulance.pdf");
-        status.textContent = "Le rapport PDF complet a été généré.";
-      } catch (error) {
-        console.error("Erreur pendant la génération du PDF :", error);
-        status.textContent = "Impossible de générer le PDF complet. Veuillez réessayer.";
+        return pdf;
       } finally {
         if (exportCopy) exportCopy.remove();
-        button.disabled = false;
-        button.textContent = originalText;
       }
+    }
+
+    function generatePDF() {
+      return ChecklistMailer.run({
+        action: "download",
+        type: "ambulance",
+        filename: "checklist_ambulance.pdf",
+        buildPdf: buildPDF
+      });
+    }
+
+    function sendPDF() {
+      return ChecklistMailer.run({
+        action: "send",
+        type: "ambulance",
+        filename: "checklist_ambulance.pdf",
+        buildPdf: buildPDF
+      });
     }
 
     initSignature("signatureChauffeur");

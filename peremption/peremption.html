@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="../checklist-modern.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="../checklist-email.js"></script>
 </head>
 <body>
   <header class="site-header">
@@ -63,7 +64,7 @@
         </section>
       </div>
 
-      <div class="action-bar"><p class="action-info" id="actionStatus">Le rapport PDF reprendra toutes les dates visibles ci-dessus.</p><div class="action-buttons"><a class="back-button" href="../checklist.html">Retour</a><button class="pdf-button" id="pdfButton" type="button" onclick="generatePDF()">Générer le PDF</button></div></div>
+      <div class="action-bar"><p class="action-info" id="actionStatus">Téléchargez le rapport ou envoyez-le directement par e-mail.</p><div class="action-buttons"><a class="back-button" href="../checklist.html">Retour</a><button class="pdf-button" id="pdfButton" type="button" onclick="generatePDF()">Télécharger le PDF</button><button class="pdf-button email-button" id="emailButton" type="button" onclick="sendPDF()">Générer et envoyer</button></div></div>
     </form>
   </main>
 
@@ -85,7 +86,9 @@
 
     function clearSignature(canvasId){const canvas=document.getElementById(canvasId);canvas.getContext("2d").clearRect(0,0,canvas.width,canvas.height)}
     function initSignature(canvasId){const canvas=document.getElementById(canvasId),context=canvas.getContext("2d");let drawing=false;context.lineWidth=2.4;context.lineCap="round";context.lineJoin="round";context.strokeStyle="#071a34";const point=event=>{const rect=canvas.getBoundingClientRect();return{x:(event.clientX-rect.left)*(canvas.width/rect.width),y:(event.clientY-rect.top)*(canvas.height/rect.height)}};canvas.addEventListener("pointerdown",event=>{drawing=true;canvas.setPointerCapture(event.pointerId);const p=point(event);context.beginPath();context.moveTo(p.x,p.y)});canvas.addEventListener("pointermove",event=>{if(!drawing)return;const p=point(event);context.lineTo(p.x,p.y);context.stroke()});const stop=event=>{drawing=false;if(event.pointerId!==undefined&&canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId)};canvas.addEventListener("pointerup",stop);canvas.addEventListener("pointercancel",stop)}
-    async function generatePDF(){const element=document.getElementById("pdfContent"),button=document.getElementById("pdfButton"),status=document.getElementById("actionStatus"),original=button.textContent;button.disabled=true;button.textContent="Création du PDF…";status.textContent="Préparation du rapport en cours…";try{const canvas=await html2canvas(element,{useCORS:true,scale:1.25,allowTaint:true,backgroundColor:"#ffffff",scrollX:0,scrollY:-window.scrollY}),imgData=canvas.toDataURL("image/jpeg",.82),{jsPDF}=window.jspdf,pdf=new jsPDF("p","mm","a4"),pageWidth=pdf.internal.pageSize.getWidth(),pageHeight=pdf.internal.pageSize.getHeight(),props=pdf.getImageProperties(imgData),imgHeight=(props.height*pageWidth)/props.width;let left=imgHeight,position=0;pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight);left-=pageHeight;while(left>0){position=left-imgHeight;pdf.addPage();pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight);left-=pageHeight}pdf.save("check_peremption.pdf");status.textContent="Le rapport PDF a été généré."}catch(error){status.textContent="Impossible de générer le PDF. Veuillez réessayer."}finally{button.disabled=false;button.textContent=original}}
+    async function buildPDF(){const element=document.getElementById("pdfContent"),canvas=await html2canvas(element,{useCORS:true,scale:1.25,allowTaint:true,backgroundColor:"#ffffff",scrollX:0,scrollY:-window.scrollY}),imgData=canvas.toDataURL("image/jpeg",.82),{jsPDF}=window.jspdf,pdf=new jsPDF("p","mm","a4"),pageWidth=pdf.internal.pageSize.getWidth(),pageHeight=pdf.internal.pageSize.getHeight(),props=pdf.getImageProperties(imgData),imgHeight=(props.height*pageWidth)/props.width;let left=imgHeight,position=0;pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight);left-=pageHeight;while(left>0){position=left-imgHeight;pdf.addPage();pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight);left-=pageHeight}return pdf}
+    function generatePDF(){return ChecklistMailer.run({action:"download",type:"peremption",filename:"check_peremption.pdf",buildPdf:buildPDF})}
+    function sendPDF(){return ChecklistMailer.run({action:"send",type:"peremption",filename:"check_peremption.pdf",buildPdf:buildPDF})}
     initSignature("signaturePad");
   </script>
 </body>

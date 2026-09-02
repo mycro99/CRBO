@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="../checklist-modern.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="../checklist-email.js"></script>
 </head>
 <body>
   <header class="site-header">
@@ -80,10 +81,11 @@
       </div>
 
       <div class="action-bar">
-        <p class="action-info" id="actionStatus">Le rapport PDF reprendra toutes les informations visibles ci-dessus.</p>
+        <p class="action-info" id="actionStatus">Téléchargez le rapport ou envoyez-le directement par e-mail.</p>
         <div class="action-buttons">
           <a class="back-button" href="../checklist.html">Retour</a>
-          <button class="pdf-button" id="pdfButton" type="button" onclick="generatePDF()">Générer le PDF</button>
+          <button class="pdf-button" id="pdfButton" type="button" onclick="generatePDF()">Télécharger le PDF</button>
+          <button class="pdf-button email-button" id="emailButton" type="button" onclick="sendPDF()">Générer et envoyer</button>
         </div>
       </div>
     </form>
@@ -126,17 +128,16 @@
       canvas.addEventListener("pointerup", stop); canvas.addEventListener("pointercancel", stop);
     }
 
-    async function generatePDF() {
-      const element=document.getElementById("pdfContent"),button=document.getElementById("pdfButton"),status=document.getElementById("actionStatus"),original=button.textContent;
-      button.disabled=true; button.textContent="Création du PDF…"; status.textContent="Préparation du rapport en cours…";
-      try {
-        const canvas=await html2canvas(element,{useCORS:true,scale:1.25,allowTaint:true,backgroundColor:"#ffffff",scrollX:0,scrollY:-window.scrollY});
-        const imgData=canvas.toDataURL("image/jpeg",.82),{jsPDF}=window.jspdf,pdf=new jsPDF("p","mm","a4"),pageWidth=pdf.internal.pageSize.getWidth(),pageHeight=pdf.internal.pageSize.getHeight(),props=pdf.getImageProperties(imgData),imgHeight=(props.height*pageWidth)/props.width;
-        let left=imgHeight,position=0; pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight); left-=pageHeight;
-        while(left>0){position=left-imgHeight;pdf.addPage();pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight);left-=pageHeight;}
-        pdf.save("checklist_FIT.pdf"); status.textContent="Le rapport PDF a été généré.";
-      } catch(error){status.textContent="Impossible de générer le PDF. Veuillez réessayer.";} finally{button.disabled=false;button.textContent=original;}
+    async function buildPDF() {
+      const element=document.getElementById("pdfContent");
+      const canvas=await html2canvas(element,{useCORS:true,scale:1.25,allowTaint:true,backgroundColor:"#ffffff",scrollX:0,scrollY:-window.scrollY});
+      const imgData=canvas.toDataURL("image/jpeg",.82),{jsPDF}=window.jspdf,pdf=new jsPDF("p","mm","a4"),pageWidth=pdf.internal.pageSize.getWidth(),pageHeight=pdf.internal.pageSize.getHeight(),props=pdf.getImageProperties(imgData),imgHeight=(props.height*pageWidth)/props.width;
+      let left=imgHeight,position=0; pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight); left-=pageHeight;
+      while(left>0){position=left-imgHeight;pdf.addPage();pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight);left-=pageHeight;}
+      return pdf;
     }
+    function generatePDF(){return ChecklistMailer.run({action:"download",type:"fit",filename:"checklist_FIT.pdf",buildPdf:buildPDF})}
+    function sendPDF(){return ChecklistMailer.run({action:"send",type:"fit",filename:"checklist_FIT.pdf",buildPdf:buildPDF})}
 
     initSignature("signatureChauffeur");
   </script>
