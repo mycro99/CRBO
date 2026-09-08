@@ -47,9 +47,13 @@ export function expiryState(date, noExpiration = false, today = todayISO()) {
 export function formatDate(date) {
   return validDate(date) && date ? date.split('-').reverse().join('/') : '—';
 }
+export const MAX_PHOTO_LENGTH = 120 * 1024;
+export function isArticlePhoto(value) {
+  return typeof value === 'string' && value.length <= MAX_PHOTO_LENGTH && /^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]+={0,2}$/.test(value);
+}
 export function safeImage(value) {
   const v = text(value).trim();
-  // Photos are optional; no upload service/billing is introduced.
+  if (isArticlePhoto(v)) return v;
   return /^images\/[a-zA-Z0-9_./ ()-]+\.(?:png|jpg|jpeg|webp|gif)$/i.test(v) && !v.includes('..') || /^https:\/\/[^\s<>"']+$/i.test(v) ? v : '';
 }
 export function articleFrom(id, data = {}) {
@@ -67,7 +71,10 @@ export function articleFrom(id, data = {}) {
   return {
     id, name:text(catalog.name) || text(data.name) || seed.name || `Article ${id}`,
     category:text(catalog.category) || seed.category || 'À classer',
-    barcodes:Array.isArray(catalog.barcodes) ? catalog.barcodes.filter(b => typeof b === 'string') : [...(seed.barcodes || [])],
+    // Requested correction of the historical adult/paediatric duplicate. No startup
+    // write: future explicit barcode edits opt out through the review version.
+    barcodes:(Array.isArray(catalog.barcodes) ? catalog.barcodes.filter(b => typeof b === 'string') : [...(seed.barcodes || [])]).filter(b =>
+      !(['consommables-93','consommables-95'].includes(id) && catalog.barcodeReviewVersion !== 1 && normalizeBarcode(b) === '4002427000362')),
     image:text(catalog.image ?? seed.image), minStock,
     targetStock:Number.isSafeInteger(catalog.targetStock) ? Math.max(minStock,catalog.targetStock) : minStock,
     location:text(catalog.location), unit:text(catalog.unit) || 'unité', notes:text(catalog.notes),
@@ -95,6 +102,10 @@ export function primaryExpiry(article) {
   const rank = {expired:0, soon:1, unknown:2, ok:3, none:4};
   return expiries(article).sort((a,b) => rank[a.key]-rank[b.key] || (a.days ?? Infinity)-(b.days ?? Infinity))[0] || expiryState('', true);
 }
+export function expiryAlert(articles) {
+  const states = articles.filter(a => a.active).flatMap(expiries);
+  return states.some(e => e.key === 'expired') ? 'expired' : states.some(e => e.key === 'soon') ? 'soon' : '';
+}
 export function orderNeed(article) { return Math.max(0,article.targetStock - article.stock - article.orderQuantity); }
 export function matchesFilter(article, filter) {
   if (filter === 'archived') return !article.active;
@@ -116,8 +127,8 @@ export function validateCatalog(input) {
   const targetStock = quantity(input.targetStock, 'Stock souhaité');
   if (targetStock < minStock) throw new Error('Le stock souhaité doit être au moins égal au minimum.');
   const image = text(input.image).trim();
-  if (image && (!safeImage(image) || image.length > 1500)) throw new Error('Photo : choisissez une image existante ou un lien HTTPS valide.');
-  const result = {name,category,barcodes,minStock,targetStock,image,location:text(input.location).trim(),unit:text(input.unit).trim() || 'unité',notes:text(input.notes).trim()};
+  if (image && (!safeImage(image) || (!isArticlePhoto(image) && image.length > 1500))) throw new Error('Photo invalide ou trop volumineuse : reprenez une photo ou choisissez une image existante.');
+  const result = {name,category,barcodes,barcodeReviewVersion:1,minStock,targetStock,image,location:text(input.location).trim(),unit:text(input.unit).trim() || 'unité',notes:text(input.notes).trim()};
   if (result.location.length > 120 || result.unit.length > 30 || result.notes.length > 1000) throw new Error('Emplacement, unité ou notes trop longs.');
   return result;
 }

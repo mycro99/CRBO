@@ -7,10 +7,10 @@
   <meta name="description" content="Stocks, articles et péremptions de la réserve du CS Oupeye">
   <title>Inventaire réserve — CS Oupeye</title>
   <link rel="icon" href="../icons/favicon-32.png">
-  <link rel="stylesheet" href="inventory-app.css?v=2">
+  <link rel="stylesheet" href="inventory-app.css?v=3">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
-  <script type="module" src="inventory-app.js?v=2"></script>
+  <script type="module" src="inventory-app.js?v=3"></script>
 </head>
 <body>
   <header class="site-header">
@@ -19,14 +19,13 @@
   </header>
   <main class="workspace">
     <div class="page-heading"><div><p class="eyebrow">GESTION DU MATÉRIEL</p><h1>Inventaire</h1></div><div class="heading-actions"><a class="button" href="scanner.html">Scanner un article</a><button id="new-article" class="button primary" disabled data-write>+ Nouvel article</button></div></div>
-    <div class="sync-line"><span id="sync-status" role="status" aria-live="polite">Connexion à l’inventaire…</span><span id="user-label"></span></div>
+    <div class="sync-line"><span id="sync-status" role="status" aria-live="polite">Connexion à l’inventaire…</span><button id="last-update" class="last-update" data-loaded disabled>Dernière modification : chargement…</button><span id="user-label"></span></div>
     <div id="global-error" class="notice error" role="alert" hidden></div>
     <noscript><p class="notice error">JavaScript est nécessaire pour ouvrir cet inventaire.</p></noscript>
     <div id="dashboard" class="dashboard" aria-label="État de la réserve">
       <button data-filter="all" aria-pressed="true"><span>Articles actifs</span><strong id="stat-all">—</strong></button>
-      <button data-filter="zero" aria-pressed="false"><span>En rupture</span><strong id="stat-zero">—</strong></button>
       <button data-filter="low" aria-pressed="false"><span>Sous le minimum</span><strong id="stat-low">—</strong></button>
-      <button data-filter="expiry" aria-pressed="false"><span>Péremptions à suivre</span><strong id="stat-expiry">—</strong></button>
+      <button id="expiry-alert" data-filter="expiry" aria-pressed="false"><span>Péremptions à suivre</span><strong id="stat-expiry">—</strong><span id="expiry-summary"></span></button>
       <button data-filter="ordered" aria-pressed="false"><span>Commandes en cours</span><strong id="stat-ordered">—</strong></button>
     </div>
     <section class="inventory-panel" aria-label="Catalogue des articles">
@@ -35,7 +34,8 @@
         <label>Catégorie<select id="category"><option value="">Toutes les catégories</option></select></label>
         <label>Afficher<select id="filter"><option value="all">Articles actifs</option><option value="low">Sous le minimum</option><option value="zero">En rupture</option><option value="expiry">Périmés / moins de 30 jours</option><option value="ordered">Commandes en cours</option><option value="barcodes">Sans code-barres</option><option value="archived">Articles archivés</option></select></label>
       </div>
-      <div class="table-actions"><p id="result-count" role="status">Chargement des données…</p><div><button id="expand" class="text-button">Tout dérouler</button><button id="collapse" class="text-button">Tout replier</button></div></div>
+      <div class="table-actions"><p id="result-count" role="status">Chargement des données…</p><div class="management-actions" aria-label="Outils de gestion"><button id="expand" class="text-button">Tout dérouler</button><button id="collapse" class="text-button">Tout replier</button><button id="orders" class="text-button" data-loaded disabled>À recommander</button><button id="count-mode" class="text-button" data-write disabled>Faire un comptage</button><button id="history" class="text-button" data-loaded disabled>Historique</button><details class="export-menu"><summary class="text-button">Exporter ▾</summary><div><button id="pdf" data-loaded disabled>Inventaire PDF</button><button id="csv" data-loaded disabled>Tableau CSV</button><button id="backup" data-loaded disabled>Sauvegarde des articles JSON</button></div></details></div></div>
+      <p id="stock-help" class="stock-help">Quantités : saisissez le <strong>total en stock</strong>, puis validez avec ✓ ou Entrée.</p>
       <section id="count-panel" class="notice" hidden aria-label="Session de comptage">
         <h2>Comptage de la réserve</h2><p>Saisissez uniquement les articles comptés. Rien n’est enregistré avant validation. Si un collègue modifie un stock entre-temps, la validation est bloquée pour éviter un écrasement.</p>
         <p>Les saisies sont un brouillon sur cet appareil. Pour les articles répartis en lots, corrigez les quantités lot par lot dans « Mouvement ».</p>
@@ -44,11 +44,6 @@
       <div class="table-wrap"><table class="inventory-table"><thead><tr><th scope="col">Article</th><th scope="col">Stock</th><th scope="col">Minimum / souhaité</th><th scope="col">Péremption</th><th scope="col">Gestion</th></tr></thead><tbody id="inventory-body"><tr><td colspan="5" class="empty">Vérification de votre connexion…</td></tr></tbody></table></div>
       <p id="empty-results" class="empty" hidden>Aucun article ne correspond à cette recherche.</p>
     </section>
-    <section class="tools-bar" aria-label="Outils de gestion">
-      <button id="orders" class="button" data-loaded disabled>À recommander</button><button id="count-mode" class="button" data-write disabled>Faire un comptage</button><button id="history" class="button" data-loaded disabled>Historique</button>
-      <details class="export-menu"><summary class="button">Exporter</summary><div><button id="pdf" data-loaded disabled>Inventaire PDF</button><button id="csv" data-loaded disabled>Tableau CSV</button><button id="backup" data-loaded disabled>Sauvegarde des articles JSON</button></div></details>
-    </section>
-    <button id="last-update" class="last-update" data-loaded disabled>Dernière modification : chargement…</button>
     <p class="footnote">Les articles archivés restent consultables. Les données et l’historique ne sont jamais supprimés automatiquement.</p>
   </main>
   <dialog id="editor" aria-labelledby="editor-title"><form id="editor-form"><div class="dialog-heading"><h2 id="editor-title"></h2><button type="button" class="close-button" data-close aria-label="Fermer">×</button></div><div id="editor-body"></div><p id="editor-error" class="form-error" role="alert"></p><div class="dialog-footer"><button type="button" class="button" data-close>Fermer</button><button id="editor-submit" class="button primary" type="submit">Enregistrer</button></div></form></dialog>

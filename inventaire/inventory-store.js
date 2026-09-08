@@ -1,4 +1,4 @@
-import { mergeInventory, planOperation } from './inventory-core.js';
+import { mergeInventory, planOperation } from './inventory-core.js?v=3';
 
 // The SDK is injected so data-safety tests run without contacting production.
 export function createInventoryStore(sdk, db, auth) {

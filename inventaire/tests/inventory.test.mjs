@@ -8,6 +8,8 @@ import {extractLegacy} from './extract-legacy.mjs';
 import {SEED_ARTICLES,SEED_CATEGORIES} from '../catalog-seed.js';
 import {articleFrom,mergeInventory,planOperation,barcodeMatches,normalizeBarcode,expiryState,expiries,quantity,validDate,orderNeed,validateCatalog,safeImage,unallocatedStock} from '../inventory-core.js';
 import {createInventoryStore} from '../inventory-store.js';
+import {expiryAlert,MAX_PHOTO_LENGTH,isArticlePhoto} from '../inventory-core.js';
+import {prepareArticlePhoto} from '../article-photo.js';
 import {csvText,escapeHTML} from '../inventory-ui.js';
 const repo=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
 const sourceRef='bc4669a1c457606374be29995901c4d5244ab764';
@@ -47,10 +49,22 @@ test('multiple distinct barcodes on one article find one shared stock',()=>{
   assert.deepEqual(barcodeMatches([article],'4015630006038').map(a=>a.id),['new']);
   assert.deepEqual(barcodeMatches([article],'DIFFERENT-CODE').map(a=>a.id),['new']);
 });
-test('both known barcode collisions remain ambiguous and unchanged',()=>{
+test('only the requested BP duplicate is removed; the other collision remains unchanged',()=>{
   const rows=mergeInventory(new Map());
   assert.deepEqual(barcodeMatches(rows,'4031815901417').map(a=>a.id),['consommables-8','consommables-8b']);
-  assert.deepEqual(barcodeMatches(rows,'4002427000362').map(a=>a.id),['consommables-93','consommables-95']);
+  assert.deepEqual(barcodeMatches(rows,'4002427000362'),[]);
+  assert.deepEqual(barcodeMatches(rows,'4002427000386').map(a=>a.id),['consommables-94']);
+});
+test('BP correction preserves raw stock and dates and allows a later explicit rescan',()=>{
+  for(const bpId of ['consommables-93','consommables-95']){
+    const raw={...original,catalog:{...catalog,barcodes:['4002427000362','KEEP-ME']}};
+    const copy=structuredClone(raw),view=articleFrom(bpId,raw);
+    assert.deepEqual(view.barcodes,['KEEP-ME']);assert.deepEqual(raw,copy);
+    const saved=planOperation(bpId,raw,{type:'catalog',catalog:{...view,barcodes:['4002427000362','KEEP-ME']},expectedRevision:0});
+    assert.equal(saved.patch.catalog.barcodeReviewVersion,1);
+    assert.deepEqual(articleFrom(bpId,merge(raw,saved.patch)).barcodes,['4002427000362','KEEP-ME']);
+    assert(!Object.hasOwn(saved.patch,'stock'));assert(!Object.hasOwn(saved.patch,'expirationDate'));
+  }
 });
 test('scanner normalization preserves meaningful letters and does not invent lot digits',()=>{
   assert.equal(normalizeBarcode(' aB-0123 '),'AB0123');
@@ -127,6 +141,28 @@ test('input validation rejects fractional, negative and unsafe quantities and im
   assert.equal(safeImage('javascript:alert(1)'),'');assert.equal(safeImage('images/../../secret.jpg'),'');
   assert.throws(()=>validateCatalog({...catalog,targetStock:1}),/souhaité/);
 });
+test('expiry dashboard prioritizes expired lots, then soon dates, excluding archived and exempt articles',()=>{
+  const future='2999-01-01',past='2000-01-01';
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const soon=articleFrom(id,{stock:10,expirationDate:today});
+  const expired=articleFrom('consommables-2',{stock:10,expirationDate:future,inventoryLots:[{id:'A',label:'A',quantity:2,expirationDate:past}]});
+  assert.equal(expiryAlert([soon]),'soon');assert.equal(expiryAlert([soon,expired]),'expired');
+  assert.equal(expiryAlert([{...expired,active:false},articleFrom(id,{expirationDate:past,noExpiration:true})]),'');
+  assert.equal(expiryAlert([articleFrom(id,{stock:2,expirationDate:future,inventoryLots:[{id:'A',label:'A',quantity:0,expirationDate:past}]})]),'');
+});
+test('bounded JPEG photos survive catalog edits; unsupported data URLs and oversized payloads are rejected',()=>{
+  const image='data:image/jpeg;base64,/9j/AAAA/9k=';
+  assert(isArticlePhoto(image));assert.equal(safeImage(image),image);
+  const raw={...original,catalog:{...catalog,image}};
+  const patch=planOperation(id,raw,{type:'catalog',catalog:{...articleFrom(id,raw),name:'Avec photo'},expectedRevision:0}).patch;
+  assert.equal(patch.catalog.image,image);assert.equal(merge(raw,patch).expirationDate,original.expirationDate);
+  for(const bad of ['data:image/svg+xml;base64,AAAA','data:text/html;base64,AAAA','data:image/jpeg;base64,not jpeg',image+'A'.repeat(MAX_PHOTO_LENGTH)]){
+    assert.equal(safeImage(bad),'');assert.throws(()=>validateCatalog({...catalog,image:bad}),/Photo/);
+  }
+});
+test('phone photo preprocessing rejects oversized and non-photo input before decoding',async()=>{
+  for(const file of [{size:0},{size:26*1024*1024,type:'image/jpeg'},{size:100,type:'application/pdf'}])await assert.rejects(prepareArticlePhoto(file));
+});
 test('escaping and CSV prevent executable content and spreadsheet formulas',()=>{
   assert.equal(escapeHTML('<img onerror="x">'),'&lt;img onerror=&quot;x&quot;&gt;');
   assert(csvText([['=1+1','+CMD','@SUM','ok']]).includes('"\'=1+1"'));
@@ -161,6 +197,18 @@ test('concurrent stock changes are additive, history atomic, same operation id i
   assert.equal(mock.database.get('inventory/'+id).stock,19);assert.equal([...mock.database.keys()].filter(k=>k.startsWith('history/')).length,2);
   await mock.store.perform(id,{type:'move',delta:1},'op1');assert.equal(mock.database.get('inventory/'+id).stock,19);
   assert.equal(mock.database.get('metadata/lastUpdate').newStock,19);
+});
+test('direct total entry saves once and preserves lots, expiry and other fields',async()=>{
+  const raw={...original,inventoryLots:[{id:'A',label:'A',quantity:10,expirationDate:'2028-01-01'}]};
+  const mock=mockStore(new Map([[id,raw]]));
+  const operation={type:'count',stock:500,expectedStock:17,expectedRevision:0,reason:'Saisie directe du stock total'};
+  await mock.store.perform(id,operation,'direct');await mock.store.perform(id,operation,'direct');
+  const saved=mock.database.get('inventory/'+id);
+  assert.equal(saved.stock,500);assert.deepEqual(saved.inventoryLots,raw.inventoryLots);assert.equal(saved.expirationDate,raw.expirationDate);assert.deepEqual(saved.extraUnknown,raw.extraUnknown);
+  assert.equal(mock.database.get('metadata/lastUpdate').newStock,500);
+  assert.equal([...mock.database.keys()].filter(k=>k.startsWith('history/')).length,1);
+  await assert.rejects(mock.store.perform(id,{type:'count',stock:5,expectedStock:500,expectedRevision:1},'bad-direct'),/réparti en lots/);
+  assert.equal(mock.database.get('inventory/'+id).stock,500);
 });
 test('denied writes leave stock, history and metadata entirely unchanged',async()=>{
   const mock=mockStore();mock.deny();
