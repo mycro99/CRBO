@@ -1,4 +1,4 @@
-import { barcodeMatches, categoryLabel } from './inventory-core.js?v=3';
+import { barcodeMatches, categoryLabel } from './inventory-core.js?v=4';
 import { escapeHTML as e, friendlyError } from './inventory-ui.js';
 import { BarcodeCamera, cameraError } from './barcode-camera.js';
 const $=id=>document.getElementById(id), camera=new BarcodeCamera('reader');
@@ -39,7 +39,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});w
 window.addEventListener('offline',()=>{$('catalog-status').textContent='Hors connexion — le catalogue peut ne pas être à jour.';});
 async function start(){
   try{
-    const client=await import('./firebase-client.js?v=3');
+    const client=await import('./firebase-client.js?v=4');
     client.store.subscribe(state=>{articles=state.articles;ready=state.ready;online=state.online;$('catalog-status').textContent=ready?`${articles.filter(a=>a.active).length} articles · ${online?'catalogue synchronisé':'consultation hors connexion'}`:'Chargement du catalogue…';controls();});
     client.watchAuth(next=>{stopListening();user=next;if(!user){ready=false;articles=[];stop();$('catalog-status').innerHTML='Connectez-vous avec votre compte staff. <a href="../index.html">Retour à l’accueil</a>';controls();return;}
       stopListening=client.store.start(error=>{online=false;$('catalog-status').textContent=friendlyError(error);controls();});

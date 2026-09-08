@@ -1,7 +1,7 @@
 import { SEED_CATEGORIES, SEED_ARTICLES } from './catalog-seed.js';
 import { CATALOG_IMAGES } from './catalog-images.js';
-import { articleFrom, categoryLabel, fold, normalizeBarcode, barcodeMatches, quantity, validDate, todayISO, expiryState, formatDate, safeImage, isArticlePhoto, expiryAlert, unallocatedStock, expiries, primaryExpiry, orderNeed, matchesFilter, splitBarcodes } from './inventory-core.js?v=3';
-import { prepareArticlePhoto } from './article-photo.js?v=3';
+import { articleFrom, categoryLabel, fold, normalizeBarcode, barcodeMatches, quantity, validDate, todayISO, expiryState, formatDate, safeImage, isArticlePhoto, expiryAlert, unallocatedStock, expiries, primaryExpiry, orderNeed, matchesFilter, splitBarcodes } from './inventory-core.js?v=4';
+import { prepareArticlePhoto } from './article-photo.js?v=4';
 import { escapeHTML as e, uid, friendlyError, downloadFile, csvText, pdfTable } from './inventory-ui.js';
 import { BarcodeCamera, cameraError } from './barcode-camera.js';
 
@@ -78,6 +78,7 @@ function openDialog(title,body,onSubmit=null,submitLabel='Enregistrer'){
   $('editor-title').textContent=title;$('editor-body').innerHTML=body;$('editor-error').textContent='';
   submitHandler=onSubmit;formOperationId=uid();formDirty=false;photoProcessing=false;
   $('editor-submit').textContent=submitLabel;$('editor-submit').hidden=!onSubmit;
+  $('editor-submit').className='button primary';
   if(!$('editor').open)$('editor').showModal();
   $('editor').scrollTop=0;updateStatus();
 }
@@ -166,7 +167,7 @@ function showDetail(a){
   openDialog(a.name,`<p class="muted">${e(categoryLabel(a.category))}${a.location?' · '+e(a.location):''}${!a.active?' · Article archivé':''}</p>
     <div class="detail-summary"><div>En stock<strong>${a.stockValid?a.stock:'À vérifier'} <small>${e(a.unit)}</small></strong></div><div>Minimum / souhaité<strong>${a.minStock} / ${a.targetStock}</strong></div><div>Péremption<strong>${badge(expiry)}</strong></div></div>
     ${a.notes?`<p class="detail-notes">${e(a.notes)}</p>`:''}
-    <div class="action-row">${actionButton('edit',a.id,'Modifier la fiche','data-write')}${a.active?actionButton('move',a.id,'Mouvement','data-write')+actionButton('expiry',a.id,'Modifier la péremption','data-write')+actionButton('lot',a.id,'Ajouter un lot','data-write')+actionButton('order',a.id,'Commande','data-write'):''}${actionButton('archive',a.id,a.active?'Archiver':'Réactiver','data-write')}</div>
+    <div class="action-row">${actionButton('edit',a.id,'Modifier la fiche','data-write')}${a.active?actionButton('move',a.id,'Mouvement','data-write')+actionButton('expiry',a.id,'Modifier la péremption','data-write')+actionButton('lot',a.id,'Ajouter un lot','data-write')+actionButton('order',a.id,'Commande','data-write'):''}${actionButton('archive',a.id,a.active?'Archiver':'Réactiver','data-write')}<button type="button" class="button small danger" data-action="delete" data-id="${e(a.id)}" data-write>Supprimer</button></div>
     <h3 style="margin-top:24px">Codes-barres</h3><p class="detail-notes muted">${a.barcodes.length?a.barcodes.map(e).join('<br>'):'Aucun code-barres. Ajoutez-en dans la fiche article.'}</p>
     ${a.lots.length?`<h3>Lots de péremption</h3><p class="muted">Stock non réparti : ${unallocatedStock(a)}. Les lots sont inclus dans le stock total.</p><ul class="list">${a.lots.map(l=>`<li><h3>${e(l.label)} — ${e(l.quantity)} ${e(a.unit)}</h3>${badge(expiryState(l.expirationDate,l.noExpiration))}<span class="article-meta">${e(formatDate(l.expirationDate))}</span>${a.active?`<div class="list-actions">${actionButton('lotExpiry',a.id,'Modifier la date',`data-lot-id="${e(l.id)}" data-write`)}</div>`:''}</li>`).join('')}</ul>`:''}`);
 }
@@ -183,6 +184,13 @@ function addLot(a){
 }
 function archive(a){
   openDialog(a.active?'Archiver — '+a.name:'Réactiver — '+a.name,`<p>${a.active?'L’article sera retiré de la liste active et du scanner. Son stock, ses lots, ses codes-barres et son historique seront conservés. Il restera accessible dans le filtre « Articles archivés ».':'L’article retrouvera la liste active, avec toutes ses données conservées.'}</p>`,async(_,opId)=>store.perform(a.id,{type:'archive',active:!a.active,expectedRevision:a.catalogRevision},opId),a.active?'Archiver sans supprimer':'Réactiver');
+}
+function deleteArticle(a){
+  openDialog('Supprimer — '+a.name,`<p>Supprimer <strong>${e(a.name)}</strong> de l’inventaire ? L’article disparaîtra du tableau, des archives, des recommandations et du scanner.</p><p class="notice warning">Stock enregistré : <strong>${a.stockValid?a.stock:'À vérifier'} ${e(a.unit)}</strong>${a.orderQuantity?` · Commande en cours : <strong>${a.orderQuantity}</strong>`:''}. Vérifiez qu’il s’agit bien de l’article à retirer.</p><p class="muted">Son historique et ses données restent conservés. Cette suppression ne déplace pas son stock vers un autre article.</p>`,async(_,opId)=>{
+    await store.perform(a.id,{type:'delete',expectedRevision:a.catalogRevision,expectedStockRevision:a.stockRevision,expectedStock:a.stock,expectedOrderQuantity:a.orderQuantity},opId);
+    stockDraft.delete(a.id);countDraft.delete(a.id);saveCountDraft();
+  },'Supprimer cet article');
+  $('editor-submit').className='button danger';
 }
 function order(a){
   openDialog('Commande — '+a.name,`<p>Stock : <strong>${a.stock}</strong> · Souhaité : <strong>${a.targetStock}</strong> · Déjà commandé : <strong>${a.orderQuantity}</strong></p><p class="muted">La quantité ci-dessous est le total restant à recevoir. Ce suivi n’envoie pas de commande au fournisseur.</p>${input('quantity','Quantité restant à recevoir',a.orderQuantity||Math.max(0,a.targetStock-a.stock),'number','required min="0" max="9999999" step="1"')}`,async(fd,opId)=>store.perform(a.id,{type:'order',quantity:fd.get('quantity'),expectedQuantity:a.orderQuantity},opId));
@@ -241,7 +249,7 @@ $('inventory-body').addEventListener('keydown',event=>{
 document.addEventListener('click',event=>{
   const b=event.target.closest('[data-action]');if(!b||b.disabled)return;const a=current(b.dataset.id);if(!a)return;
   if(['plus','minus','move','receive'].includes(b.dataset.action)&&stockDraft.get(a.id)?.dirty){notify('Validez d’abord le total saisi avec ✓, ou annulez avec ↶.',true);return;}
-  const actions={detail:()=>showDetail(a),edit:()=>editArticle(a),move:()=>movement(a),plus:()=>quickMove(a,1),minus:()=>quickMove(a,-1),saveStock:()=>saveStock(a),cancelStock:()=>cancelStock(a),expiry:()=>editExpiry(a),lotExpiry:()=>editExpiry(a,b.dataset.lotId),lot:()=>addLot(a),archive:()=>archive(a),order:()=>order(a),receive:()=>receive(a)};
+  const actions={detail:()=>showDetail(a),edit:()=>editArticle(a),move:()=>movement(a),plus:()=>quickMove(a,1),minus:()=>quickMove(a,-1),saveStock:()=>saveStock(a),cancelStock:()=>cancelStock(a),expiry:()=>editExpiry(a),lotExpiry:()=>editExpiry(a,b.dataset.lotId),lot:()=>addLot(a),archive:()=>archive(a),delete:()=>deleteArticle(a),order:()=>order(a),receive:()=>receive(a)};
   actions[b.dataset.action]?.();
 });
 
@@ -323,7 +331,7 @@ function initialNavigation(){
 
 async function start(){
   try{
-    const client=await import('./firebase-client.js?v=3');store=client.store;
+    const client=await import('./firebase-client.js?v=4');store=client.store;
     store.subscribe(next=>{state=next;render();initialNavigation();});
     client.watchAuth(user=>{
       unsubscribeInventory();unsubscribeLast();stockDraft.clear();authUser=user;

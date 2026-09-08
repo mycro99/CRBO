@@ -2,7 +2,7 @@
 import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js';
 import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js';
 import * as firestore from 'https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js';
-import { createInventoryStore } from './inventory-store.js?v=3';
+import { createInventoryStore } from './inventory-store.js?v=4';
 
 const config = {
   apiKey:'AIzaSyBa95NS-_TApkErWgkfhTzRhOyKss5W2aU',

@@ -78,7 +78,7 @@ export function articleFrom(id, data = {}) {
     image:text(catalog.image ?? seed.image), minStock,
     targetStock:Number.isSafeInteger(catalog.targetStock) ? Math.max(minStock,catalog.targetStock) : minStock,
     location:text(catalog.location), unit:text(catalog.unit) || 'unité', notes:text(catalog.notes),
-    active:catalog.active !== false, order:seed.order ?? 10000,
+    active:catalog.active !== false && catalog.deleted !== true, deleted:catalog.deleted === true, order:seed.order ?? 10000,
     stock, stockValid, expirationDate:data.expirationDate || '', noExpiration:data.noExpiration === true,
     lots, catalogRevision:data.catalogRevision || 0, stockRevision:data.inventoryStockRevision || 0,
     orderQuantity:Number.isSafeInteger(data.inventoryOrder?.quantity) ? data.inventoryOrder.quantity : 0,
@@ -88,7 +88,7 @@ export function articleFrom(id, data = {}) {
 export function mergeInventory(records) {
   const all = new Map(SEED_ARTICLES.map(a => [a.id,articleFrom(a.id)]));
   for (const [id, data] of records) all.set(id, articleFrom(id, data));
-  return [...all.values()];
+  return [...all.values()].filter(article => !article.deleted);
 }
 export function unallocatedStock(article) {
   return article.stock - article.lots.reduce((sum, lot) => sum + quantity(lot.quantity), 0);
@@ -108,6 +108,7 @@ export function expiryAlert(articles) {
 }
 export function orderNeed(article) { return Math.max(0,article.targetStock - article.stock - article.orderQuantity); }
 export function matchesFilter(article, filter) {
+  if (article.deleted) return false;
   if (filter === 'archived') return !article.active;
   if (!article.active) return false;
   if (filter === 'low') return article.stockValid && article.stock < article.minStock;
@@ -139,7 +140,8 @@ export function planOperation(id, raw, operation) {
   let action = '', type = operation.type, extra = {};
   const hasArticle = raw !== null || seedById.has(id);
   if (!hasArticle && type !== 'create') throw new Error('Cet article n’existe plus. Rechargez la page.');
-  if (!article.active && !['archive','catalog'].includes(type)) throw new Error('Cet article est archivé. Réactivez-le d’abord.');
+  if (article.deleted) throw new Error('Cet article a été supprimé. Rechargez la liste.');
+  if (!article.active && !['archive','catalog','delete'].includes(type)) throw new Error('Cet article est archivé. Réactivez-le d’abord.');
   const setStock = n => {
     patch.stock = quantity(n);
     patch.inventoryStockRevision = article.stockRevision + 1;
@@ -156,6 +158,13 @@ export function planOperation(id, raw, operation) {
     patch.expirationDate = operation.expirationDate || null;
     patch.noExpiration = operation.noExpiration === true;
     action = 'Article créé';
+  } else if (type === 'delete') {
+    if (operation.expectedRevision !== article.catalogRevision || operation.expectedStockRevision !== article.stockRevision || operation.expectedStock !== article.stock || operation.expectedOrderQuantity !== article.orderQuantity) throw new Error('Cet article a changé depuis l’ouverture de la fiche. Rouvrez-la avant de confirmer sa suppression.');
+    // Keep a tombstone: deleting a legacy document would resurrect its seed entry.
+    // Stock, lots, dates, unknown fields and previous history remain untouched.
+    patch.catalog = {active:false,deleted:true};
+    patch.catalogRevision = article.catalogRevision + 1;
+    action = 'Article supprimé';
   } else if (type === 'catalog' || type === 'archive') {
     if (operation.expectedRevision !== article.catalogRevision) throw new Error('La fiche a été modifiée par un collègue. Rouvrez-la avant d’enregistrer.');
     patch.catalog = type === 'catalog' ? validateCatalog(operation.catalog) : {active:operation.active === true};

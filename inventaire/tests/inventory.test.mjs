@@ -8,7 +8,7 @@ import {extractLegacy} from './extract-legacy.mjs';
 import {SEED_ARTICLES,SEED_CATEGORIES} from '../catalog-seed.js';
 import {articleFrom,mergeInventory,planOperation,barcodeMatches,normalizeBarcode,expiryState,expiries,quantity,validDate,orderNeed,validateCatalog,safeImage,unallocatedStock} from '../inventory-core.js';
 import {createInventoryStore} from '../inventory-store.js';
-import {expiryAlert,MAX_PHOTO_LENGTH,isArticlePhoto} from '../inventory-core.js';
+import {expiryAlert,MAX_PHOTO_LENGTH,isArticlePhoto,matchesFilter} from '../inventory-core.js';
 import {prepareArticlePhoto} from '../article-photo.js';
 import {csvText,escapeHTML} from '../inventory-ui.js';
 const repo=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
@@ -222,6 +222,37 @@ test('a conflicting count aborts ALL changes in a multi-article validation',asyn
 });
 test('offline cached state cannot perform stock changes',async()=>{
   const mock=mockStore();mock.cache();await assert.rejects(mock.store.perform(id,{type:'move',delta:1},'offline'),/Connexion requise/);assert.equal(mock.writes(),0);
+});
+const deletion=a=>({type:'delete',expectedRevision:a.catalogRevision,expectedStockRevision:a.stockRevision,expectedStock:a.stock,expectedOrderQuantity:a.orderQuantity});
+test('deleting legacy and new articles hides them permanently while preserving their data and history',async()=>{
+  for(const articleId of [id,'article-new']){
+    const raw={...original,catalog:{...catalog,active:articleId===id},inventoryLots:[{id:'A',label:'Lot A',quantity:2,expirationDate:'2027-01-01'}]};
+    const mock=mockStore(new Map([[articleId,raw]]));
+    mock.database.set('history/previous',{articleId,action:'+1'});
+    const operation=deletion(articleFrom(articleId,raw));
+    await mock.store.perform(articleId,operation,'delete-test');
+    await mock.store.perform(articleId,operation,'delete-test');
+    const saved=mock.database.get('inventory/'+articleId);
+    assert.equal(saved.catalog.deleted,true);assert.equal(saved.catalog.active,false);
+    for(const key of ['stock','expirationDate','inventoryLots','extraUnknown'])assert.deepEqual(saved[key],raw[key]);
+    assert.deepEqual(saved.catalog.barcodes,raw.catalog.barcodes);
+    assert.deepEqual(mock.database.get('history/previous'),{articleId,action:'+1'});
+    assert.equal(mock.database.get('metadata/lastUpdate').action,'Article supprimé');
+    assert.equal([...mock.database.keys()].filter(k=>k.startsWith('history/')).length,2);
+    assert(!mergeInventory(new Map([[articleId,saved]])).some(a=>a.id===articleId));
+    for(const filter of ['all','archived','low','expiry','ordered'])assert.equal(matchesFilter(articleFrom(articleId,saved),filter),false);
+    assert.deepEqual(barcodeMatches([articleFrom(articleId,saved)],catalog.barcodes[0]),[]);
+    for(const op of [{type:'move',delta:1},{type:'archive',active:true,expectedRevision:1},{type:'catalog',catalog,expectedRevision:1}])assert.throws(()=>planOperation(articleId,saved,op),/supprimé/);
+  }
+});
+test('deletion refuses stale confirmations without hiding changed stock or orders',()=>{
+  const op=deletion(articleFrom(id,original));
+  for(const changes of [{stock:18},{inventoryStockRevision:1},{catalogRevision:1},{inventoryOrder:{quantity:4}}])assert.throws(()=>planOperation(id,{...original,...changes},op),/changé/);
+});
+test('denied deletion leaves the article and audit records entirely unchanged',async()=>{
+  const mock=mockStore();mock.deny();
+  await assert.rejects(mock.store.perform(id,deletion(articleFrom(id,original)),'delete-denied'));
+  assert.equal(mock.writes(),0);assert.deepEqual(mock.database.get('inventory/'+id),original);assert.equal(mock.database.size,1);
 });
 test('all local entrypoint scripts, styles and icons exist; old inline Firebase and scanner mappings are gone',()=>{
   for(const file of ['inventaire.html','scanner.html']){

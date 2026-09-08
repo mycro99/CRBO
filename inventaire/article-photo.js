@@ -1,4 +1,4 @@
-import { MAX_PHOTO_LENGTH, isArticlePhoto } from './inventory-core.js?v=3';
+import { MAX_PHOTO_LENGTH, isArticlePhoto } from './inventory-core.js?v=4';
 
 // Store only a small JPEG thumbnail in the existing article document. The original
 // never leaves the device; drawing to canvas also discards its camera metadata.
