@@ -301,6 +301,13 @@ $('collapse').addEventListener('click',()=>{expanded.clear();search='';category=
 $('inventory-body').addEventListener('click',event=>{const b=event.target.closest('[data-category]');if(!b)return;expanded.has(b.dataset.category)?expanded.delete(b.dataset.category):expanded.add(b.dataset.category);render();});
 $('new-article').addEventListener('click',()=>editArticle());
 $('orders').addEventListener('click',showOrders);$('history').addEventListener('click',showHistory);$('last-update').addEventListener('click',showHistory);
+const exportMenu=document.querySelector('.export-menu');
+function positionExportMenu(){
+  if(!exportMenu.open)return;
+  const popup=exportMenu.querySelector('div'),anchor=exportMenu.getBoundingClientRect();
+  popup.style.right='auto';popup.style.left=`${Math.max(8,Math.min(anchor.left,window.innerWidth-popup.offsetWidth-8))-anchor.left}px`;
+}
+exportMenu.addEventListener('toggle',positionExportMenu);window.addEventListener('resize',positionExportMenu);
 window.addEventListener('online',()=>render());window.addEventListener('offline',()=>render());
 window.addEventListener('beforeunload',event=>{if(busy||formDirty||[...stockDraft.values()].some(d=>d.dirty)){event.preventDefault();event.returnValue='';}});
 let initialNavigationDone=false;
