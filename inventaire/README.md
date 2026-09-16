@@ -49,10 +49,14 @@ Le scanner n’initialise pas un deuxième catalogue : il importe la même base 
 
 ## Vérifications
 
+Le scanner conserve QR Code, Data Matrix et les formats de codes-barres existants. Il demande une image 1920 × 1080 en préférence, avec repli si les contraintes ne sont pas acceptées, et une zone de lecture plus haute pour les codes carrés. La mise au point, l’exposition et la balance des blancs continues sont appliquées uniquement si la caméra les expose ; leur refus ne bloque pas le scan. La résolution réellement fournie dépend du téléphone et du navigateur. La lampe reste manuelle et conserve les réglages acceptés. Aucun réglage ne peut reconstituer un code masqué par un reflet. Les changements s’appliquent au scanner de recherche et au scan depuis une fiche article.
+
+Un QR contenant une URL ou un autre texte doit correspondre au contenu enregistré dans la fiche pour retrouver l’article. L’activation du décodage QR ne signifie pas qu’une URL sera automatiquement convertie en EAN. Voir [les réglages du décodeur](https://scanapp.org/html5-qrcode-docs/docs/apis/interfaces/Html5QrcodeCameraScanConfig) et [les contraintes de caméra](https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints).
+
 Depuis la racine du dépôt, avec Node.js 24 :
 
 ```sh
-node --test inventaire/tests/inventory.test.mjs
+node --test inventaire/tests/*.test.mjs
 ```
 
 Tests purs et adaptateur Firestore simulé : comparaison intégrale du catalogue d’origine, conservation de champs, concurrence, refus atomiques, idempotence, lots, comptages, commandes, dates, scanner et références locales. Ces tests ne contactent jamais la base réelle. Ils ne constituent pas une vérification des règles Firestore en production ni un essai de caméra sur iPhone.

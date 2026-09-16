@@ -1,6 +1,6 @@
 import { barcodeMatches, categoryLabel } from './inventory-core.js?v=4';
 import { escapeHTML as e, friendlyError } from './inventory-ui.js';
-import { BarcodeCamera, cameraError } from './barcode-camera.js';
+import { BarcodeCamera, cameraError } from './barcode-camera.js?v=5';
 const $=id=>document.getElementById(id), camera=new BarcodeCamera('reader');
 let articles=[],ready=false,online=false,user=null,torch=false,busy=false,stopListening=()=>{};
 function controls(){
@@ -9,7 +9,7 @@ function controls(){
   $('stop').hidden=!camera.running&&!busy;
   $('torch').hidden=!camera.running;
 }
-async function stop(){await camera.stop();busy=false;torch=false;controls();}
+async function stop(){await camera.stop();busy=false;torch=false;$('torch').textContent='Activer la lampe';controls();}
 async function lookup(raw){
   if(!ready||!user)return;
   await stop();$('manual-code').value=raw;

@@ -3,7 +3,7 @@ import { CATALOG_IMAGES } from './catalog-images.js';
 import { articleFrom, categoryLabel, fold, normalizeBarcode, barcodeMatches, quantity, validDate, todayISO, expiryState, formatDate, safeImage, isArticlePhoto, expiryAlert, unallocatedStock, expiries, primaryExpiry, orderNeed, matchesFilter, splitBarcodes } from './inventory-core.js?v=4';
 import { prepareArticlePhoto } from './article-photo.js?v=4';
 import { escapeHTML as e, uid, friendlyError, downloadFile, csvText, pdfTable } from './inventory-ui.js';
-import { BarcodeCamera, cameraError } from './barcode-camera.js';
+import { BarcodeCamera, cameraError } from './barcode-camera.js?v=5';
 
 const $=id=>document.getElementById(id);
 let store, state={articles:[],records:new Map(),ready:false,online:false}, busy=0, authUser=null;
@@ -152,7 +152,7 @@ function editArticle(a=null,barcode=''){
   $('capture-code').addEventListener('click',()=>captureCode(code=>{$('article-barcodes').value=splitBarcodes($('article-barcodes').value+'\n'+code).join('\n');formDirty=true;warn();}));
 }
 async function captureCode(onCode){
-  $('capture-status').textContent='Placez le code dans le cadre.';$('capture-dialog').showModal();
+  $('capture-status').textContent='Gardez le QR ou le code-barres entier dans le cadre. Reculez légèrement si l’image est floue ; inclinez l’emballage en cas de reflet.';$('capture-dialog').showModal();
   try{await camera.start(async code=>{await camera.stop();$('capture-dialog').close();onCode(code);});}
   catch(error){$('capture-status').textContent=cameraError(error);}
 }

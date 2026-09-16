@@ -9,7 +9,7 @@
   <link rel="icon" href="../icons/favicon-32.png">
   <link rel="stylesheet" href="inventory-app.css?v=4">
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
-  <script type="module" src="scanner-app.js?v=4"></script>
+  <script type="module" src="scanner-app.js?v=5"></script>
 </head>
 <body>
   <header class="site-header"><a class="brand" href="../index.html">CS Oupeye<span>Réserve opérationnelle</span></a><nav aria-label="Navigation principale"><a href="../index.html">Accueil</a><a href="../staff.html">Staff</a></nav></header>
@@ -20,6 +20,7 @@
       <div id="reader" class="camera-reader"></div>
       <div class="scanner-actions"><button id="start" class="button primary" disabled>Démarrer le scan</button><button id="stop" class="button" hidden>Arrêter</button><button id="torch" class="button" hidden>Activer la lampe</button></div>
       <p id="scan-status" class="notice" role="status">Le scanner utilise le catalogue de l’inventaire.</p>
+      <p class="muted">QR codes et codes-barres : gardez le code entier dans le cadre. Reculez légèrement si l’image est floue. En cas de reflet, éteignez la lampe et inclinez un peu l’emballage ; préférez un éclairage diffus.</p>
       <form id="manual-form" class="manual-scan"><label for="manual-code">Saisir un code-barres</label><div class="manual-row"><input id="manual-code" type="text" inputmode="numeric" autocomplete="off" maxlength="160" required placeholder="Numéro du code-barres"><button id="search-code" class="button" disabled>Rechercher</button></div></form>
     </section>
     <section id="results" class="scanner-card" hidden aria-live="polite"></section>
