@@ -227,11 +227,14 @@ export function planOperation(id, raw, operation) {
     action = amount ? `Commande en cours : ${amount}` : 'Commande clôturée';
   } else if (type === 'receive') {
     requireStock();
+    if (operation.expectedQuantity !== undefined && operation.expectedQuantity !== article.orderQuantity) throw new Error('La commande a changé depuis l’ouverture de la réception. Rouvrez-la pour vérifier le restant à recevoir.');
     const amount = quantity(operation.quantity);
     if (!amount || amount > article.orderQuantity) throw new Error('Quantité supérieure à la commande restante ou nulle.');
     patch.inventoryOrder = {quantity:article.orderQuantity - amount};
     setStock(article.stock + amount);
-    action = `Commande reçue : +${amount}`;
+    extra.receivedQuantity = amount;
+    extra.remainingOrderQuantity = patch.inventoryOrder.quantity;
+    action = `Commande reçue : +${amount} · ${patch.inventoryOrder.quantity ? 'Reste à recevoir : '+patch.inventoryOrder.quantity : 'Commande clôturée'}`;
   } else throw new Error('Opération non reconnue.');
   return {patch, history:{type,articleId:id,articleName:patch.catalog?.name || article.name,action,...extra}};
 }

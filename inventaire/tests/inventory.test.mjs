@@ -224,6 +224,30 @@ test('offline cached state cannot perform stock changes',async()=>{
   const mock=mockStore();mock.cache();await assert.rejects(mock.store.perform(id,{type:'move',delta:1},'offline'),/Connexion requise/);assert.equal(mock.writes(),0);
 });
 const deletion=a=>({type:'delete',expectedRevision:a.catalogRevision,expectedStockRevision:a.stockRevision,expectedStock:a.stock,expectedOrderQuantity:a.orderQuantity});
+test('partial and complete receipts atomically update stock, remaining order and history exactly once',async()=>{
+  const raw={...original,inventoryOrder:{quantity:10},inventoryLots:[{id:'A',label:'Existing lot',quantity:5,expirationDate:'2027-02-01'}]};
+  const mock=mockStore(new Map([[id,raw]]));
+  const partial={type:'receive',quantity:4,expectedQuantity:10};
+  await mock.store.perform(id,partial,'receipt-partial');await mock.store.perform(id,partial,'receipt-partial');
+  let saved=mock.database.get('inventory/'+id);
+  assert.equal(saved.stock,21);assert.equal(saved.inventoryOrder.quantity,6);
+  assert.equal(mock.database.get('metadata/lastUpdate').receivedQuantity,4);
+  assert.equal(mock.database.get('metadata/lastUpdate').remainingOrderQuantity,6);
+  await assert.rejects(mock.store.perform(id,partial,'receipt-stale'),/commande a changé/);
+  assert.equal(mock.database.get('inventory/'+id).stock,21);
+  await mock.store.perform(id,{type:'receive',quantity:6,expectedQuantity:6},'receipt-complete');
+  saved=mock.database.get('inventory/'+id);assert.equal(saved.stock,27);assert.equal(saved.inventoryOrder.quantity,0);
+  assert.match(mock.database.get('metadata/lastUpdate').action,/Commande clôturée/);
+  assert.deepEqual(saved.inventoryLots,raw.inventoryLots);assert.equal(saved.expirationDate,raw.expirationDate);assert.deepEqual(saved.extraUnknown,raw.extraUnknown);
+  assert.equal([...mock.database.keys()].filter(k=>k.startsWith('history/')).length,2);
+});
+test('receipts reject invalid amounts and denied writes without any partial stock update',async()=>{
+  const raw={...original,inventoryOrder:{quantity:10}};
+  for(const amount of [0,-1,1.5,11,''])assert.throws(()=>planOperation(id,raw,{type:'receive',quantity:amount,expectedQuantity:10}));
+  const mock=mockStore(new Map([[id,raw]]));mock.deny();
+  await assert.rejects(mock.store.perform(id,{type:'receive',quantity:4,expectedQuantity:10},'receipt-denied'));
+  assert.deepEqual(mock.database.get('inventory/'+id),raw);assert.equal(mock.writes(),0);
+});
 test('deleting legacy and new articles hides them permanently while preserving their data and history',async()=>{
   for(const articleId of [id,'article-new']){
     const raw={...original,catalog:{...catalog,active:articleId===id},inventoryLots:[{id:'A',label:'Lot A',quantity:2,expirationDate:'2027-01-01'}]};

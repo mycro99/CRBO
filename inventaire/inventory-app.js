@@ -1,7 +1,7 @@
 import { SEED_CATEGORIES, SEED_ARTICLES } from './catalog-seed.js';
 import { CATALOG_IMAGES } from './catalog-images.js';
-import { articleFrom, categoryLabel, fold, normalizeBarcode, barcodeMatches, quantity, validDate, todayISO, expiryState, formatDate, safeImage, isArticlePhoto, expiryAlert, unallocatedStock, expiries, primaryExpiry, orderNeed, matchesFilter, splitBarcodes } from './inventory-core.js?v=4';
-import { prepareArticlePhoto } from './article-photo.js?v=4';
+import { articleFrom, categoryLabel, fold, normalizeBarcode, barcodeMatches, quantity, validDate, todayISO, expiryState, formatDate, safeImage, isArticlePhoto, expiryAlert, unallocatedStock, expiries, primaryExpiry, orderNeed, matchesFilter, splitBarcodes } from './inventory-core.js?v=6';
+import { prepareArticlePhoto } from './article-photo.js?v=6';
 import { escapeHTML as e, uid, friendlyError, downloadFile, csvText, pdfTable } from './inventory-ui.js';
 import { BarcodeCamera, cameraError } from './barcode-camera.js?v=5';
 
@@ -193,10 +193,20 @@ function deleteArticle(a){
   $('editor-submit').className='button danger';
 }
 function order(a){
-  openDialog('Commande — '+a.name,`<p>Stock : <strong>${a.stock}</strong> · Souhaité : <strong>${a.targetStock}</strong> · Déjà commandé : <strong>${a.orderQuantity}</strong></p><p class="muted">La quantité ci-dessous est le total restant à recevoir. Ce suivi n’envoie pas de commande au fournisseur.</p>${input('quantity','Quantité restant à recevoir',a.orderQuantity||Math.max(0,a.targetStock-a.stock),'number','required min="0" max="9999999" step="1"')}`,async(fd,opId)=>store.perform(a.id,{type:'order',quantity:fd.get('quantity'),expectedQuantity:a.orderQuantity},opId));
+  openDialog('Commande — '+a.name,`<p>Stock : <strong>${a.stock} ${e(a.unit)}</strong> · Souhaité : <strong>${a.targetStock}</strong></p>
+    ${a.orderQuantity?`<section class="notice"><h3>Livraison de cet article</h3><p><strong>${a.orderQuantity} ${e(a.unit)}</strong> restent à recevoir.</p><p>À l’arrivée de la livraison, indiquez la quantité reçue : le stock et la commande seront mis à jour ensemble.</p>${actionButton('receive',a.id,'Réceptionner la commande','data-write')}</section>`:'<p class="notice">Aucune commande en cours pour cet article. Enregistrez ci-dessous la quantité commandée.</p>'}
+    <details id="order-edit" ${a.orderQuantity?'':'open'}><summary class="text-button">${a.orderQuantity?'Modifier ou annuler la commande':'Enregistrer une commande'}</summary><p class="muted">Ce champ modifie uniquement le restant à recevoir. Mettre 0 annule le suivi sans ajouter de stock. Pour une livraison, utilisez « Réceptionner la commande ».</p>${input('quantity','Quantité restant à recevoir',a.orderQuantity||Math.max(0,a.targetStock-a.stock),'number','required min="0" max="9999999" step="1"')}</details><p class="muted">Ce suivi n’envoie pas de commande au fournisseur.</p>`,async(fd,opId)=>store.perform(a.id,{type:'order',quantity:fd.get('quantity'),expectedQuantity:a.orderQuantity},opId),'Enregistrer la commande');
+  const editPanel=$('order-edit');
+  const showOrderSubmit=()=>{if(editPanel.isConnected)$('editor-submit').hidden=!editPanel.open;};
+  editPanel.addEventListener('toggle',showOrderSubmit);showOrderSubmit();
 }
 function receive(a){
-  openDialog('Réception — '+a.name,`<p>Restant à recevoir : ${a.orderQuantity} ${e(a.unit)}. La quantité reçue sera ajoutée au stock et retirée de la commande.</p><p class="muted">Elle rejoint le stock non réparti. Vous pourrez ensuite la répartir en lot sans modifier le total.</p>${input('quantity','Quantité reçue',a.orderQuantity,'number',`required min="1" max="${a.orderQuantity}" step="1"`)}`,async(fd,opId)=>store.perform(a.id,{type:'receive',quantity:fd.get('quantity')},opId),'Confirmer la réception');
+  if(!a.orderQuantity){notify('Aucune commande en cours pour cet article.');return;}
+  if(formDirty&&!confirm('Abandonner les modifications non enregistrées pour ouvrir la réception ?'))return;
+  openDialog('Réception — '+a.name,`<p>Restant à recevoir : <strong>${a.orderQuantity} ${e(a.unit)}</strong>.</p><p>Indiquez uniquement ce qui arrive aujourd’hui. En cas de livraison partielle, le solde restera en commande.</p>${input('quantity','Quantité reçue aujourd’hui',a.orderQuantity,'number',`id="received-quantity" required min="1" max="${a.orderQuantity}" step="1"`)}<div class="action-row" style="margin-top:12px"><button type="button" id="receive-all" class="button small">Tout réceptionner (${a.orderQuantity})</button></div><p id="receipt-summary" class="notice" role="status"></p><p class="muted">Le stock et la commande ne seront modifiés qu’après confirmation. Les dates et lots existants sont conservés ; la livraison rejoint le stock non réparti. Pour une nouvelle date, vous pourrez ensuite utiliser « Ajouter un lot → Répartir une partie du stock existant ».</p>`,async(fd,opId)=>store.perform(a.id,{type:'receive',quantity:fd.get('quantity'),expectedQuantity:a.orderQuantity},opId),'Confirmer la réception');
+  const preview=()=>{try{const n=quantity($('received-quantity').value);if(!n||n>a.orderQuantity)throw new Error();const remaining=a.orderQuantity-n;$('receipt-summary').textContent=`Après confirmation : +${n} ${a.unit} en stock. ${remaining?`${remaining} ${a.unit} resteront à recevoir.`:'La commande sera entièrement réceptionnée et clôturée.'}`;}catch{$('receipt-summary').textContent=`Saisissez une quantité entière entre 1 et ${a.orderQuantity}.`;}};
+  $('received-quantity').addEventListener('input',preview);
+  $('receive-all').addEventListener('click',()=>{$('received-quantity').value=a.orderQuantity;formDirty=true;preview();});preview();
 }
 function showOrders(){
   const items=state.articles.filter(a=>a.active&&(a.stock<a.minStock||a.orderQuantity>0));
@@ -331,7 +341,7 @@ function initialNavigation(){
 
 async function start(){
   try{
-    const client=await import('./firebase-client.js?v=4');store=client.store;
+    const client=await import('./firebase-client.js?v=6');store=client.store;
     store.subscribe(next=>{state=next;render();initialNavigation();});
     client.watchAuth(user=>{
       unsubscribeInventory();unsubscribeLast();stockDraft.clear();authUser=user;
