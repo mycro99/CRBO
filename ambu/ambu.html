@@ -1350,12 +1350,15 @@
 
     function addAnnotation(event) {
       const rect = event.currentTarget.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
+      if (!rect.width || !rect.height) return;
+      // The PDF clone uses a different width from the phone screen. Keep each
+      // marker attached to the same position on the image at every display size.
+      const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+      const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
       const annotation = document.createElement("span");
       annotation.className = "annotation";
-      annotation.style.left = `${x}px`;
-      annotation.style.top = `${y}px`;
+      annotation.style.left = `${x * 100}%`;
+      annotation.style.top = `${y * 100}%`;
       annotationLayer.appendChild(annotation);
     }
 
