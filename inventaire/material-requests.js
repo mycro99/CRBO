@@ -3,6 +3,7 @@ import { escapeHTML as e } from './inventory-ui.js';
 
 export function setupMaterialRequests({articles,notify}){
   const button=document.getElementById('material-requests'),dialog=document.getElementById('requests-dialog'),list=document.getElementById('requests-list'),status=document.getElementById('requests-status'),pushButton=document.getElementById('requests-push');
+  const testPushButton=document.getElementById('requests-test-push');
   let user=null,authorized=false,rows=[],publicKey='',timer,loading=false,generation=0,busy=false,autoOpened=false;
   const isOwner=u=>Boolean(u&&u===user&&authorized);
   async function api(method='GET',body,as=user){
@@ -34,8 +35,13 @@ export function setupMaterialRequests({articles,notify}){
   async function registration(){return navigator.serviceWorker.register(new URL('../sw.js',import.meta.url),{scope:new URL('../',import.meta.url).pathname});}
   async function pushState(){
     if(!('serviceWorker'in navigator)||!('PushManager'in window)||!('Notification'in window)){pushButton.disabled=true;pushButton.textContent='Sur iPhone : ouvrez CRBO depuis l’écran d’accueil pour activer les notifications.';return;}
-    try{const reg=await registration();await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();pushButton.textContent=sub?'Désactiver les notifications sur cet appareil':'Activer les notifications sur cet appareil';}catch{pushButton.textContent='Notifications indisponibles sur cet appareil';}
+    try{const reg=await registration();await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();pushButton.textContent=sub?'Désactiver les notifications sur cet appareil':'Activer les notifications sur cet appareil';testPushButton.hidden=!sub;}catch{pushButton.textContent='Notifications indisponibles sur cet appareil';testPushButton.hidden=true;}
   }
+  testPushButton.addEventListener('click',async()=>{
+    if(!isOwner(user))return;testPushButton.disabled=true;status.textContent='Envoi de la notification de test…';
+    try{const reg=await registration();await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();if(!sub)throw new Error('Activez les notifications sur cet appareil.');await api('POST',{action:'testPush',subscription:sub.toJSON()});status.textContent='Notification de test acceptée par le service de votre téléphone. Vérifiez son centre de notifications.';}
+    catch(error){status.textContent=error.message;}finally{testPushButton.disabled=false;}
+  });
   pushButton.addEventListener('click',async()=>{
     if(!isOwner(user))return;pushButton.disabled=true;
     try{
