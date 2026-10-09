@@ -4,6 +4,7 @@ import { articleFrom, categoryLabel, fold, normalizeBarcode, barcodeMatches, qua
 import { prepareArticlePhoto } from './article-photo.js?v=6';
 import { escapeHTML as e, uid, friendlyError, downloadFile, csvText, pdfTable } from './inventory-ui.js';
 import { BarcodeCamera, cameraError } from './barcode-camera.js?v=5';
+import { setupMaterialRequests } from './material-requests.js?v=1';
 
 const $=id=>document.getElementById(id);
 let store, state={articles:[],records:new Map(),ready:false,online:false}, busy=0, authUser=null;
@@ -14,6 +15,7 @@ const expanded=new Set(['consommables']);
 const stockDraft=new Map();
 const camera=new BarcodeCamera('capture-reader');
 const current=id=>state.articles.find(a=>a.id===id);
+const materialRequests=setupMaterialRequests({articles:()=>state.articles,notify:(message,error)=>notify(message,error)});
 const writable=()=>Boolean(authUser && state.ready && state.online && navigator.onLine && !busy);
 const actionButton=(action,id,label,extra='')=>`<button type="button" class="button small" data-action="${action}" data-id="${e(id)}" ${extra}>${e(label)}</button>`;
 const badge=expiry=>`<span class="status ${e(expiry.key)}">${e(expiry.label)}</span>`;
@@ -344,7 +346,7 @@ async function start(){
     const client=await import('./firebase-client.js?v=6');store=client.store;
     store.subscribe(next=>{state=next;render();initialNavigation();});
     client.watchAuth(user=>{
-      unsubscribeInventory();unsubscribeLast();stockDraft.clear();authUser=user;
+      unsubscribeInventory();unsubscribeLast();stockDraft.clear();authUser=user;materialRequests.setUser(user);
       if(!user){state={articles:[],records:new Map(),ready:false,online:false};countDraft.clear();$('inventory-body').innerHTML='<tr><td colspan="5" class="empty">Connectez-vous depuis l’accueil avec votre compte staff.</td></tr>';$('global-error').innerHTML='Session staff requise. <a href="../index.html">Revenir à l’accueil pour se connecter</a>';$('global-error').hidden=false;$('user-label').textContent='';if($('editor').open)$('editor').close();updateStatus();return;}
       $('user-label').textContent=user.email||'Session staff';$('global-error').hidden=true;countDraft.clear();countMode=false;restoreCountDraft();updateStatus();
       unsubscribeInventory=store.start(showError);

@@ -63,3 +63,12 @@ node --test inventaire/tests/*.test.mjs
 Tests purs et adaptateur Firestore simulé : comparaison intégrale du catalogue d’origine, conservation de champs, concurrence, refus atomiques, idempotence, lots, comptages, commandes, dates, scanner et références locales. Ces tests ne contactent jamais la base réelle. Ils ne constituent pas une vérification des règles Firestore en production ni un essai de caméra sur iPhone.
 
 L’ancienne version du code reste récupérable dans l’historique Git. Pour annuler cette livraison, restaurer uniquement les fichiers de cette livraison depuis le commit précédent. **Ne pas restaurer ou réinitialiser les documents Firestore** pour un retour arrière de code. Après la création de nouvelles fiches ou lots, préférer corriger la nouvelle interface : l’ancien écran ne sait pas les afficher.
+# Demandes de réapprovisionnement
+
+Le formulaire public `../demande-materiel.html` n’accède ni au catalogue ni à Firebase. Son QR code et son affiche imprimable sont dans `../assets/qr-demande-materiel.png` et `../demande-materiel-qr.html`.
+
+Les demandes utilisent un service indépendant (Sites, D1) : `https://crbo-demandes-materiel.mycro99.chatgpt.site/api/requests`. Il vérifie les signatures des jetons Firebase du projet CRBO et réserve lecture, validation et abonnements push au gestionnaire autorisé, défini uniquement côté serveur. Une coche masque la demande ; elle conserve sa trace et ne modifie aucun stock. L’association facultative à un article est propre au gestionnaire.
+
+Le service envoie des notifications Web Push aux appareils volontairement abonnés depuis « Demandes ». Sa clé privée VAPID reste dans les secrets du serveur. Le service worker existant reçoit les alertes et ouvre les demandes. Sur iPhone, ouvrir CRBO installé sur l’écran d’accueil avant d’activer les notifications. Aucun changement des règles Firestore ni fonction Firebase payante n’est nécessaire.
+
+Le formulaire attend une confirmation serveur, garde sa saisie en cas d’erreur et réutilise son identifiant pour éviter les doublons lors d’une nouvelle tentative identique. Le serveur valide les champs, limite à 50 demandes par 24 heures et n’expose aucune réponse aux visiteurs.
