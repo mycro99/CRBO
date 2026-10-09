@@ -7,7 +7,8 @@
     ambulance: "AMBULANCE",
     tpmr: "TPMR",
     fit: "FIT",
-    peremption: "PEREMPTION"
+    peremption: "PEREMPTION",
+    tenues: "TENUES"
   });
 
   function blobToBase64(blob) {
@@ -36,17 +37,33 @@
     });
   }
 
+  async function checkUniformService() {
+    const controller = new AbortController();
+    const timeout = setTimeout(function () { controller.abort(); }, 15000);
+    try {
+      const response = await fetch(WEB_APP_URL, { signal: controller.signal, cache: "no-store" });
+      const service = await response.json();
+      if (!response.ok || !service.ok || !Array.isArray(service.supportedTypes) ||
+          !service.supportedTypes.includes("tenues")) {
+        throw new Error("L’envoi des commandes de tenues n’est pas encore activé. Le script Google doit être mis à jour.");
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async function sendPdf(pdf, type) {
     const typeLabel = TYPE_LABELS[type];
-    const plaqueInput = document.getElementById("plaque");
+    const uniformOrder = type === "tenues";
+    const plaqueInput = document.getElementById(uniformOrder ? "nom" : "plaque");
     const dateInput = document.getElementById("date");
     const plaque = plaqueInput ? plaqueInput.value.trim() : "";
     const checklistDate = dateInput ? dateInput.value : "";
 
-    if (!typeLabel) throw new Error("Type de checklist inconnu.");
+    if (!typeLabel) throw new Error("Type de document inconnu.");
     if (!plaque) {
       if (plaqueInput) plaqueInput.focus();
-      throw new Error("Indiquez la plaque avant l’envoi.");
+      throw new Error(uniformOrder ? "Indiquez votre nom avant l’envoi." : "Indiquez la plaque avant l’envoi.");
     }
     if (!checklistDate) {
       if (dateInput) dateInput.focus();
@@ -70,7 +87,7 @@
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
         pdfBase64: pdfBase64,
-        plaque: plaque,
+        ...(uniformOrder ? { demandeur: plaque } : { plaque: plaque }),
         checklistDate: checklistDate,
         checklistType: type,
         requestId: requestId,
@@ -85,10 +102,10 @@
     const originalText = activeButton ? activeButton.textContent : "";
 
     if (action === "send") {
-      const plaque = document.getElementById("plaque");
+      const plaque = document.getElementById(options.type === "tenues" ? "nom" : "plaque");
       const date = document.getElementById("date");
       if (!plaque || !plaque.value.trim()) {
-        setStatus("Indiquez la plaque avant l’envoi.");
+        setStatus(options.type === "tenues" ? "Indiquez votre nom avant l’envoi." : "Indiquez la plaque avant l’envoi.");
         if (plaque) plaque.focus();
         return;
       }
@@ -101,17 +118,22 @@
 
     setButtonsDisabled(true);
     if (activeButton) activeButton.textContent = action === "send" ? "Envoi en cours…" : "Création du PDF…";
-    setStatus("Préparation du rapport complet…");
+    setStatus(options.type === "tenues" ? "Préparation du bon de commande…" : "Préparation du rapport complet…");
 
     try {
+      if (action === "send" && options.type === "tenues") {
+        setStatus("Vérification du service d’envoi…");
+        await checkUniformService();
+        setStatus("Préparation du bon de commande…");
+      }
       const pdf = await options.buildPdf();
 
       if (action === "download") {
         pdf.save(options.filename);
-        setStatus("Le rapport PDF a été téléchargé.");
+        setStatus(options.type === "tenues" ? "Le bon de commande PDF a été téléchargé." : "Le rapport PDF a été téléchargé.");
       } else {
         await sendPdf(pdf, options.type);
-        setStatus("Checklist transmise. Le mail peut prendre quelques secondes pour arriver.");
+        setStatus(options.type === "tenues" ? "Commande transmise au service d’envoi. Le mail peut prendre quelques secondes pour arriver." : "Checklist transmise. Le mail peut prendre quelques secondes pour arriver.");
       }
     } catch (error) {
       console.error("Erreur PDF ou envoi :", error);

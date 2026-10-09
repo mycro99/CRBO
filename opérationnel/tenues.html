@@ -5,11 +5,12 @@
   <title>Commande de tenues - CS Oupeye®</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="../operation-modern.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="../checklist-email.js?v=2"></script>
 </head>
 <body>
   <header class="site-header"><div class="nav-shell"><a class="brand" href="../index.html">CS Oupeye®</a><nav class="main-nav" aria-label="Navigation principale"><a class="nav-link" href="../index.html">Accueil</a><a class="nav-link active" href="../operation.html" aria-current="page">Documentation</a><a class="nav-link" href="../checklist.html">Checklists</a></nav><a class="header-back" href="../operation.html"><span aria-hidden="true">←</span> Retour aux documents</a></div></header>
   <main>
-    <section class="page-hero" aria-labelledby="page-title"><div class="hero-art" aria-hidden="true"><img src="../crbo-hero-ambulance.png" alt=""></div><div class="hero-content"><div class="hero-copy"><p class="eyebrow">Équipement de l’équipe</p><h1 id="page-title">Commande de<br>tenues</h1><p>Sélectionnez les articles, tailles et modèles puis générez votre bon de commande.</p></div></div></section>
+    <section class="page-hero" aria-labelledby="page-title"><div class="hero-art" aria-hidden="true"><img src="../crbo-hero-ambulance.png" alt=""></div><div class="hero-content"><div class="hero-copy"><p class="eyebrow">Équipement de l’équipe</p><h1 id="page-title">Commande de<br>tenues</h1><p>Sélectionnez les articles, tailles et modèles puis envoyez votre bon de commande par mail.</p></div></div></section>
 
     <form class="operation-area" id="uniformForm" onsubmit="return false;">
       <div class="document-sheet" id="pdfContent">
@@ -23,10 +24,10 @@
 
         <section class="form-section" aria-labelledby="signature-title"><div class="section-title"><span class="section-number">04</span><div><h3 id="signature-title">Signature</h3><p>Validez la commande avec votre signature.</p></div></div><div class="signature-grid single"><div class="signature-box"><label for="signatureCanvas">Signature du demandeur</label><canvas id="signatureCanvas" class="signature-pad" width="900" height="180"></canvas><button type="button" id="clearSignature" class="signature-clear">Effacer la signature</button></div></div></section>
 
-        <div class="notice"><span class="notice-icon" aria-hidden="true">!</span><div><strong>Attention</strong><p>Les tenues restent la propriété de la Croix-Rouge de Belgique. Merci d’envoyer ce document à <a href="mailto:logistique.cs.oupeye@croix-rouge.be">logistique.cs.oupeye@croix-rouge.be</a>.</p></div></div>
+        <div class="notice"><span class="notice-icon" aria-hidden="true">!</span><div><strong>Attention</strong><p>Les tenues restent la propriété de la Croix-Rouge de Belgique. Le bouton « Envoyer par mail » transmet le PDF à <a href="mailto:logistique.cs.oupeye@croix-rouge.be">logistique.cs.oupeye@croix-rouge.be</a>.</p></div></div>
       </div>
 
-      <div class="action-bar"><p class="action-info" id="actionStatus">Le bon de commande sera généré au format PDF.</p><div class="action-buttons"><a class="back-button" href="../operation.html">Retour</a><button type="button" id="pdfButton" class="primary-button">Générer le PDF</button></div></div>
+      <div class="action-bar"><p class="action-info" id="actionStatus" role="status" aria-live="polite">Le PDF sera envoyé à la logistique. Attendez la fin de la transmission avant de quitter la page.</p><div class="action-buttons"><a class="back-button" href="../operation.html">Retour</a><button type="button" id="pdfButton" class="back-button">Télécharger le PDF</button><button type="button" id="emailButton" class="primary-button">Envoyer par mail</button></div></div>
     </form>
   </main>
 
@@ -47,7 +48,60 @@
 
     const signatureCanvas=document.getElementById("signatureCanvas"),signatureContext=signatureCanvas.getContext("2d");let drawing=false;signatureContext.lineWidth=2.4;signatureContext.lineCap="round";signatureContext.lineJoin="round";signatureContext.strokeStyle="#071a34";const signaturePoint=event=>{const rect=signatureCanvas.getBoundingClientRect();return{x:(event.clientX-rect.left)*(signatureCanvas.width/rect.width),y:(event.clientY-rect.top)*(signatureCanvas.height/rect.height)}};signatureCanvas.addEventListener("pointerdown",event=>{drawing=true;signatureCanvas.setPointerCapture(event.pointerId);const p=signaturePoint(event);signatureContext.beginPath();signatureContext.moveTo(p.x,p.y)});signatureCanvas.addEventListener("pointermove",event=>{if(!drawing)return;const p=signaturePoint(event);signatureContext.lineTo(p.x,p.y);signatureContext.stroke()});const stopDrawing=event=>{drawing=false;if(event.pointerId!==undefined&&signatureCanvas.hasPointerCapture(event.pointerId))signatureCanvas.releasePointerCapture(event.pointerId)};signatureCanvas.addEventListener("pointerup",stopDrawing);signatureCanvas.addEventListener("pointercancel",stopDrawing);document.getElementById("clearSignature").addEventListener("click",()=>signatureContext.clearRect(0,0,signatureCanvas.width,signatureCanvas.height));
 
-    document.getElementById("pdfButton").addEventListener("click",async function(){const button=this,status=document.getElementById("actionStatus"),clearButton=document.getElementById("clearSignature"),original=button.textContent;button.disabled=true;button.textContent="Création du PDF…";status.textContent="Préparation du bon de commande…";clearButton.style.display="none";try{const canvas=await html2canvas(document.getElementById("pdfContent"),{scale:1.4,useCORS:true,backgroundColor:"#ffffff",scrollX:0,scrollY:-window.scrollY}),imgData=canvas.toDataURL("image/jpeg",.88),{jsPDF}=window.jspdf,pdf=new jsPDF("p","mm","a4"),pageWidth=pdf.internal.pageSize.getWidth(),pageHeight=pdf.internal.pageSize.getHeight(),props=pdf.getImageProperties(imgData),imgHeight=(props.height*pageWidth)/props.width;let left=imgHeight,position=0;pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight);left-=pageHeight;while(left>0){position=left-imgHeight;pdf.addPage();pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight);left-=pageHeight}pdf.save("commande_tenues.pdf");status.textContent="Le bon de commande PDF a été téléchargé."}catch(error){status.textContent="Impossible de générer le PDF. Veuillez réessayer."}finally{clearButton.style.display="";button.disabled=false;button.textContent=original}});
+    async function buildUniformPdf() {
+      const clearButton = document.getElementById("clearSignature");
+      clearButton.style.display = "none";
+      try {
+        const canvas = await html2canvas(document.getElementById("pdfContent"), {
+          scale: 1.4, useCORS: true, backgroundColor: "#ffffff",
+          scrollX: 0, scrollY: -window.scrollY
+        });
+        const imgData = canvas.toDataURL("image/jpeg", .88);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const props = pdf.getImageProperties(imgData);
+        const imgHeight = props.height * pageWidth / props.width;
+        let left = imgHeight, position = 0;
+        pdf.addImage(imgData, "JPEG", 0, position, pageWidth, imgHeight);
+        left -= pageHeight;
+        while (left > 0) {
+          position = left - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, "JPEG", 0, position, pageWidth, imgHeight);
+          left -= pageHeight;
+        }
+        return pdf;
+      } finally {
+        clearButton.style.display = "";
+      }
+    }
+
+    function runUniformAction(action) {
+      if (action === "send") {
+        const quantityInputs = [...document.querySelectorAll('[name^="nombre_"]')];
+        const invalid = quantityInputs.find(input => input.value.trim() && !/^[1-9]\d*$/.test(input.value.trim()));
+        if (invalid) {
+          document.getElementById("actionStatus").textContent = "Indiquez un nombre entier positif pour chaque article demandé.";
+          invalid.focus();
+          return;
+        }
+        if (!quantityInputs.some(input => input.value.trim())) {
+          document.getElementById("actionStatus").textContent = "Indiquez la quantité d’au moins un article avant l’envoi.";
+          quantityInputs[0].focus();
+          return;
+        }
+      }
+      const date = document.getElementById("date").value;
+      return window.ChecklistMailer.run({
+        action, type: "tenues", buildPdf: buildUniformPdf,
+        filename: "commande-tenues" + (date ? "-" + date : "") + ".pdf"
+      });
+    }
+    document.getElementById("pdfButton").addEventListener("click", () => runUniformAction("download"));
+    document.getElementById("emailButton").addEventListener("click", () => runUniformAction("send"));
+
   </script>
 </body>
 </html>
