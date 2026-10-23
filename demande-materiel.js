@@ -12,5 +12,13 @@ form.addEventListener('submit',async event=>{
   catch(error){status.className='error';status.textContent=error.name==='TimeoutError'||error.name==='TypeError'?'La confirmation n’a pas été reçue. Vos réponses sont conservées : réessayez.':error.message;}
   finally{sending=false;controls.forEach(el=>el.disabled=false);send.disabled=false;}
 });
-document.getElementById('another-request').addEventListener('click',()=>{form.reset();id=crypto.randomUUID();attempted=null;status.textContent='';success.hidden=true;form.hidden=false;form.elements.name.focus();});
+document.getElementById('another-request').addEventListener('click',()=>{form.reset();id=crypto.randomUUID();attempted=null;status.textContent='';success.hidden=true;form.hidden=false;const first=form.querySelector('input:not([type=hidden]),textarea');if(first)first.focus();setDefaultDate();});
 window.addEventListener('beforeunload',event=>{if(sending){event.preventDefault();event.returnValue='';}});
+
+function setDefaultDate(){
+  const input=form.elements.interventionDate;
+  if(input&&!input.value){const now=new Date();input.value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');}
+}
+setDefaultDate();
+const datePicker=document.getElementById('date-picker');
+if(datePicker)datePicker.addEventListener('click',()=>{const input=form.elements.interventionDate;try{if(input.showPicker){input.showPicker();return;}}catch{}input.focus();input.click();});

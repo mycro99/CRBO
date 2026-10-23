@@ -9,10 +9,10 @@
   <link rel="icon" href="../icons/favicon-32.png">
   <link rel="manifest" href="../manifest.webmanifest">
   <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="inventory-app.css?v=5">
+  <link rel="stylesheet" href="inventory-app.css?v=6">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
-  <script type="module" src="inventory-app.js?v=8"></script>
+  <script type="module" src="inventory-app.js?v=9"></script>
 </head>
 <body>
   <header class="site-header">
@@ -30,6 +30,10 @@
       <button id="expiry-alert" data-filter="expiry" aria-pressed="false"><span>Péremptions à suivre</span><strong id="stat-expiry">—</strong><span id="expiry-summary"></span></button>
       <button data-filter="ordered" aria-pressed="false"><span>Commandes en cours</span><strong id="stat-ordered">—</strong></button>
     </div>
+    <section id="dea-requests" class="dea-requests-panel" aria-labelledby="dea-requests-title" tabindex="-1" hidden>
+      <div class="dea-requests-heading"><div><p class="eyebrow">DEMANDES DES ÉQUIPAGES</p><h2 id="dea-requests-title">Patchs DEA à recommander <span id="dea-requests-count" class="dea-count">0</span></h2></div><div class="action-row"><button id="dea-requests-refresh" type="button" class="button">Actualiser</button><a class="button" href="../demande-patchs-dea.html" target="_blank" rel="noopener">Ouvrir le formulaire</a><a class="button" href="../demande-patchs-dea-qr.html" target="_blank" rel="noopener">QR code</a></div></div>
+      <p id="dea-requests-status" class="form-error" role="status" aria-live="polite"></p><div id="dea-requests-list"></div>
+    </section>
     <section class="inventory-panel" aria-label="Catalogue des articles">
       <div class="toolbar">
         <label class="search-field">Rechercher<input id="search" type="search" placeholder="Article, code-barres, emplacement…" autocomplete="off"></label>
