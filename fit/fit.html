@@ -13,6 +13,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="../checklist-email.js"></script>
+  <link rel="stylesheet" href="../vehicle-photos.css?v=1">
+  <script src="../vehicle-photos.js?v=1"></script>
 </head>
 <body>
   <header class="site-header">
@@ -58,8 +60,15 @@
           </div>
         </section>
 
+        <section class="form-section" aria-labelledby="vehicle-title">
+          <div class="section-title"><span class="section-number">02</span><div><h3 id="vehicle-title">Schéma du véhicule</h3><p>Placez un point rouge sur chaque zone présentant une anomalie.</p></div></div>
+          <div class="vehicle-toolbar"><p>Cliquez ou touchez directement le schéma pour ajouter un repère.</p><button class="secondary-button" type="button" onclick="clearAnnotations()">Effacer les repères</button></div>
+          <div class="vehicle-stage" id="image-container"><img src="../ambu/images/vehicle_image.jpg" id="vehicle" width="800" height="400" alt="Schéma du véhicule"></div>
+          <div class="vehicle-photos" id="vehiclePhotos" data-html2canvas-ignore="true"></div>
+        </section>
+
         <section class="form-section" aria-labelledby="inventory-title">
-          <div class="section-title"><span class="section-number">02</span><div><h3 id="inventory-title">Matériel FIT</h3><p>Pour chaque élément, contrôlez la présence, l’état et le fonctionnement.</p></div></div>
+          <div class="section-title"><span class="section-number">03</span><div><h3 id="inventory-title">Matériel FIT</h3><p>Pour chaque élément, contrôlez la présence, l’état et le fonctionnement.</p></div></div>
           <div class="table-wrap">
             <table class="fit-table">
               <thead><tr><th>Matériel</th><th>Présent</th><th>État</th><th>Fonctionne</th><th>Remarque</th></tr></thead>
@@ -69,7 +78,7 @@
         </section>
 
         <section class="form-section" aria-labelledby="signature-title">
-          <div class="section-title"><span class="section-number">03</span><div><h3 id="signature-title">Signature</h3><p>Validez l’inventaire avec la signature du chauffeur.</p></div></div>
+          <div class="section-title"><span class="section-number">04</span><div><h3 id="signature-title">Signature</h3><p>Validez l’inventaire avec la signature du chauffeur.</p></div></div>
           <div class="signature-grid single">
             <div class="signature-box">
               <label for="signatureChauffeur">Signature du chauffeur</label>
@@ -91,6 +100,30 @@
   </main>
 
   <script>
+    const vehicleImage = document.getElementById("vehicle");
+    const annotationLayer = document.getElementById("image-container");
+
+    vehicleImage.addEventListener("click", addAnnotation);
+
+    function addAnnotation(event) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      // The PDF clone uses a different width from the phone screen. Keep each
+      // marker attached to the same position on the image at every display size.
+      const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+      const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+      const annotation = document.createElement("span");
+      annotation.className = "annotation";
+      annotation.style.left = `${x * 100}%`;
+      annotation.style.top = `${y * 100}%`;
+      annotationLayer.appendChild(annotation);
+    }
+
+    function clearAnnotations() {
+      annotationLayer.querySelectorAll(".annotation").forEach(point => point.remove());
+    }
+
+
     const itemList = [
       "tente","    compresseur","malle SPF","2 sacs soignants","4 valises couvertures (5pcs/malle)","2 oxycurs","2 B10","1 KIT secrétariat","    (en arborescence)","    1 PC","    1 scanner","    1 routeur","    Tablette 1","    Tablette 2","    Tablette 3","    Feuille IN","    Feuille OUT","    50 bracelets BITS","    50 METAG","    Macarons (10 T1, 10 T2, 5 T3","malle chasubles","    coord CRK","    coord PMA","    coord secrétariat","    coord ambu","    coord regul. ambu","    coord logistique","    coord med dispo","1 kit secrétariat SISU","    Feuille IN","    Feuille OUT","1 astrid","    chargeur","8 brancards OTAN","1 scoop","1 sac 1er secours","8 brancards SNOOG","20 sangles","8 trétaux","1 valise eclairage + trépied","1 chauffage","    electrique","    canon chaleur","    jerrycan","3 casques de protections","1 groupe electrogène","    jerrycan","1 enrouleur","1 trousse à outils","2 chaises pliantes","1 tables pliante","Documents de bord","    assurances","    Controle technique","    certif. immatriculation","état général du véhicule","    plein","    propreté","    avertisseur sonore","    feux bleu","    phares","    pneus","    carte carburant"
     ];
@@ -127,7 +160,7 @@
       canvas.addEventListener("pointerup", stop); canvas.addEventListener("pointercancel", stop);
     }
 
-    async function buildPDF() {
+    async function buildChecklistPDF() {
       const element=document.getElementById("pdfContent");
       const canvas=await html2canvas(element,{useCORS:true,scale:1.25,allowTaint:true,backgroundColor:"#ffffff",scrollX:0,scrollY:-window.scrollY});
       const imgData=canvas.toDataURL("image/jpeg",.82),{jsPDF}=window.jspdf,pdf=new jsPDF("p","mm","a4"),pageWidth=pdf.internal.pageSize.getWidth(),pageHeight=pdf.internal.pageSize.getHeight(),props=pdf.getImageProperties(imgData),imgHeight=(props.height*pageWidth)/props.width;
@@ -135,6 +168,8 @@
       while(left>0){position=left-imgHeight;pdf.addPage();pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight);left-=pageHeight;}
       return pdf;
     }
+    function buildPDF() { return VehiclePhotos.withPhotos(buildChecklistPDF); }
+
     function sendPDF(){return ChecklistMailer.run({action:"send",type:"fit",filename:"checklist_FIT.pdf",buildPdf:buildPDF})}
 
     initSignature("signatureChauffeur");

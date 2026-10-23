@@ -72,7 +72,7 @@
 
     const blob = pdf.output("blob");
     if (blob.size > MAX_PDF_BYTES) {
-      throw new Error("Le PDF dépasse 10 Mo. Utilisez le téléchargement en attendant.");
+      throw new Error("Le PDF dépasse 10 Mo. Réduisez le nombre de photos ou le contenu du rapport, puis réessayez.");
     }
 
     setStatus("Transmission sécurisée du PDF vers Gmail…");

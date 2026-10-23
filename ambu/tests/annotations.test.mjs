@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 
-const html=readFileSync(new URL('../ambu.html',import.meta.url),'utf8');
+for (const path of ['../ambu.html','../../tpmr/tpmr.html','../../fit/fit.html']) {
+const html=readFileSync(new URL(path,import.meta.url),'utf8');
 const handler=html.match(/function addAnnotation\(event\) \{[\s\S]*?\n    \}/)[0];
 function place(rect,x,y){
   const points=[];
@@ -11,7 +12,7 @@ function place(rect,x,y){
   runInNewContext(handler+';addAnnotation(event);',context);
   return points;
 }
-test('phone annotations retain image-relative centres in the wider PDF clone and after rotation',()=>{
+test(path+' phone annotations retain image-relative centres in the wider PDF clone and after rotation',()=>{
   for(const [width,height] of [[320,180],[390,219.375],[800,450]]){
     for(const [x,y] of [[0,0],[0.25,0.75],[0.5,0.5],[0.9,0.1],[1,1]]){
       const [point]=place({left:37,top:163,width,height},x,y);
@@ -25,6 +26,8 @@ test('phone annotations retain image-relative centres in the wider PDF clone and
     }
   }
 });
-test('an image without layout cannot create invalid annotation coordinates',()=>{
+test(path+' an image without layout cannot create invalid annotation coordinates',()=>{
   assert.equal(place({left:0,top:0,width:0,height:0},0,0).length,0);
 });
+
+}

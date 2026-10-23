@@ -14,6 +14,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="../checklist-email.js"></script>
+  <link rel="stylesheet" href="../vehicle-photos.css?v=1">
+  <script src="../vehicle-photos.js?v=1"></script>
 
   <style>
     :root {
@@ -945,6 +947,7 @@
           <div class="vehicle-stage" id="image-container">
             <img src="images/vehicle_image.jpg" id="vehicle" width="800" height="400" alt="Schéma du véhicule">
           </div>
+          <div class="vehicle-photos" id="vehiclePhotos" data-html2canvas-ignore="true"></div>
         </section>
 
         <section class="form-section" aria-labelledby="status-title">
@@ -1527,7 +1530,7 @@
       }
     }
 
-    async function buildPDF() {
+    async function buildChecklistPDF() {
       const element = document.getElementById("pdfContent");
       const status = document.getElementById("actionStatus");
       let exportCopy = null;
@@ -1598,6 +1601,8 @@
       }
     }
 
+
+    function buildPDF() { return VehiclePhotos.withPhotos(buildChecklistPDF); }
 
     function sendPDF() {
       return ChecklistMailer.run({
