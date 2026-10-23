@@ -100,13 +100,13 @@ test('existing quota, daily limit, lock and sender protections remain active', (
   assert.ok(service.get().supportedTypes.includes('tenues'));
 });
 
-async function browser({ type = 'tenues', name = 'Kévin Leruth', date = '2026-10-09', ready = true, networkError = false, action = 'send' } = {}) {
+async function browser({ type = 'tenues', name = 'Kévin Leruth', date = '2026-10-09', ready = true, networkError = false, action = 'send', photos, photoReady = false, failPost = false } = {}) {
   const elements = {
     nom: { value: name, focus() {} }, plaque: { value: '1-ABC-234', focus() {} },
     date: { value: date, focus() {} }, actionStatus: { textContent: '' },
     pdfButton: { textContent: 'Télécharger' }, emailButton: { textContent: 'Envoyer' }
   };
-  let built = 0, downloaded = 0, payload, probes = 0;
+  let built = 0, downloaded = 0, payload, probes = 0, released = 0;
   const context = {
     document: { getElementById: id => elements[id] }, console: { error() {} },
     Uint8Array, Date, Math, Error, AbortController, setTimeout, clearTimeout,
@@ -115,8 +115,9 @@ async function browser({ type = 'tenues', name = 'Kévin Leruth', date = '2026-1
       if (networkError) throw new Error('Réseau indisponible');
       if (!options.method) {
         probes++;
-        return { ok: true, json: async () => ready ? { ok: true, supportedTypes: ['tenues'] } : { ok: true } };
+        return { ok: true, json: async () => ready ? { ok: true, supportedTypes: ['tenues'], photoAttachments: photoReady } : { ok: true } };
       }
+      if (failPost) throw new Error('Transmission interrompue');
       assert.equal(options.mode, 'no-cors');
       payload = JSON.parse(options.body);
       return {};
@@ -126,12 +127,13 @@ async function browser({ type = 'tenues', name = 'Kévin Leruth', date = '2026-1
   vm.runInContext(browserSource, context);
   await context.window.ChecklistMailer.run({
     action, type, filename: 'commande.pdf',
+    ...(photos ? { prepareAttachments: async () => ({ photos, release: () => released++ }) } : {}),
     buildPdf: async () => {
       built++;
       return { save: () => downloaded++, output: () => ({ size: 5, arrayBuffer: async () => Uint8Array.from([37, 80, 68, 70, 45]).buffer }) };
     }
   });
-  return { built, downloaded, payload, probes, elements };
+  return { built, downloaded, payload, probes, elements, released };
 }
 
 test('browser blocks an old server before PDF creation or POST', async () => {
@@ -175,4 +177,51 @@ test('missing identity or date prevents transmission; network errors restore but
   assert.equal(failure.payload, undefined);
   assert.equal(failure.elements.emailButton.disabled, false);
   assert.match(failure.elements.actionStatus.textContent, /Réseau indisponible/);
+});
+
+const photo = {
+  filename: 'photo-1-ABC-234-2026-10-09-01.jpg',
+  mimeType: 'image/jpeg',
+  base64: Buffer.from([255, 216, 255, 217]).toString('base64')
+};
+
+test('all three vehicle checklists send JPEGs separately from the unchanged PDF', async () => {
+  for (const type of ['ambulance', 'tpmr', 'fit']) {
+    const result = await browser({ type, photos: [photo], photoReady: true });
+    assert.equal(result.probes, 1);
+    assert.equal(result.built, 1);
+    assert.equal(result.payload.checklistType, type);
+    assert.equal(result.payload.pdfBase64, Buffer.from('%PDF-').toString('base64'));
+    assert.equal(JSON.stringify(result.payload.photos), JSON.stringify([photo]));
+    assert.equal(result.released, 1);
+    assert.match(result.elements.actionStatus.textContent, /Checklist et photos transmises/);
+  }
+});
+
+test('photo requests cannot silently lose JPEGs on the current Google script', async () => {
+  const result = await browser({ type: 'ambulance', photos: [photo] });
+  assert.equal(result.probes, 1);
+  assert.equal(result.built, 0);
+  assert.equal(result.payload, undefined);
+  assert.equal(result.released, 1);
+  assert.equal(result.elements.emailButton.disabled, false);
+  assert.match(result.elements.actionStatus.textContent, /aucun mail n’a été envoyé/);
+});
+
+test('empty photo selections keep normal sending without probing the photo service', async () => {
+  for (const type of ['ambulance', 'tpmr', 'fit']) {
+    const result = await browser({ type, photos: [] });
+    assert.equal(result.probes, 0);
+    assert.equal(result.payload.photos, undefined);
+    assert.equal(result.released, 1);
+    assert.equal(server().post(result.payload).ok, true);
+  }
+});
+
+test('photo controls are released when network transmission fails', async () => {
+  const result = await browser({ type: 'fit', photos: [photo], photoReady: true, failPost: true });
+  assert.equal(result.released, 1);
+  assert.equal(result.elements.emailButton.disabled, false);
+  assert.equal(result.payload, undefined);
+  assert.match(result.elements.actionStatus.textContent, /Transmission interrompue/);
 });

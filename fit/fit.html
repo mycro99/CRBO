@@ -12,9 +12,9 @@
   <link rel="stylesheet" href="../checklist-modern.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="../checklist-email.js"></script>
+  <script src="../checklist-email.js?v=photos-separees-1"></script>
   <link rel="stylesheet" href="../vehicle-photos.css?v=1">
-  <script src="../vehicle-photos.js?v=1"></script>
+  <script src="../vehicle-photos.js?v=2"></script>
 </head>
 <body>
   <header class="site-header">
@@ -168,9 +168,9 @@
       while(left>0){position=left-imgHeight;pdf.addPage();pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight);left-=pageHeight;}
       return pdf;
     }
-    function buildPDF() { return VehiclePhotos.withPhotos(buildChecklistPDF); }
+    function buildPDF() { return buildChecklistPDF(); }
 
-    function sendPDF(){return ChecklistMailer.run({action:"send",type:"fit",filename:"checklist_FIT.pdf",buildPdf:buildPDF})}
+    function sendPDF(){return ChecklistMailer.run({action:"send",prepareAttachments:VehiclePhotos.prepareAttachments,type:"fit",filename:"checklist_FIT.pdf",buildPdf:buildPDF})}
 
     initSignature("signatureChauffeur");
   </script>

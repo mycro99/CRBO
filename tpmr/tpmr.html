@@ -12,9 +12,9 @@
   <link rel="stylesheet" href="../checklist-modern.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="../checklist-email.js"></script>
+  <script src="../checklist-email.js?v=photos-separees-1"></script>
   <link rel="stylesheet" href="../vehicle-photos.css?v=1">
-  <script src="../vehicle-photos.js?v=1"></script>
+  <script src="../vehicle-photos.js?v=2"></script>
 </head>
 <body>
   <header class="site-header">
@@ -137,9 +137,9 @@
     function clearSignature(canvasId){const canvas=document.getElementById(canvasId);canvas.getContext("2d").clearRect(0,0,canvas.width,canvas.height);}
     function initSignature(canvasId){const canvas=document.getElementById(canvasId),context=canvas.getContext("2d");let drawing=false;context.lineWidth=2.4;context.lineCap="round";context.lineJoin="round";context.strokeStyle="#071a34";const point=event=>{const rect=canvas.getBoundingClientRect();return{x:(event.clientX-rect.left)*(canvas.width/rect.width),y:(event.clientY-rect.top)*(canvas.height/rect.height)}};canvas.addEventListener("pointerdown",event=>{drawing=true;canvas.setPointerCapture(event.pointerId);const p=point(event);context.beginPath();context.moveTo(p.x,p.y)});canvas.addEventListener("pointermove",event=>{if(!drawing)return;const p=point(event);context.lineTo(p.x,p.y);context.stroke()});const stop=event=>{drawing=false;if(event.pointerId!==undefined&&canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId)};canvas.addEventListener("pointerup",stop);canvas.addEventListener("pointercancel",stop)}
     async function buildChecklistPDF(){const element=document.getElementById("pdfContent"),canvas=await html2canvas(element,{useCORS:true,scale:1.35,allowTaint:true,backgroundColor:"#ffffff",scrollX:0,scrollY:-window.scrollY}),imgData=canvas.toDataURL("image/jpeg",.82),{jsPDF}=window.jspdf,pdf=new jsPDF("p","mm","a4"),pageWidth=pdf.internal.pageSize.getWidth(),pageHeight=pdf.internal.pageSize.getHeight(),props=pdf.getImageProperties(imgData),imgHeight=(props.height*pageWidth)/props.width;let left=imgHeight,position=0;pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight);left-=pageHeight;while(left>0){position=left-imgHeight;pdf.addPage();pdf.addImage(imgData,"JPEG",0,position,pageWidth,imgHeight);left-=pageHeight}return pdf}
-    function buildPDF() { return VehiclePhotos.withPhotos(buildChecklistPDF); }
+    function buildPDF() { return buildChecklistPDF(); }
 
-    function sendPDF(){return ChecklistMailer.run({action:"send",type:"tpmr",filename:"checklist_TPMR.pdf",buildPdf:buildPDF})}
+    function sendPDF(){return ChecklistMailer.run({action:"send",prepareAttachments:VehiclePhotos.prepareAttachments,type:"tpmr",filename:"checklist_TPMR.pdf",buildPdf:buildPDF})}
     initSignature("signatureChauffeur");
   </script>
 </body>

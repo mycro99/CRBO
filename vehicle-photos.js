@@ -15,8 +15,8 @@
       control.disabled = loading || exporting;
     });
     panel.querySelector(".vehicle-photo-count").textContent = photos.length
-      ? photos.length + " photo" + (photos.length > 1 ? "s" : "") + " jointe" + (photos.length > 1 ? "s" : "") + " au PDF"
-      : "Les photos seront jointes au PDF envoyé par mail (12 maximum).";
+      ? photos.length + (photos.length > 1 ? " photos JPEG séparées du PDF" : " photo JPEG séparée du PDF")
+      : "Les photos seront jointes au mail séparément du PDF (12 maximum).";
     const gallery = panel.querySelector(".vehicle-photo-gallery");
     gallery.replaceChildren();
     photos.forEach((photo, index) => {
@@ -124,47 +124,34 @@
     refresh();
   }
 
-  function appendToPdf(pdf, items) {
-    const width = pdf.internal.pageSize.getWidth();
-    const height = pdf.internal.pageSize.getHeight();
-    const margin = 12;
-    const slotHeight = (height - 52) / 2;
-    const plaque = document.getElementById("plaque")?.value.trim() || "";
-    const date = document.getElementById("date")?.value || "";
-    items.forEach((photo, index) => {
-      if (index % 2 === 0) {
-        pdf.addPage();
-        pdf.setTextColor(7, 29, 50);
-        pdf.setFontSize(16);
-        pdf.text("Photos du véhicule", margin, 18);
-        pdf.setFontSize(10);
-        pdf.text([plaque, date].filter(Boolean).join(" - "), margin, 25, { maxWidth: width - 2 * margin });
-      }
-      const top = 36 + (index % 2) * slotHeight;
-      pdf.setFontSize(10);
-      pdf.text("Photo " + (index + 1), margin, top);
-      const ratio = Math.min((width - 2 * margin) / photo.width, (slotHeight - 16) / photo.height);
-      const imageWidth = photo.width * ratio;
-      const imageHeight = photo.height * ratio;
-      pdf.addImage(photo.data, "JPEG", (width - imageWidth) / 2, top + 4, imageWidth, imageHeight, undefined, "FAST");
-    });
-  }
-
-  async function withPhotos(buildPdf) {
+  async function prepareAttachments() {
     exporting = true;
     refresh();
     try {
       await pending;
-      const snapshot = photos.slice();
-      const pdf = await buildPdf();
-      appendToPdf(pdf, snapshot);
-      return pdf;
-    } finally {
+      const plaque = (document.getElementById("plaque")?.value || "")
+        .toUpperCase().replace(/[^A-Z0-9_-]/g, "-").slice(0, 24) || "vehicule";
+      const date = (document.getElementById("date")?.value || "")
+        .replace(/[^0-9-]/g, "").slice(0, 10) || "sans-date";
+      const attachments = photos.map((photo, index) => ({
+        filename: "photo-" + plaque + "-" + date + "-" + String(index + 1).padStart(2, "0") + ".jpg",
+        mimeType: "image/jpeg",
+        base64: photo.data.slice(photo.data.indexOf(",") + 1)
+      }));
+      return {
+        photos: attachments,
+        release() {
+          exporting = false;
+          refresh();
+        }
+      };
+    } catch (error) {
       exporting = false;
       refresh();
+      throw error;
     }
   }
 
-  window.VehiclePhotos = Object.freeze({ withPhotos });
+  window.VehiclePhotos = Object.freeze({ prepareAttachments });
   document.addEventListener("DOMContentLoaded", mount);
 })();

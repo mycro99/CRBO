@@ -37,22 +37,25 @@
     });
   }
 
-  async function checkUniformService() {
+  async function checkService(feature) {
     const controller = new AbortController();
     const timeout = setTimeout(function () { controller.abort(); }, 15000);
     try {
       const response = await fetch(WEB_APP_URL, { signal: controller.signal, cache: "no-store" });
       const service = await response.json();
-      if (!response.ok || !service.ok || !Array.isArray(service.supportedTypes) ||
-          !service.supportedTypes.includes("tenues")) {
-        throw new Error("L’envoi des commandes de tenues n’est pas encore activé. Le script Google doit être mis à jour.");
+      const available = feature === "photos" ? service.photoAttachments === true :
+        Array.isArray(service.supportedTypes) && service.supportedTypes.includes("tenues");
+      if (!response.ok || !service.ok || !available) {
+        throw new Error(feature === "photos"
+          ? "L’envoi des photos en pièces jointes nécessite la mise à jour du script Google. Vos photos sont conservées sur cette page ; aucun mail n’a été envoyé."
+          : "L’envoi des commandes de tenues n’est pas encore activé. Le script Google doit être mis à jour.");
       }
     } finally {
       clearTimeout(timeout);
     }
   }
 
-  async function sendPdf(pdf, type) {
+  async function sendPdf(pdf, type, photos) {
     const typeLabel = TYPE_LABELS[type];
     const uniformOrder = type === "tenues";
     const plaqueInput = document.getElementById(uniformOrder ? "nom" : "plaque");
@@ -72,10 +75,10 @@
 
     const blob = pdf.output("blob");
     if (blob.size > MAX_PDF_BYTES) {
-      throw new Error("Le PDF dépasse 10 Mo. Réduisez le nombre de photos ou le contenu du rapport, puis réessayez.");
+      throw new Error("Le PDF dépasse 10 Mo. Réduisez le contenu du rapport, puis réessayez.");
     }
 
-    setStatus("Transmission sécurisée du PDF vers Gmail…");
+    setStatus(photos.length ? "Transmission du PDF et des photos vers Gmail…" : "Transmission sécurisée du PDF vers Gmail…");
     const pdfBase64 = await blobToBase64(blob);
     const requestId = Date.now() + "-" + (window.crypto && window.crypto.randomUUID
       ? window.crypto.randomUUID()
@@ -90,6 +93,7 @@
         ...(uniformOrder ? { demandeur: plaque } : { plaque: plaque }),
         checklistDate: checklistDate,
         checklistType: type,
+        ...(photos.length ? { photos: photos } : {}),
         requestId: requestId,
         website: ""
       })
@@ -120,11 +124,25 @@
     if (activeButton) activeButton.textContent = action === "send" ? "Envoi en cours…" : "Création du PDF…";
     setStatus(options.type === "tenues" ? "Préparation du bon de commande…" : "Préparation du rapport complet…");
 
+    let photoSelection;
     try {
       if (action === "send" && options.type === "tenues") {
         setStatus("Vérification du service d’envoi…");
-        await checkUniformService();
+        await checkService("tenues");
         setStatus("Préparation du bon de commande…");
+      }
+      const photos = [];
+      if (action === "send" && options.prepareAttachments) {
+        photoSelection = await options.prepareAttachments();
+        photos.push(...photoSelection.photos);
+        if (photos.length) {
+          if (!["ambulance", "tpmr", "fit"].includes(options.type)) {
+            throw new Error("Les photos sont réservées aux checklists des véhicules.");
+          }
+          setStatus("Vérification de l’envoi des photos en pièces jointes…");
+          await checkService("photos");
+          setStatus("Préparation du rapport complet…");
+        }
       }
       const pdf = await options.buildPdf();
 
@@ -132,13 +150,14 @@
         pdf.save(options.filename);
         setStatus(options.type === "tenues" ? "Le bon de commande PDF a été téléchargé." : "Le rapport PDF a été téléchargé.");
       } else {
-        await sendPdf(pdf, options.type);
-        setStatus(options.type === "tenues" ? "Commande transmise au service d’envoi. Le mail peut prendre quelques secondes pour arriver." : "Checklist transmise. Le mail peut prendre quelques secondes pour arriver.");
+        await sendPdf(pdf, options.type, photos);
+        setStatus(photos.length ? "Checklist et photos transmises au service d’envoi. Le mail peut prendre quelques secondes pour arriver." : options.type === "tenues" ? "Commande transmise au service d’envoi. Le mail peut prendre quelques secondes pour arriver." : "Checklist transmise. Le mail peut prendre quelques secondes pour arriver.");
       }
     } catch (error) {
       console.error("Erreur PDF ou envoi :", error);
       setStatus(error && error.message ? error.message : "Impossible de traiter la checklist. Veuillez réessayer.");
     } finally {
+      if (photoSelection) photoSelection.release();
       setButtonsDisabled(false);
       if (activeButton) activeButton.textContent = originalText;
     }
