@@ -281,7 +281,7 @@
 
     .cards {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 24px;
     }
 
@@ -297,6 +297,10 @@
       box-shadow: var(--shadow);
       text-align: center;
       transition: transform 220ms ease, box-shadow 220ms ease;
+    }
+
+    .portal-card[hidden] {
+      display: none;
     }
 
     .portal-card:hover {
@@ -402,7 +406,7 @@
       margin-top: 26px;
       padding: 22px 26px;
       display: grid;
-      grid-template-columns: auto repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       align-items: center;
       gap: 16px;
       border: 1px solid var(--line);
@@ -412,6 +416,7 @@
     }
 
     .quick-title {
+      grid-column: 1 / -1;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -928,7 +933,7 @@
 
     <section class="portal-content" aria-label="Accès au portail">
       <div class="cards">
-        <article class="portal-card">
+        <article class="portal-card" hidden>
           <div class="card-icon blue" aria-hidden="true">▣</div>
           <h2>Documentation opérationnelle</h2>
           <p>Procédures, feuilles de route et formulaires essentiels.</p>
@@ -969,6 +974,16 @@
         <a class="quick-link" href="opérationnel/112.html" data-safe-nav>
           <span class="quick-symbol" aria-hidden="true">▤</span>
           Feuille de route 112
+        </a>
+
+        <a class="quick-link" href="opérationnel/accident_salariés.html" data-safe-nav>
+          <span class="quick-symbol" aria-hidden="true">✚</span>
+          Accident de travail — salariés
+        </a>
+
+        <a class="quick-link" href="opérationnel/accident_vol.html" data-safe-nav>
+          <span class="quick-symbol" aria-hidden="true">✚</span>
+          Accident de travail — volontaires
         </a>
 
         <a class="quick-link" href="opérationnel/tenues.html" data-safe-nav>
