@@ -29,3 +29,9 @@ Le POST utilise le mode navigateur `no-cors` : le site peut confirmer la transmi
 `node --test apps-script/tests/document-mail.test.mjs`
 
 Les tests utilisent des doubles des services Google et n’envoient aucun mail.
+
+## Photos des véhicules
+
+Les checklists Ambulance, TPMR et FIT peuvent joindre jusqu’à 12 JPEG séparés du PDF, dans le même mail (6 Mio au total pour les photos). Le schéma annoté reste dans le PDF. Une photo invalide bloque tout le mail. Les fichiers photo sont nommés avec la plaque, la date et un numéro. La limite journalière reste de 30 mails, quel que soit le nombre de pièces jointes.
+
+Après mise à jour, ouvrir l’URL `/exec` existante : la réponse doit contenir `"photoAttachments": true`. Recharger une checklist et tester un envoi avec une photo pour vérifier la réception du PDF et du JPEG séparés.

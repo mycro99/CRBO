@@ -9,6 +9,8 @@ const CONFIG = Object.freeze({
   recipient: "logistique.cs.oupeye@croix-rouge.be",
   dailyLimit: 30,
   maxPdfBytes: 10 * 1024 * 1024,
+  maxPhotos: 12,
+  maxPhotoBytes: 6 * 1024 * 1024,
   timezone: "Europe/Brussels",
   senderName: "Checklist Ambulance - CS Oupeye"
 });
@@ -26,6 +28,7 @@ function doGet() {
     ok: true,
     service: "checklist-ambulance",
     supportedTypes: Object.keys(DOCUMENT_TYPES),
+    photoAttachments: true,
     message: "Le service d'envoi est actif."
   });
 }
@@ -74,6 +77,7 @@ function doPost(event) {
     if (bytes.length > CONFIG.maxPdfBytes || !isPdf_(bytes)) {
       throw new Error("Le document reçu n'est pas un PDF valide.");
     }
+    const photoAttachments = preparePhotoAttachments_(payload.photos, type, identity, checklistDate);
     if (MailApp.getRemainingDailyQuota() < 1) {
       throw new Error("Le quota Gmail quotidien est épuisé.");
     }
@@ -87,13 +91,14 @@ function doPost(event) {
       body: DOCUMENT_TYPES[type] + "\n" +
         (uniformOrder ? "Demandeur : " : "Plaque : ") + identity + "\n" +
         "Date : " + displayDate + "\n\n" +
-        "Le document PDF est joint à ce message.",
-      attachments: [attachment],
+        "Le document PDF est joint à ce message." +
+        (photoAttachments.length ? "\n" + photoAttachments.length + " photo(s) du véhicule sont jointes séparément au format JPEG." : ""),
+      attachments: [attachment].concat(photoAttachments),
       name: uniformOrder ? "Commande de tenues - CS Oupeye" : CONFIG.senderName
     });
     incrementDailyCount_();
     if (requestId) cache.put("sent:" + requestId, "1", 21600);
-    return jsonResponse_({ ok: true, filename: filename, subject: subject });
+    return jsonResponse_({ ok: true, filename: filename, subject: subject, photoCount: photoAttachments.length });
   } catch (error) {
     console.error(error && error.stack ? error.stack : error);
     return jsonResponse_({
@@ -103,6 +108,47 @@ function doPost(event) {
   } finally {
     if (lock.hasLock()) lock.releaseLock();
   }
+}
+
+function preparePhotoAttachments_(photos, type, plaque, date) {
+  if (photos === undefined) return [];
+  if (!Array.isArray(photos) || photos.length > CONFIG.maxPhotos) {
+    throw new Error("Liste de photos invalide (12 maximum).");
+  }
+  if (!photos.length) return [];
+  if (["ambulance", "tpmr", "fit"].indexOf(type) === -1) {
+    throw new Error("Les photos sont réservées aux checklists des véhicules.");
+  }
+  let totalBytes = 0;
+  const safePlaque = sanitizePlaque_(plaque).replace(/[^A-Z0-9_-]/g, "-");
+  return photos.map(function (photo, index) {
+    if (!photo || typeof photo !== "object" || photo.mimeType !== "image/jpeg" ||
+        typeof photo.base64 !== "string" || !photo.base64 ||
+        photo.base64.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(photo.base64)) {
+      throw new Error("Photo " + (index + 1) + " invalide : un JPEG encodé est requis.");
+    }
+    const padding = photo.base64.slice(-2) === "==" ? 2 : photo.base64.slice(-1) === "=" ? 1 : 0;
+    const estimatedBytes = photo.base64.length * 3 / 4 - padding;
+    if (totalBytes + estimatedBytes > CONFIG.maxPhotoBytes) {
+      throw new Error("Les photos dépassent la limite totale de 6 Mo.");
+    }
+    const bytes = Utilities.base64Decode(photo.base64);
+    totalBytes += bytes.length;
+    if (totalBytes > CONFIG.maxPhotoBytes || !isJpeg_(bytes)) {
+      throw new Error("Photo " + (index + 1) + " invalide ou trop volumineuse.");
+    }
+    // Rebuild names on the server rather than trusting uploaded filenames.
+    const number = String(index + 1).padStart(2, "0");
+    const filename = "photo-" + safePlaque + "-" + filenameDate_(date) + "-" + number + ".jpg";
+    return Utilities.newBlob(bytes, "image/jpeg", filename);
+  });
+}
+
+function isJpeg_(bytes) {
+  // Apps Script returns signed bytes; normalize them before checking JPEG markers.
+  return bytes.length >= 5 && (bytes[0] & 255) === 255 &&
+    (bytes[1] & 255) === 216 && (bytes[2] & 255) === 255 &&
+    (bytes[bytes.length - 2] & 255) === 255 && (bytes[bytes.length - 1] & 255) === 217;
 }
 
 function validateDeploymentAccount_() {

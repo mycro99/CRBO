@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const serverSource = fs.readFileSync(new URL('../Code.gs', import.meta.url), 'utf8');
 const browserSource = fs.readFileSync(new URL('../../checklist-email.js', import.meta.url), 'utf8');
 
-function server({ count = 0, quota = 100, account = 'contactoupeye@gmail.com', locked = false } = {}) {
+function server({ count = 0, quota = 100, account = 'contactoupeye@gmail.com', locked = false, signedBytes = false } = {}) {
   const mails = [], cache = new Map(), properties = new Map();
   properties.set('CHECKLIST_SEND_COUNTER', JSON.stringify({ date: '2026-10-09', count }));
   let held = false;
@@ -20,7 +20,7 @@ function server({ count = 0, quota = 100, account = 'contactoupeye@gmail.com', l
     Session: { getEffectiveUser: () => ({ getEmail: () => account }) },
     Utilities: {
       formatDate: () => '2026-10-09',
-      base64Decode: value => [...Buffer.from(value, 'base64')],
+      base64Decode: value => [...Buffer.from(value, 'base64')].map(b => signedBytes && b > 127 ? b - 256 : b),
       newBlob: (bytes, type, name) => ({ bytes, type, name })
     },
     MailApp: { getRemainingDailyQuota: () => quota, sendEmail: mail => mails.push(mail) },
@@ -224,4 +224,65 @@ test('photo controls are released when network transmission fails', async () => 
   assert.equal(result.elements.emailButton.disabled, false);
   assert.equal(result.payload, undefined);
   assert.match(result.elements.actionStatus.textContent, /Transmission interrompue/);
+});
+
+const jpeg = { filename: '../../ignored.exe', mimeType: 'image/jpeg', base64: Buffer.from([255, 216, 255, 224, 0, 255, 217]).toString('base64') };
+
+test('Google script attaches JPEGs beside the PDF for all three vehicles, including signed Google bytes', () => {
+  for (const type of ['ambulance', 'tpmr', 'fit']) {
+    const service = server({ signedBytes: true });
+    const result = service.post({ ...valid, checklistType: type, plaque: '1-ABC-234', photos: [jpeg, jpeg] });
+    assert.equal(service.get().photoAttachments, true);
+    assert.equal(result.ok, true);
+    assert.equal(result.photoCount, 2);
+    assert.equal(service.mails.length, 1);
+    const attachments = service.mails[0].attachments;
+    assert.equal(attachments.length, 3);
+    assert.equal(attachments[0].type, 'application/pdf');
+    assert.equal(attachments[1].type, 'image/jpeg');
+    assert.equal(attachments[1].name, 'photo-1-ABC-234-09-10-26-01.jpg');
+    assert.equal(attachments[2].name, 'photo-1-ABC-234-09-10-26-02.jpg');
+    assert.match(service.mails[0].body, /2 photo\(s\)/);
+    assert.equal(JSON.parse(service.properties.get('CHECKLIST_SEND_COUNTER')).count, 1);
+  }
+});
+
+test('a bad JPEG rejects the whole mail, including otherwise valid preceding attachments', () => {
+  for (const photos of [
+    null, {}, [null], Array(13).fill(jpeg),
+    [jpeg, { ...jpeg, mimeType: 'image/png' }],
+    [jpeg, { ...jpeg, base64: Buffer.from('%PDF-not-a-jpeg').toString('base64') }],
+    [{ ...jpeg, base64: 'invalid base64!!' }],
+    [{ ...jpeg, base64: jpeg.base64.slice(0, -1) }],
+    [{ ...jpeg, base64: Buffer.from([255, 216, 255, 224]).toString('base64') }]
+  ]) {
+    const service = server();
+    const result = service.post({ ...valid, checklistType: 'ambulance', plaque: 'ABC', photos });
+    assert.equal(result.ok, false);
+    assert.equal(service.mails.length, 0);
+    assert.equal(JSON.parse(service.properties.get('CHECKLIST_SEND_COUNTER')).count, 0);
+    assert.equal(service.held(), false);
+  }
+});
+
+test('photos stay forbidden for expiry checks and uniform orders', () => {
+  for (const type of ['peremption', 'tenues']) {
+    const service = server();
+    assert.equal(service.post({ ...valid, checklistType: type, demandeur: 'Kevin', plaque: 'ABC', photos: [jpeg] }).ok, false);
+    assert.equal(service.mails.length, 0);
+  }
+});
+
+test('combined JPEG size is limited to 6 MiB and photo retries never send twice', () => {
+  const big = Buffer.alloc(3 * 1024 * 1024 + 1, 0);
+  big[0] = 255; big[1] = 216; big[2] = 255;
+  big[big.length - 2] = 255; big[big.length - 1] = 217;
+  const largePhoto = { ...jpeg, base64: big.toString('base64') };
+  const service = server();
+  assert.equal(service.post({ ...valid, plaque: 'ABC', photos: [largePhoto, largePhoto] }).ok, false);
+  assert.equal(service.mails.length, 0);
+  const request = { ...valid, plaque: 'ABC', photos: [jpeg] };
+  assert.equal(service.post(request).ok, true);
+  assert.equal(service.post(request).duplicate, true);
+  assert.equal(service.mails.length, 1);
 });
