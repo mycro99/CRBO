@@ -15,8 +15,19 @@
 <label id="address-label" for="address" hidden>Adresse de prise en charge<input id="address" name="address" type="text" maxlength="240" autocomplete="off"></label></fieldset>
 <fieldset><legend>3. Destination</legend>
 <label><input type="radio" name="destination" value="hopital" required>Hôpital</label><label><input type="radio" name="destination" value="sans_prise_en_charge" required>Pas de prise en charge</label>
-<label id="hospital-label" for="hospital" hidden>Hôpital de destination<select id="hospital" name="hospital"><option value="">Choisir un hôpital</option value="AR">AR - André Renard</option><option value="NDH">NDH - Notre-Dame d’Hermalle</option><option value="CITA">CITA - Citadelle</option><option value="MLE">MLE - MontLégia</option><option value="CHU">CHU - Sart Tilman</option><option value="NDB">NDB - Notre-Dame des Bruyères</option><option value="CHBA">CHBA - Bois de l’Abbaye</option><option value="AZ">AZ Vesalius - Tongeren</option><option value="UMC">UMC+ Maastricht</option></select></label>
-<label id="outcome-label" for="outcome" hidden>Motif<select id="outcome" name="outcome"><option value="">Choisir un motif</option value="absent">Pas de patient</option><option value="refus">Refus</option><option value="dcd">DCD</option><option value="sur_place">Acte posé sur place</option><option value="autre_transport">Transporté par un autre moyen</option></select></label></fieldset>
+<label id="hospital-label" for="hospital" hidden>Hôpital de destination<select id="hospital" name="hospital">
+<option value="">Choisir un hôpital</option>
+<option value="AR">AR - André Renard</option>
+<option value="AZ">AZ Vesalius - Tongeren</option>
+<option value="CHBA">CHBA - Bois de l’Abbaye</option>
+<option value="CHU">CHU - Sart Tilman</option>
+<option value="CITA">CITA - Citadelle</option>
+<option value="MLE">MLE - MontLégia</option>
+<option value="NDB">NDB - Notre-Dame des Bruyères</option>
+<option value="NDH">NDH - Notre-Dame d’Hermalle</option>
+<option value="UMC">UMC+ Maastricht</option>
+</select></label>
+<label id="outcome-label" for="outcome" hidden>Motif<select id="outcome" name="outcome"><option value="">Choisir un motif</option><option value="absent">Pas de patient</option><option value="refus">Refus</option><option value="dcd">DCD</option><option value="sur_place">Acte posé sur place</option><option value="autre_transport">Transporté par un autre moyen</option></select></label></fieldset>
 <div class="trap" aria-hidden="true"><label>Site web<input name="website" tabindex="-1" autocomplete="off"></label></div>
 <p class="hint">Accès à l’enregistrement uniquement. Les fiches ne sont pas consultables depuis cette page. La photo et le texte ne sont pas sauvegardés dans le navigateur : gardez cette page ouverte jusqu’à confirmation.</p>
 <p id="status" role="status" aria-live="polite"></p><button id="send" type="submit">Enregistrer la course</button>
