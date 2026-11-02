@@ -13,9 +13,37 @@ const OUTCOMES = Object.freeze({
   absent: 'Pas de patient', refus: 'Refus', dcd: 'DCD',
   sur_place: 'Acte posé sur place', autre_transport: 'Transporté par un autre moyen'
 });
-function doGet() {
+function doGet(event) {
+  const params = event && event.parameter || {};
+  if (params.service === 'route-api') {
+    try { root_(); return routeJson_({ok: true, routeApi: 1}); }
+    catch (_) { return routeJson_({ok: false, error: 'Service indisponible.'}); }
+  }
+  if (params.receipt !== undefined) {
+    const id = String(params.receipt);
+    if (!/^[a-f0-9-]{36}$/i.test(id)) return routeJson_({ok: false});
+    const raw = PropertiesService.getScriptProperties().getProperty('RECEIPT_' + id);
+    const saved = raw ? JSON.parse(raw) : null;
+    // Accusé technique uniquement : aucune identité, photo, adresse ou empreinte.
+    return routeJson_(saved && saved.saved === true
+      ? {ok: true, stored: true, receipt: id, day: saved.day}
+      : {ok: true, stored: false});
+  }
   return HtmlService.createHtmlOutputFromFile('Form').setTitle('Feuille de route - CS Oupeye')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+// Transport anonyme depuis CRBO : aucun cookie Google requis.
+function doPost(event) {
+  try {
+    const raw = event && event.postData && event.postData.contents;
+    if (typeof raw !== 'string' || !raw || raw.length > 900000) throw new Error('Requête invalide.');
+    return routeJson_(enregistrerCourse(JSON.parse(raw)));
+  } catch (_) {
+    return routeJson_({ok: false, error: 'Enregistrement non confirmé.'});
+  }
+}
+function routeJson_(value) {
+  return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);
 }
 // Seule opération patient appelable depuis la page publique. Aucun accès en lecture.
 function enregistrerCourse(payload) {

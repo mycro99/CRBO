@@ -1,5 +1,77 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex"><meta name="theme-color" content="#142d43"><title>Feuille de route - CS Oupeye</title><link rel="icon" href="icons/favicon-32.png"><style>body{margin:0;background:#eef3f7;color:#142d43;font:17px/1.6 system-ui,sans-serif}main{max-width:550px;background:white;margin:12vh auto;padding:30px;border-radius:16px}h1{font-size:1.8rem}a{color:#087b7d}#open{display:inline-block;background:#142d43;color:white;padding:12px 18px;border-radius:9px;text-decoration:none}@media(max-width:650px){main{margin:30px 16px}}</style></head><body><main><h1>Feuille de route</h1><p>Ouverture du formulaire sécurisé d’enregistrement des courses…</p><p><a id="open" href="https://script.google.com/macros/s/AKfycbyTKz-6nf540Fgd87UfD4bADYcy1Qk5gDYWDvE6pcytlPVgDGqe5A8RYjaeV19NRfSvSA/exec" rel="noreferrer">Ouvrir le formulaire</a></p><p><a href="index.html">Retour à l’accueil CRBO</a></p><noscript><p>Touchez « Ouvrir le formulaire » pour continuer.</p></noscript></main><script>
-// Destination fixe : aucune donnée patient ni paramètre de l’URL ne transite par CRBO.
-window.location.replace(document.getElementById('open').href);
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex"><title>Feuille de route - CS Oupeye</title><link rel="icon" href="icons/favicon-32.png">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef3f7;color:#142d43;font:16px system-ui,sans-serif}header{background:#142d43;color:white;padding:20px;text-align:center;font-weight:750}main{max-width:660px;margin:24px auto;padding:25px;background:white;border-radius:18px}h1{font-size:1.8rem;margin:0 0 10px}p{line-height:1.5}.intro{color:#506474}fieldset{border:0;padding:0;margin:24px 0}legend{font-weight:750;font-size:1.15rem;margin-bottom:12px}label{display:block;margin:12px 0}input[type=text],textarea,select{width:100%;font:inherit;border:1px solid #aabaca;border-radius:9px;padding:13px;margin-top:7px}input[type=radio]{width:20px;height:20px;vertical-align:middle;margin-right:8px}button{font:inherit;border:0;border-radius:10px;padding:14px 18px;background:#142d43;color:white;font-weight:700;cursor:pointer;min-height:48px}button:disabled{opacity:.55;cursor:wait}.photo-buttons{display:flex;gap:10px;flex-wrap:wrap}.secondary{background:#e6eff4;color:#142d43}.hint{color:#506474;font-size:.9rem}#preview{display:block;max-width:100%;max-height:260px;margin:16px auto;border:1px solid #dce5ef;border-radius:8px}#send{width:100%}#status.error{color:#ad2331}#status{min-height:24px}.trap{display:none}[hidden]{display:none!important}footer{text-align:center;color:#506474;font-size:.85rem;padding:20px}@media(max-width:700px){main{margin:15px;padding:22px}}
+</style></head><body><header>CS OUPEYE · FEUILLE DE ROUTE</header><main>
+<h1>Enregistrer une course</h1><p class="intro">Complétez la fiche après la course. Elle sera jointe au PDF de la journée envoyé automatiquement.</p>
+<form id="route-form" autocomplete="off">
+<fieldset><legend>1. Patient</legend><p class="hint">Photographiez l’étiquette ou renseignez l’identité si vous n’avez pas d’étiquette. En l’absence de patient, les deux peuvent rester vides.</p>
+<div class="photo-buttons"><button type="button" id="camera" class="secondary">📷 Prendre une photo</button><button type="button" id="gallery" class="secondary">Choisir une photo</button></div>
+<input id="camera-file" type="file" accept="image/*" capture="environment" hidden><input id="gallery-file" type="file" accept="image/*" hidden>
+<img id="preview" alt="Aperçu de l’étiquette patient" hidden><button type="button" id="remove-photo" class="secondary" hidden>Retirer la photo</button>
+<label for="identity">Identité du patient<textarea id="identity" name="identity" rows="3" maxlength="300" placeholder="Nom, prénom et informations d’identité utiles" autocomplete="off" spellcheck="false"></textarea></label></fieldset>
+<fieldset><legend>2. Lieu de prise en charge</legend>
+<label><input type="radio" name="pickup" value="domicile" required>Domicile</label><label><input type="radio" name="pickup" value="autre" required>Autre lieu</label>
+<label id="address-label" for="address" hidden>Adresse de prise en charge<input id="address" name="address" type="text" maxlength="240" autocomplete="off"></label></fieldset>
+<fieldset><legend>3. Destination</legend>
+<label><input type="radio" name="destination" value="hopital" required>Hôpital</label><label><input type="radio" name="destination" value="sans_prise_en_charge" required>Pas de prise en charge</label>
+<label id="hospital-label" for="hospital" hidden>Hôpital de destination<select id="hospital" name="hospital"><option value="">Choisir un hôpital</option value="AR">AR - André Renard</option><option value="NDH">NDH - Notre-Dame d’Hermalle</option><option value="CITA">CITA - Citadelle</option><option value="MLE">MLE - MontLégia</option><option value="CHU">CHU - Sart Tilman</option><option value="NDB">NDB - Notre-Dame des Bruyères</option><option value="CHBA">CHBA - Bois de l’Abbaye</option><option value="AZ">AZ Vesalius - Tongeren</option><option value="UMC">UMC+ Maastricht</option></select></label>
+<label id="outcome-label" for="outcome" hidden>Motif<select id="outcome" name="outcome"><option value="">Choisir un motif</option value="absent">Pas de patient</option><option value="refus">Refus</option><option value="dcd">DCD</option><option value="sur_place">Acte posé sur place</option><option value="autre_transport">Transporté par un autre moyen</option></select></label></fieldset>
+<div class="trap" aria-hidden="true"><label>Site web<input name="website" tabindex="-1" autocomplete="off"></label></div>
+<p class="hint">Accès à l’enregistrement uniquement. Les fiches ne sont pas consultables depuis cette page. La photo et le texte ne sont pas sauvegardés dans le navigateur : gardez cette page ouverte jusqu’à confirmation.</p>
+<p id="status" role="status" aria-live="polite"></p><button id="retry-service" class="secondary" type="button" hidden>Réessayer la connexion</button><button id="send" type="submit" disabled>Enregistrer la course</button>
+</form><section id="success" hidden tabindex="-1"><h2>Course enregistrée ✓</h2><p>Elle est sauvegardée et sera incluse dans le PDF de la journée.</p><p class="hint" id="receipt"></p><button id="new-course" type="button">Encoder une nouvelle course</button></section>
+</main><footer><a href="index.html">Retour à l’accueil CRBO</a> · Feuille de route numérisée</footer>
+<script type="module">
+import {checkRouteService,sendCourse} from './feuille-route-api.js?v=1';
+const form=document.getElementById('route-form'),status=document.getElementById('status'),preview=document.getElementById('preview'),success=document.getElementById('success');
+let ready=false,photo='',previewUrl='',working=false,reading=false,id=crypto.randomUUID(),attempted=null;
+function showError(message){status.className='error';status.textContent=message;}
+function sync(){
+ const data=new FormData(form);for(const [name,visible] of [['address',data.get('pickup')==='autre'],['hospital',data.get('destination')==='hopital'],['outcome',data.get('destination')==='sans_prise_en_charge']]){document.getElementById(name+'-label').hidden=!visible;form.elements[name].required=visible;}
+}
+form.addEventListener('change',sync);
+document.getElementById('camera').onclick=()=>document.getElementById('camera-file').click();document.getElementById('gallery').onclick=()=>document.getElementById('gallery-file').click();
+function clearPhoto(){photo='';if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl='';preview.removeAttribute('src');preview.hidden=true;document.getElementById('remove-photo').hidden=true;document.getElementById('camera-file').value='';document.getElementById('gallery-file').value='';}
+document.getElementById('remove-photo').onclick=clearPhoto;
+function lock(value){working=value;for(const el of form.elements)el.disabled=value;document.getElementById('send').disabled=value||!ready;}
+async function readPhoto(event){
+ const file=event.target.files[0];if(!file)return;if(working)return;
+ reading=true;lock(true);status.className='';status.textContent='Préparation de la photo…';
+ let objectUrl='';try{
+  if(file.size>25*1024*1024)throw Error('La photo est trop volumineuse. Prenez une nouvelle photo.');
+  objectUrl=URL.createObjectURL(file);const img=new Image();img.src=objectUrl;await img.decode();
+  let scale=Math.min(1,1800/Math.max(img.naturalWidth,img.naturalHeight));let data='';
+  const canvas=document.createElement('canvas');
+  for(let pass=0;pass<4;pass++){
+   canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+   for(const quality of [.9,.8,.7]){data=canvas.toDataURL('image/jpeg',quality);if((data.length-data.indexOf(',')-1)*.75<=590000)break;}
+   if((data.length-data.indexOf(',')-1)*.75<=590000)break;scale*=.8;
+  }
+  if((data.length-data.indexOf(',')-1)*.75>600000)throw Error('Impossible de préparer cette photo. Prenez-en une autre.');
+  photo=data.split(',')[1];if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=objectUrl;objectUrl='';preview.src=previewUrl;preview.hidden=false;document.getElementById('remove-photo').hidden=false;status.textContent='Vérifiez que l’étiquette est lisible avant d’enregistrer.';
+ }catch(error){showError(error.message||'Photo non lisible. Essayez une autre image.');}finally{if(objectUrl)URL.revokeObjectURL(objectUrl);reading=false;lock(false);sync();}
+}
+for(const key of ['camera-file','gallery-file'])document.getElementById(key).addEventListener('change',readPhoto);
+form.addEventListener('submit',async event=>{
+ event.preventDefault();if(working||reading||!ready||!form.reportValidity())return;
+ const data=Object.fromEntries(new FormData(form));delete data['camera-file'];delete data['gallery-file'];data.photo=photo;
+ if(!photo&&!data.identity.trim()&&data.outcome!=='absent'){showError('Ajoutez la photo de l’étiquette ou l’identité du patient.');form.elements.identity.focus();return;}
+ const signature=JSON.stringify(data);if(attempted!==null&&attempted!==signature)id=crypto.randomUUID();attempted=signature;
+ lock(true);status.className='';status.textContent='Enregistrement en cours… Gardez cette page ouverte.';
+ try{
+  const result=await sendCourse({...data,id});
+  if(!result||!result.ok){showError('Enregistrement non confirmé. Réessayez.');lock(false);sync();return;}
+  clearPhoto();form.reset();sync();attempted=null;id=crypto.randomUUID();form.hidden=true;success.hidden=false;document.getElementById('receipt').textContent='Référence : '+result.receipt+' · Journée : '+result.day;success.focus();status.textContent='';lock(false);
+ }catch(error){showError(error.message||'Enregistrement non confirmé. Vos réponses restent sur cette page : réessayez.');lock(false);sync();}
+});
+document.getElementById('new-course').onclick=()=>{success.hidden=true;form.hidden=false;document.getElementById('receipt').textContent='';form.elements.identity.focus();};
+window.addEventListener('beforeunload',event=>{if(working||photo||form.elements.identity.value){event.preventDefault();event.returnValue='';}});
+sync();
+async function connect(){
+ const retry=document.getElementById('retry-service');retry.hidden=true;status.className='';status.textContent='Connexion au service d’enregistrement…';
+ try{await checkRouteService();ready=true;status.textContent='';}catch{ready=false;showError('Enregistrement indisponible pour le moment. Réessayez ou utilisez la procédure habituelle.');retry.hidden=false;}
+ document.getElementById('send').disabled=working||!ready;
+}
+document.getElementById('retry-service').onclick=connect;connect();
 </script></body></html>

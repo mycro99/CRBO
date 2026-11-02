@@ -1,6 +1,6 @@
 # Feuille de route CS Oupeye - module à activer
 
-Ce module est indépendant de `apps-script/Code.gs` : **ne pas remplacer le script des checklists**. Le formulaire est relié depuis les accès rapides de CRBO via `feuille-route.html`. Le QR code stable pointe vers cette page de redirection. L'affiche imprimable est `feuille-route-qr.html` et l'image `assets/qr-feuille-route.png`. Aucune donnée patient ne passe dans les URL ou le code du dépôt.
+Ce module est indépendant de `apps-script/Code.gs` : **ne pas remplacer le script des checklists**. Le formulaire est relié depuis les accès rapides de CRBO via `feuille-route.html`. Le QR code stable pointe vers le formulaire hébergé directement dans CRBO. L'affiche imprimable est `feuille-route-qr.html` et l'image `assets/qr-feuille-route.png`. Aucune donnée patient ne passe dans les URL ou le code du dépôt. Le formulaire ne stocke rien dans le navigateur : les données sont transmises en POST anonyme à Google, sans cookies Google. Un reçu technique distinct confirme la sauvegarde avant d’effacer les champs.
 
 ## Installation (contactoupeye@gmail.com)
 
@@ -47,7 +47,7 @@ Dans Drive, un dossier de journée contenant `batch.json` avec `phase: "review"`
 
 ## Vérifications effectuables localement
 
-`node --test apps-script/feuille-route/tests/route.test.mjs`
+`node --test apps-script/feuille-route/tests/*.test.mjs`
 
 Le rendu Google Docs/PDF, les autorisations Google et le déclencheur réel doivent encore être vérifiés sur le nouveau déploiement avec des données fictives. Les tests simulés ne remplacent pas cet essai.
 
@@ -56,3 +56,14 @@ Le rendu Google Docs/PDF, les autorisations Google et le déclencheur réel doiv
 https://script.google.com/macros/s/AKfycbyTKz-6nf540Fgd87UfD4bADYcy1Qk5gDYWDvE6pcytlPVgDGqe5A8RYjaeV19NRfSvSA/exec
 
 Après modification du script, mettre à jour le déploiement existant (Modifier > Nouvelle version) pour conserver cette URL.
+
+## Correction de l’erreur Google Drive à l’ouverture (comptes multiples)
+
+Le formulaire est maintenant affiché directement par GitHub Pages. Le navigateur ne navigue plus sur Google pour l’ouvrir. Pour activer les enregistrements depuis ce formulaire :
+
+1. Remplacer **Code.gs** dans le projet **Feuilles de route** par le fichier actualisé de ce dossier. Les fichiers Form.html et appsscript.json déjà installés peuvent rester en place.
+2. Enregistrer. **Ne pas réexécuter l’installation** : le dossier privé et le déclencheur sont conservés.
+3. Déployer > Gérer les déploiements > sélectionner l’application existante > crayon > **Nouvelle version** > Déployer. Garder Moi / Tout le monde et la même URL /exec.
+4. Recharger https://mycro99.github.io/CRBO/feuille-route.html et faire un essai fictif en navigation normale.
+
+Le POST utilise `credentials: omit` et une réponse opaque ; une réponse opaque n’est jamais considérée comme un succès. Un GET distinct avec l’identifiant aléatoire de la soumission doit confirmer `stored: true` avant d’annoncer l’enregistrement. Le reçu n’expose ni photo, ni nom, ni adresse, ni empreinte du contenu. Les erreurs d’enregistrement conservent les réponses dans la page. Le QR code reste identique.

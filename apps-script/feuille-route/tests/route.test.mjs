@@ -12,7 +12,7 @@ function harness({quota=10,sendFails=false,buildFails=false,manifestFails=false,
  const folder={getName:()=> '2026-11-01',getId:()=> 'folder',getSharingAccess:()=>shared?'ANYONE':'PRIVATE',getEditors:()=>[],getViewers:()=>[],getFiles:()=>iterator([...files.values()]),getFilesByName:n=>iterator([...files.values()].filter(f=>f.getName()===n)),createFile:(n,s)=>{if(n==='batch.json'&&manifestFails)throw Error('Manifest unavailable');events.push('create:'+n);return file(n,s);}};
  let lock=false;
  const ctx={console:{log(){},error(){}},Date,JSON,Math,Error,Object,String,Array,
-  ContentService:{},HtmlService:{},MimeType:{PLAIN_TEXT:'text/plain',PDF:'application/pdf'},
+  ContentService:{MimeType:{JSON:'json'},createTextOutput:value=>({setMimeType:()=>JSON.parse(value)})},HtmlService:{},MimeType:{PLAIN_TEXT:'text/plain',PDF:'application/pdf'},
   Session:{getEffectiveUser:()=>({getEmail:()=> 'contactoupeye@gmail.com'})},
   LockService:{getScriptLock:()=>({tryLock:()=>{lock=true;return true;},releaseLock:()=>{lock=false;}})},
   PropertiesService:{getScriptProperties:()=>({getProperty:k=>props.get(k),setProperty:(k,v)=>props.set(k,v),getProperties:()=>Object.fromEntries(props),deleteProperty:k=>props.delete(k)})},
@@ -69,7 +69,7 @@ test('cleanup of durable sent state never sends mail again',()=>{
  const h=harness(),pdf=h.file('daily.pdf','pdf');h.file('batch.json',JSON.stringify({day:'2026-11-01',count:1,phase:'sent',pdfId:pdf.getId(),sourceIds:[]}));h.ctx.processDay_(h.folder);assert.equal(h.files.size,0);assert.equal(h.mails.length,0);
 });
 test('public script functions do not expose admin operations or a read API; form has no browser persistence',()=>{
- const publicNames=[...source.matchAll(/^function (\w+)\(/gm)].map(x=>x[1]).filter(x=>!x.endsWith('_'));assert.deepEqual(publicNames,['doGet','enregistrerCourse','installerFeuilleRoute']);
+ const publicNames=[...source.matchAll(/^function (\w+)\(/gm)].map(x=>x[1]).filter(x=>!x.endsWith('_'));assert.deepEqual(publicNames,['doGet','doPost','enregistrerCourse','installerFeuilleRoute']);
  const html=fs.readFileSync(new URL('../Form.html',import.meta.url),'utf8');assert.doesNotMatch(html,/localStorage|sessionStorage|indexedDB|serviceWorker|console\./);new vm.Script(html.match(/<script>([\s\S]*?)<\/script>/)[1]);
 });
 test('pending receipt recovers an already persisted record after a lost acknowledgement',()=>{
@@ -107,4 +107,12 @@ test('visible installer rejects anonymous and other active users even when deplo
  const h=harness();let installed=0;h.ctx.installerFeuilleRoute_=()=>{installed++;};
  for(const email of ['', 'other@example.com']){h.ctx.Session.getActiveUser=()=>({getEmail:()=>email});assert.throws(()=>h.ctx.installerFeuilleRoute());}
  assert.equal(installed,0);h.ctx.Session.getActiveUser=()=>({getEmail:()=> 'contactoupeye@gmail.com'});h.ctx.installerFeuilleRoute();assert.equal(installed,1);
+});
+
+test('anonymous POST plus technical receipt confirms storage without exposing patient content',()=>{
+ const h=harness();assert.equal(h.ctx.doPost({postData:{contents:JSON.stringify(sample)}}).ok,true);
+ const receipt=h.ctx.doGet({parameter:{receipt:sample.id}});assert.equal(receipt.stored,true);assert.equal(receipt.receipt,sample.id);assert.deepEqual(Object.keys(receipt).sort(),['day','ok','receipt','stored']);
+ assert.equal(h.ctx.doGet({parameter:{receipt:'22222222-2222-4222-8222-222222222222'}}).stored,false);
+ assert.equal(h.ctx.doPost({postData:{contents:'not json'}}).ok,false);assert.equal(h.ctx.doPost({postData:{contents:'x'.repeat(900001)}}).ok,false);
+ assert.equal(h.ctx.doGet({parameter:{service:'route-api'}}).routeApi,1);
 });
