@@ -106,6 +106,13 @@ function courseFiles_(folder) {
   while (files.hasNext()) { const f = files.next(); if (/^course-[a-f0-9-]{36}\.json$/i.test(f.getName())) result.push(f); }
   return result;
 }
+/** Point d’entrée visible dans le menu Exécuter, réservé au propriétaire. */
+function installerFeuilleRoute() {
+  if (String(Session.getActiveUser().getEmail() || '').toLowerCase() !== ROUTE.sender) {
+    throw new Error('Exécutez cette installation depuis l’éditeur avec ' + ROUTE.sender + '.');
+  }
+  installerFeuilleRoute_();
+}
 /** À exécuter UNE FOIS depuis l’éditeur, connecté comme contactoupeye@gmail.com. */
 function installerFeuilleRoute_() {
   account_();

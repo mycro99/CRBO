@@ -69,7 +69,7 @@ test('cleanup of durable sent state never sends mail again',()=>{
  const h=harness(),pdf=h.file('daily.pdf','pdf');h.file('batch.json',JSON.stringify({day:'2026-11-01',count:1,phase:'sent',pdfId:pdf.getId(),sourceIds:[]}));h.ctx.processDay_(h.folder);assert.equal(h.files.size,0);assert.equal(h.mails.length,0);
 });
 test('public script functions do not expose admin operations or a read API; form has no browser persistence',()=>{
- const publicNames=[...source.matchAll(/^function (\w+)\(/gm)].map(x=>x[1]).filter(x=>!x.endsWith('_'));assert.deepEqual(publicNames,['doGet','enregistrerCourse']);
+ const publicNames=[...source.matchAll(/^function (\w+)\(/gm)].map(x=>x[1]).filter(x=>!x.endsWith('_'));assert.deepEqual(publicNames,['doGet','enregistrerCourse','installerFeuilleRoute']);
  const html=fs.readFileSync(new URL('../Form.html',import.meta.url),'utf8');assert.doesNotMatch(html,/localStorage|sessionStorage|indexedDB|serviceWorker|console\./);new vm.Script(html.match(/<script>([\s\S]*?)<\/script>/)[1]);
 });
 test('pending receipt recovers an already persisted record after a lost acknowledgement',()=>{
@@ -101,4 +101,10 @@ test('missing or modified backup never causes remaining sources to be erased',()
   if(mode==='missing')h.files.delete(state.pdfId);else h.files.get(state.pdfId).getBlob=()=>({getBytes:()=>[37,80,68,70,45,99]});
   h.ctx.removeFile_=id=>h.files.delete(id);assert.throws(()=>h.ctx.processDay_(h.folder));assert.ok(h.files.has(raw.getId()));assert.equal(h.mails.length,0);
  }
+});
+
+test('visible installer rejects anonymous and other active users even when deployed as owner',()=>{
+ const h=harness();let installed=0;h.ctx.installerFeuilleRoute_=()=>{installed++;};
+ for(const email of ['', 'other@example.com']){h.ctx.Session.getActiveUser=()=>({getEmail:()=>email});assert.throws(()=>h.ctx.installerFeuilleRoute());}
+ assert.equal(installed,0);h.ctx.Session.getActiveUser=()=>({getEmail:()=> 'contactoupeye@gmail.com'});h.ctx.installerFeuilleRoute();assert.equal(installed,1);
 });

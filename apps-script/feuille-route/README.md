@@ -8,8 +8,8 @@ Ce module est indépendant de `apps-script/Code.gs` : **ne pas remplacer le scri
 2. Remplacer son fichier `Code.gs` par le fichier de ce dossier.
 3. Ajouter un fichier **HTML**, nommé `Form`, et y coller `Form.html`.
 4. Paramètres du projet : activer l'affichage de `appsscript.json` ; remplacer son contenu par celui fourni. Fuseau : Europe/Brussels.
-5. Enregistrer, sélectionner `installerFeuilleRoute_` dans la barre Exécuter et l'exécuter une fois. Autoriser les accès du nouveau projet. Cela crée un dossier Drive privé et un déclencheur toutes les cinq minutes. **Ne pas partager ce dossier ni ses sous-dossiers.**
-6. Déployer > Nouveau déploiement > Application Web : exécuter en tant que **Moi**, accès **Tout le monde**. Ce choix donne uniquement accès au formulaire et à l'enregistrement, aucune API ne lit les fiches. Les fonctions administratives finissant par `_` ne sont pas appelables depuis `google.script.run`.
+5. Enregistrer, sélectionner `installerFeuilleRoute` (sans underscore final) dans la barre Exécuter et l'exécuter une fois. Autoriser les accès du nouveau projet. Cela crée un dossier Drive privé et un déclencheur toutes les cinq minutes. **Ne pas partager ce dossier ni ses sous-dossiers.**
+6. Déployer > Nouveau déploiement > Application Web : exécuter en tant que **Moi**, accès **Tout le monde**. Ce choix donne uniquement accès au formulaire et à l'enregistrement, aucune API ne lit les fiches. La fonction publique d’installation vérifie l’identité active du propriétaire avant toute action. Les fonctions administratives finissant par `_` ne sont pas appelables depuis `google.script.run`.
 7. Copier l'URL de l'application Web terminant par `/exec` et la communiquer pour l'intégration dans CRBO et le QR code.
 8. Faire d'abord un essai avec une étiquette et une identité **fictives**. Vérifier l'enregistrement dans le Drive privé, l'envoi après changement de journée, le PDF (une course par page, étiquette lisible) et le nettoyage.
 
