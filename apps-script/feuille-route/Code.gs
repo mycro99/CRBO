@@ -145,7 +145,7 @@ function installerFeuilleRoute() {
   }
   installerFeuilleRoute_();
 }
-/** À exécuter UNE FOIS depuis l’éditeur, connecté comme contactoupeye@gmail.com. */
+/** Installation ou migration de la planification depuis l’éditeur, compte propriétaire. */
 function installerFeuilleRoute_() {
   account_();
   const lock = LockService.getScriptLock(); lock.waitLock(30000);
@@ -156,12 +156,40 @@ function installerFeuilleRoute_() {
       privateFolder_(root); props.setProperty('ROUTE_ROOT', root.getId());
     }
     root_();
-    ScriptApp.getProjectTriggers().forEach(t => { if (t.getHandlerFunction() === 'traiterJournees_') ScriptApp.deleteTrigger(t); });
-    ScriptApp.newTrigger('traiterJournees_').timeBased().everyMinutes(5).create();
-    console.log('Service installé. Déployez le projet comme application Web.');
+    // Créer le nouveau rendez-vous AVANT de supprimer l’ancien : une erreur de
+    // création ne doit pas laisser le service sans programmation.
+    const daily = ScriptApp.newTrigger('demarrerEnvoiNocturne_').timeBased()
+      .atHour(0).nearMinute(15).everyDays(1).inTimezone(ROUTE.timezone).create();
+    ScriptApp.getProjectTriggers().forEach(trigger => {
+      if (['traiterJournees_', 'demarrerEnvoiNocturne_'].includes(trigger.getHandlerFunction()) && trigger.getUniqueId() !== daily.getUniqueId()) {
+        ScriptApp.deleteTrigger(trigger);
+      }
+    });
+    // Filet de reprise si la vérification immédiate est interrompue ou occupée.
+    ensureRouteRetry_();
+    console.log('Planification quotidienne installée. Les relances s’arrêtent lorsque le traitement est terminé.');
   } finally { lock.releaseLock(); }
+  // Reprendre les éventuelles journées en attente, ou retirer immédiatement
+  // la relance temporaire s’il n’y a rien à traiter. La journée courante est exclue.
+  traiterJournees_();
 }
-/** Déclencheur autonome. Fonctions finissant par _ inaccessibles à google.script.run. */
+/** Rendez-vous permanent quotidien, vers 00 h 15 en Belgique (horaire Google approximatif). */
+function demarrerEnvoiNocturne_() {
+  ensureRouteRetry_();
+  traiterJournees_();
+}
+/** Un seul déclencheur temporaire de reprise, même en cas de passages multiples. */
+function ensureRouteRetry_() {
+  const retries = ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'traiterJournees_');
+  if (!retries.length) ScriptApp.newTrigger('traiterJournees_').timeBased().everyMinutes(5).create();
+  retries.slice(1).forEach(trigger => ScriptApp.deleteTrigger(trigger));
+}
+function stopRouteRetries_() {
+  ScriptApp.getProjectTriggers().forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'traiterJournees_') ScriptApp.deleteTrigger(trigger);
+  });
+}
+/** Traitement et relances temporaires, sans accès public aux fiches. */
 function traiterJournees_() {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(1000)) return;
@@ -170,16 +198,22 @@ function traiterJournees_() {
     while (folders.hasNext()) { const f = folders.next(); if (/^\d{4}-\d{2}-\d{2}$/.test(f.getName()) && f.getName() < today) days.push(f); }
     days.sort((a, b) => a.getName().localeCompare(b.getName()));
     const started = Date.now();
+    let needsRetry = false;
     for (const folder of days) {
-      if (Date.now() - started > 200000) break;
-      try { processDay_(privateFolder_(folder)); }
-      catch (_) { console.error('ROUTE_BATCH_FAILED: journée conservée, aucune donnée patient dans ce journal.'); }
+      if (Date.now() - started > 200000) { needsRetry = true; break; }
+      try { if (processDay_(privateFolder_(folder)) === true) needsRetry = true; }
+      catch (_) {
+        needsRetry = true;
+        console.error('ROUTE_BATCH_FAILED: journée conservée, aucune donnée patient dans ce journal.');
+      }
     }
     const props = PropertiesService.getScriptProperties();
     const all = props.getProperties();
     Object.keys(all).filter(k => k.startsWith('RECEIPT_')).forEach(k => {
       if (Date.now() - JSON.parse(all[k]).at > 3 * 86400000) props.deleteProperty(k);
     });
+    if (needsRetry) ensureRouteRetry_();
+    else stopRouteRetries_(); // Ne touche jamais au rendez-vous quotidien.
   } finally { lock.releaseLock(); }
 }
 function processDay_(folder) {
@@ -188,7 +222,7 @@ function processDay_(folder) {
   let state = manifestFile ? JSON.parse(manifestFile.getBlob().getDataAsString()) : null;
   if (!state) {
     const files = courseFiles_(folder);
-    if (!files.length) return;
+    if (!files.length) return false;
     const records = files.map(f => ({file: f, record: JSON.parse(f.getBlob().getDataAsString())}));
     records.forEach(r => {
       const c = r.record.course;
@@ -206,19 +240,19 @@ function processDay_(folder) {
   if (state.phase === 'sending') {
     state.phase = 'review'; save();
     console.error('ROUTE_SEND_UNCERTAIN: vérifier Envoyés avant de relancer la journée ' + day);
-    return;
+    return false;
   }
-  if (state.phase === 'review') return;
+  if (state.phase === 'review') return false;
   if (state.phase === 'sent') {
     state.sourceIds.forEach(id => removeFile_(id));
-    removeFile_(state.pdfId); removeFile_(manifestFile.getId()); return;
+    removeFile_(state.pdfId); removeFile_(manifestFile.getId()); return false;
   }
   if (state.phase !== 'prepared') throw new Error('État de lot inconnu.');
   const attachment = DriveApp.getFileById(state.pdfId).getBlob();
   // Revérifier le fichier sauvegardé à CHAQUE reprise avant de toucher aux sources.
   if (pdfHash_(attachment) !== state.pdfHash) throw new Error('Sauvegarde PDF modifiée : sources conservées.');
   state.sourceIds.forEach(id => removeFile_(id));
-  if (MailApp.getRemainingDailyQuota() < 1) return;
+  if (MailApp.getRemainingDailyQuota() < 1) return true;
   state.phase = 'sending'; save();
   try {
     MailApp.sendEmail({to: ROUTE.recipient, subject: 'Feuille de route - CS Oupeye - ' + day,
@@ -227,11 +261,12 @@ function processDay_(folder) {
   } catch (_) {
     state.phase = 'review'; save();
     console.error('ROUTE_SEND_UNCERTAIN: PDF conservé, vérifier Envoyés pour ' + day);
-    return;
+    return false;
   }
   // MailApp a terminé sans erreur : ce n’est PAS un accusé de réception destinataire.
   state.phase = 'sent'; state.sentAt = new Date().toISOString(); save();
   removeFile_(state.pdfId); removeFile_(manifestFile.getId());
+  return false;
 }
 function pdfHash_(blob) {
   const bytes = blob.getBytes();

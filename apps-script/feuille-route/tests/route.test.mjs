@@ -5,16 +5,20 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 const source=fs.readFileSync(new URL('../Code.gs',import.meta.url),'utf8');
 const sample={id:'11111111-1111-4111-8111-111111111111',identity:'Patient fictif',missionNumber:'60/26/295/0259',pickup:'domicile',destination:'hopital',hospital:'AR',photo:'',website:''};
-function harness({quota=10,sendFails=false,buildFails=false,manifestFails=false,sentStateFails=false,deleteFails=false,shared=false}={}){
+function harness({quota=10,sendFails=false,buildFails=false,manifestFails=false,sentStateFails=false,deleteFails=false,shared=false,busy=false}={}){
  const files=new Map(),events=[],mails=[],props=new Map();let next=1;
  function file(name,content){const id=String(next++),f={getId:()=>id,getName:()=>name,getBlob:()=>({getDataAsString:()=>content,getBytes:()=>[37,80,68,70,45]}),setContent:s=>{const state=JSON.parse(s);if(sentStateFails&&state.phase==='sent')throw Error('Interrupted after mail');content=s;events.push('state:'+state.phase);return f;}};files.set(id,f);return f;}
  function iterator(list){let i=0;return {hasNext:()=>i<list.length,next:()=>list[i++]};}
  const folder={getName:()=> '2026-11-01',getId:()=> 'folder',getSharingAccess:()=>shared?'ANYONE':'PRIVATE',getEditors:()=>[],getViewers:()=>[],getFiles:()=>iterator([...files.values()]),getFilesByName:n=>iterator([...files.values()].filter(f=>f.getName()===n)),createFile:(n,s)=>{if(n==='batch.json'&&manifestFails)throw Error('Manifest unavailable');events.push('create:'+n);return file(n,s);}};
+ const triggers=[];let triggerId=0;
+ const script={getProjectTriggers:()=>[...triggers],deleteTrigger:t=>{const index=triggers.findIndex(x=>x.getUniqueId()===t.getUniqueId());if(index>=0)triggers.splice(index,1);},newTrigger:handler=>{
+  const spec={handler};const builder={timeBased(){return this;},atHour(v){spec.hour=v;return this;},nearMinute(v){spec.minute=v;return this;},everyDays(v){spec.days=v;return this;},inTimezone(v){spec.timezone=v;return this;},everyMinutes(v){spec.minutes=v;return this;},create(){const id='trigger-'+(++triggerId);const t={spec,getHandlerFunction:()=>handler,getUniqueId:()=>id};triggers.push(t);return t;}};return builder;
+ }};
  let lock=false;
  const ctx={console:{log(){},error(){}},Date,JSON,Math,Error,Object,String,Array,
-  ContentService:{MimeType:{JSON:'json'},createTextOutput:value=>({setMimeType:()=>JSON.parse(value)})},HtmlService:{},MimeType:{PLAIN_TEXT:'text/plain',PDF:'application/pdf'},
+  ScriptApp:script,ContentService:{MimeType:{JSON:'json'},createTextOutput:value=>({setMimeType:()=>JSON.parse(value)})},HtmlService:{},MimeType:{PLAIN_TEXT:'text/plain',PDF:'application/pdf'},
   Session:{getEffectiveUser:()=>({getEmail:()=> 'contactoupeye@gmail.com'})},
-  LockService:{getScriptLock:()=>({tryLock:()=>{lock=true;return true;},releaseLock:()=>{lock=false;}})},
+  LockService:{getScriptLock:()=>({waitLock:()=>{lock=true;},tryLock:()=>{lock=!busy;return !busy;},releaseLock:()=>{lock=false;}})},
   PropertiesService:{getScriptProperties:()=>({getProperty:k=>props.get(k),setProperty:(k,v)=>props.set(k,v),getProperties:()=>Object.fromEntries(props),deleteProperty:k=>props.delete(k)})},
   Utilities:{base64Decode:s=>[...Buffer.from(s,'base64')].map(b=>b>127?b-256:b),base64EncodeWebSafe:b=>Buffer.from(b).toString('base64url'),DigestAlgorithm:{SHA_256:'sha256'},Charset:{UTF_8:'utf8'},computeDigest:(_,s)=>crypto.createHash('sha256').update(typeof s==='string'?s:Buffer.from(s)).digest(),formatDate:(d,zone,pattern)=>{const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(d).map(x=>[x.type,x.value]));if(pattern==='HH:mm:ss')return parts.hour+':'+parts.minute+':'+parts.second;if(pattern==='dd/MM/yyyy')return parts.day+'/'+parts.month+'/'+parts.year;return parts.year+'-'+parts.month+'-'+parts.day;}},
   DriveApp:{Access:{PRIVATE:'PRIVATE'},getFileById:id=>{if(!files.has(id))throw Error('Missing');return files.get(id);}},
@@ -25,7 +29,7 @@ function harness({quota=10,sendFails=false,buildFails=false,manifestFails=false,
  ctx.buildPdf_=(f,day,records)=>{if(buildFails)throw Error('Conversion failed');events.push('pdf-saved');return file('feuille-route-'+day+'.pdf','%PDF');};
  ctx.removeFile_=id=>{if(deleteFails)throw Error('Delete failed');events.push('delete:'+id);files.delete(id);};
  ctx.root_=()=>({});ctx.dayFolder_=()=>folder;
- return {ctx,realBuild,folder,files,events,mails,props,file,add:course=>file('course-'+course.id+'.json',JSON.stringify({day:'2026-11-01',receivedAt:'2026-11-01T12:00:00Z',course})),state:()=>{const f=[...files.values()].find(f=>f.getName()==='batch.json');return f?JSON.parse(f.getBlob().getDataAsString()):null;},locked:()=>lock};
+ return {ctx,realBuild,triggers,folder,files,events,mails,props,file,add:course=>file('course-'+course.id+'.json',JSON.stringify({day:'2026-11-01',receivedAt:'2026-11-01T12:00:00Z',course})),state:()=>{const f=[...files.values()].find(f=>f.getName()==='batch.json');return f?JSON.parse(f.getBlob().getDataAsString()):null;},locked:()=>lock};
 }
 test('photo or written identity accepted; absent patient exempt; conditional fields validated server-side',()=>{
  const h=harness();assert.equal(h.ctx.validateCourse_(sample).identity,'Patient fictif');
@@ -143,4 +147,49 @@ test('course number is mandatory and normalized on the server, preserving leadin
  assert.equal(h.ctx.validateCourse_({...sample,missionNumber:'00260000001'}).missionNumber,'00/26/000/0001');
  for(const missionNumber of ['', '123', '602629502590', 'AA60262950259'])assert.throws(()=>h.ctx.validateCourse_({...sample,missionNumber}));
  h.ctx.enregistrerCourse(sample);const stored=JSON.parse([...h.files.values()][0].getBlob().getDataAsString());assert.equal(stored.course.missionNumber,sample.missionNumber);
+});
+
+function scheduledDays(h,days){
+ h.ctx.routeDay_=()=> '2026-11-02';
+ h.ctx.root_=()=>({getFolders:()=>{let index=0;return {hasNext:()=>index<days.length,next:()=>days[index++]};}});
+}
+function daily(h){return h.ctx.ScriptApp.newTrigger('demarrerEnvoiNocturne_').timeBased().atHour(0).nearMinute(15).everyDays(1).inTimezone('Europe/Brussels').create();}
+const retryCount=h=>h.triggers.filter(t=>t.getHandlerFunction()==='traiterJournees_').length;
+test('installation migrates old five-minute triggers to one Belgian daily appointment and preserves existing data',()=>{
+ const h=harness();h.props.set('ROUTE_ROOT','existing-private-root');h.add(sample);scheduledDays(h,[]);
+ const unrelated=h.ctx.ScriptApp.newTrigger('otherFunction').timeBased().everyMinutes(10).create();
+ h.ctx.ScriptApp.newTrigger('traiterJournees_').timeBased().everyMinutes(5).create();daily(h);
+ h.ctx.installerFeuilleRoute_();h.ctx.installerFeuilleRoute_();
+ assert.equal(h.props.get('ROUTE_ROOT'),'existing-private-root');assert.equal(h.files.size,1);assert.ok(h.triggers.includes(unrelated));
+ const days=h.triggers.filter(t=>t.getHandlerFunction()==='demarrerEnvoiNocturne_');assert.equal(days.length,1);assert.deepEqual(days[0].spec,{handler:'demarrerEnvoiNocturne_',hour:0,minute:15,days:1,timezone:'Europe/Brussels'});assert.equal(retryCount(h),0);assert.equal(h.mails.length,0);
+});
+test('failed daily-trigger creation leaves the previous working trigger intact',()=>{
+ const h=harness();h.props.set('ROUTE_ROOT','existing');scheduledDays(h,[]);const old=h.ctx.ScriptApp.newTrigger('traiterJournees_').timeBased().everyMinutes(5).create();const create=h.ctx.ScriptApp.newTrigger;
+ h.ctx.ScriptApp.newTrigger=fn=>{if(fn==='demarrerEnvoiNocturne_')throw Error('Quota');return create(fn);};
+ assert.throws(()=>h.ctx.installerFeuilleRoute_());assert.ok(h.triggers.includes(old));assert.equal(h.locked(),false);
+});
+test('nightly success removes temporary retries and keeps the next daily appointment',()=>{
+ const h=harness();h.add(sample);scheduledDays(h,[h.folder]);const nextDay=daily(h);
+ h.ctx.demarrerEnvoiNocturne_();assert.equal(h.mails.length,1);assert.equal(h.files.size,0);assert.equal(retryCount(h),0);assert.ok(h.triggers.includes(nextDay));
+ h.ctx.demarrerEnvoiNocturne_();assert.equal(h.mails.length,1);assert.equal(retryCount(h),0);
+});
+test('quota exhaustion keeps exactly one five-minute retry, which stops after recovery',()=>{
+ const h=harness({quota:0});h.add(sample);scheduledDays(h,[h.folder]);daily(h);
+ h.ctx.demarrerEnvoiNocturne_();h.ctx.demarrerEnvoiNocturne_();assert.equal(h.state().phase,'prepared');assert.equal(retryCount(h),1);assert.equal(h.triggers.find(t=>t.getHandlerFunction()==='traiterJournees_').spec.minutes,5);
+ h.ctx.MailApp.getRemainingDailyQuota=()=>10;h.ctx.traiterJournees_();assert.equal(h.mails.length,1);assert.equal(retryCount(h),0);assert.equal(h.triggers.length,1);
+});
+test('generation error arms one retry without losing records; recovery stops it',()=>{
+ const h=harness({buildFails:true});h.add(sample);scheduledDays(h,[h.folder]);daily(h);h.ctx.demarrerEnvoiNocturne_();h.ctx.demarrerEnvoiNocturne_();assert.equal(retryCount(h),1);assert.equal(h.files.size,1);assert.equal(h.mails.length,0);
+ h.ctx.buildPdf_=(folder,day)=>h.file('feuille-route-'+day+'.pdf','%PDF');h.ctx.traiterJournees_();assert.equal(h.mails.length,1);assert.equal(retryCount(h),0);
+});
+test('busy worker leaves a retry armed; a later empty pass stops it',()=>{
+ const h=harness({busy:true});scheduledDays(h,[]);daily(h);h.ctx.demarrerEnvoiNocturne_();assert.equal(retryCount(h),1);
+ h.ctx.LockService={getScriptLock:()=>({tryLock:()=>true,releaseLock(){}})};h.ctx.traiterJournees_();assert.equal(retryCount(h),0);assert.equal(h.triggers.length,1);
+});
+test('uncertain delivery keeps the PDF and stops automatic resend retries',()=>{
+ const h=harness({sendFails:true});h.add(sample);scheduledDays(h,[h.folder]);daily(h);h.ctx.demarrerEnvoiNocturne_();assert.equal(h.state().phase,'review');assert.ok(h.files.has(h.state().pdfId));assert.equal(retryCount(h),0);assert.equal(h.triggers.length,1);
+});
+test('time budget exhaustion keeps a retry for the unprocessed days',()=>{
+ const h=harness();scheduledDays(h,[h.folder]);daily(h);let calls=0;h.ctx.Date=class extends Date{static now(){return calls++===0?0:200001;}};let processed=false;h.ctx.processDay_=()=>{processed=true;};
+ h.ctx.demarrerEnvoiNocturne_();assert.equal(processed,false);assert.equal(retryCount(h),1);
 });

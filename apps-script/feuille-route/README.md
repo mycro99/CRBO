@@ -2,13 +2,15 @@
 
 Ce module est indépendant de `apps-script/Code.gs` : **ne pas remplacer le script des checklists**. Le formulaire est relié depuis les accès rapides de CRBO via `feuille-route.html`. Le QR code stable pointe vers le formulaire hébergé directement dans CRBO. L'affiche imprimable est `feuille-route-qr.html` et l'image `assets/qr-feuille-route.png`. Aucune donnée patient ne passe dans les URL ou le code du dépôt. Le formulaire ne stocke rien dans le navigateur : les données sont transmises en POST anonyme à Google, sans cookies Google. Un reçu technique distinct confirme la sauvegarde avant d’effacer les champs.
 
+**Projet déjà installé avec l’ancien déclencheur toutes les cinq minutes :** suivre la section « Planification quotidienne et relances temporaires » en fin de page. Cette migration nécessite exceptionnellement de réexécuter `installerFeuilleRoute` après remplacement du code.
+
 ## Installation (contactoupeye@gmail.com)
 
 1. Créer un nouveau projet sur https://script.google.com/ et le nommer « CRBO - Feuilles de route ».
 2. Remplacer son fichier `Code.gs` par le fichier de ce dossier.
 3. Ajouter un fichier **HTML**, nommé `Form`, et y coller `Form.html`.
 4. Paramètres du projet : activer l'affichage de `appsscript.json` ; remplacer son contenu par celui fourni. Fuseau : Europe/Brussels.
-5. Enregistrer, sélectionner `installerFeuilleRoute` (sans underscore final) dans la barre Exécuter et l'exécuter une fois. Autoriser les accès du nouveau projet. Cela crée un dossier Drive privé et un déclencheur toutes les cinq minutes. **Ne pas partager ce dossier ni ses sous-dossiers.**
+5. Enregistrer, sélectionner `installerFeuilleRoute` (sans underscore final) dans la barre Exécuter et l'exécuter une fois. Autoriser les accès du nouveau projet. Cela crée (ou réutilise) le dossier Drive privé et programme un lancement quotidien après minuit. Une relance toutes les cinq minutes n’existe que si un traitement doit être retenté. **Ne pas partager ce dossier ni ses sous-dossiers.**
 6. Déployer > Nouveau déploiement > Application Web : exécuter en tant que **Moi**, accès **Tout le monde**. Ce choix donne uniquement accès au formulaire et à l'enregistrement, aucune API ne lit les fiches. La fonction publique d’installation vérifie l’identité active du propriétaire avant toute action. Les fonctions administratives finissant par `_` ne sont pas appelables depuis `google.script.run`.
 7. Copier l'URL de l'application Web terminant par `/exec` et la communiquer pour l'intégration dans CRBO et le QR code.
 8. Faire d'abord un essai avec une étiquette et une identité **fictives**. Vérifier l'enregistrement dans le Drive privé, l'envoi après changement de journée, le PDF (une course par page, étiquette lisible) et le nettoyage.
@@ -22,7 +24,7 @@ Les autorisations Drive/Documents sont nécessaires aux sauvegardes et au PDF. E
 - Choix domicile/autre adresse et les neuf hôpitaux/cinq motifs demandés.
 - Date et heure d'enregistrement attribuées côté serveur. La journée correspond à **l'enregistrement**, pas à une date d'intervention saisie ; une course encodée après minuit appartient à la nouvelle journée.
 - Un enregistrement est un fichier privé indépendant. Une référence stable évite les doublons lors d'une nouvelle tentative après perte de confirmation. Les reçus techniques sans identité/photo sont conservés trois jours.
-- Le déclencheur, même sans téléphone connecté, traite les journées antérieures à la date actuelle en Belgique. Il n'efface jamais la journée en cours.
+- Le lancement quotidien `demarrerEnvoiNocturne_`, même sans téléphone connecté, traite les journées antérieures à la date actuelle en Belgique. Il n’efface jamais la journée en cours. Les relances `traiterJournees_` toutes les cinq minutes s’arrêtent lorsque les traitements sont terminés.
 - Pour chaque journée non vide, génération du PDF complet puis sauvegarde dans son propre dossier daté, puis manifeste de traitement. **Aucune fiche n'est effacée avant ces deux sauvegardes.**
 - Les fiches peuvent ensuite être supprimées, puisque le PDF privé les remplace. Aucun PDF d'une autre journée ne l'écrase.
 - Si un quota, une conversion ou un nettoyage empêche l'envoi, les sources ou le PDF restent conservés et le déclencheur réessaie.
@@ -41,7 +43,7 @@ Un stockage court ne rend pas une étiquette patient anonyme. Le stockage est pr
 Dans Drive, un dossier de journée contenant `batch.json` avec `phase: "review"` et son PDF doit être conservé. Consulter les exécutions du script : le journal `ROUTE_SEND_UNCERTAIN` n'indique que la date.
 
 - Vérifier les messages envoyés et, si nécessaire, la réception auprès du destinataire.
-- Si le PDF a bien été envoyé, modifier **uniquement** `phase` en `"sent"` dans `batch.json`. Le prochain passage nettoie sans renvoyer.
+- Si le PDF a bien été envoyé, modifier **uniquement** `phase` en `"sent"` dans `batch.json`. Le prochain lancement nocturne nettoie sans renvoyer. Pour reprendre plus tôt, exécuter `installerFeuilleRoute` une fois depuis l’éditeur avec le compte propriétaire : il réutilise le dossier et vérifie les journées passées.
 - S'il n'a pas été envoyé, modifier **uniquement** `phase` en `"prepared"`. Le prochain passage retente l'envoi avec le PDF conservé.
 - Ne jamais supprimer un dossier en attente ou remplacer un PDF en attente par celui d'un autre jour.
 
@@ -62,7 +64,7 @@ Après modification du script, mettre à jour le déploiement existant (Modifier
 Le formulaire est maintenant affiché directement par GitHub Pages. Le navigateur ne navigue plus sur Google pour l’ouvrir. Pour activer les enregistrements depuis ce formulaire :
 
 1. Remplacer **Code.gs** dans le projet **Feuilles de route** par le fichier actualisé de ce dossier. Les fichiers Form.html et appsscript.json déjà installés peuvent rester en place.
-2. Enregistrer. **Ne pas réexécuter l’installation** : le dossier privé et le déclencheur sont conservés.
+2. Enregistrer. **Pour une correction du transport seule, inutile de réexécuter l’installation**. Pour migrer la planification, suivre la section dédiée ci-dessous.
 3. Déployer > Gérer les déploiements > sélectionner l’application existante > crayon > **Nouvelle version** > Déployer. Garder Moi / Tout le monde et la même URL /exec.
 4. Recharger https://mycro99.github.io/CRBO/feuille-route.html et faire un essai fictif en navigation normale.
 
@@ -78,4 +80,17 @@ Cette évolution nécessite de remplacer **Code.gs** et publier une **nouvelle v
 
 Une course par page A4, avec cadre centré, bandeau CS Oupeye, numéro de course en gros caractères gras, et trois blocs séparés : Patient / Prise en charge / Destination. La photo reste dans le bloc patient avec ses proportions conservées. La date et l’heure affichées sont celles de l’enregistrement initial côté serveur, avec secondes et fuseau Europe/Brussels (heure d’été/hiver), pas celles de l’envoi du PDF.
 
-Pour appliquer cette présentation : remplacer Code.gs, enregistrer, puis publier une nouvelle version du déploiement existant. Le déclencheur existant reste en place ; ne pas relancer l’installation. La présentation est appliquée lors des prochaines générations. Un PDF déjà envoyé ou déjà sauvegardé en attente n’est ni écrasé, ni régénéré automatiquement. Le rendu Google Docs final doit être contrôlé au prochain essai : les tests locaux vérifient la structure et les paramètres de style sans exporter réellement depuis Google.
+Pour appliquer cette présentation : remplacer Code.gs, enregistrer, puis publier une nouvelle version du déploiement existant. Un changement de présentation seul conserve le déclencheur existant. La migration de planification décrite ci-dessous nécessite, elle, une nouvelle exécution de l’installation. La présentation est appliquée lors des prochaines générations. Un PDF déjà envoyé ou déjà sauvegardé en attente n’est ni écrasé, ni régénéré automatiquement. Le rendu Google Docs final doit être contrôlé au prochain essai : les tests locaux vérifient la structure et les paramètres de style sans exporter réellement depuis Google.
+
+## Planification quotidienne et relances temporaires
+
+Pour remplacer l’ancien déclencheur permanent de cinq minutes :
+
+1. Remplacer Code.gs par la version actuelle et enregistrer.
+2. **Cette fois, exécuter `installerFeuilleRoute` une fois** : cette opération migre la planification, réutilise le dossier privé et conserve ses fichiers. Elle peut reprendre immédiatement une journée passée encore en attente.
+3. Publier une nouvelle version du déploiement existant avec la même URL.
+4. Dans Déclencheurs, vérifier `demarrerEnvoiNocturne_` : quotidien, vers **00 h 15, Europe/Brussels**. Google donne une heure approximative (nearMinute : ±15 min), donc pas une garantie à la minute près.
+
+Le déclencheur quotidien est créé avant la suppression de l’ancien. Chaque nuit, il arme d’abord une reprise temporaire, puis lance immédiatement le traitement. En cas de quota épuisé, d’erreur de génération/nettoyage, de verrou occupé ou de traitement interrompu, `traiterJournees_` reste programmé toutes les cinq minutes. Dès que le travail est terminé, ces reprises sont supprimées et seul le rendez-vous quotidien subsiste. Un jour sans course n’envoie rien et retire aussi la reprise temporaire. Les réinstallations successives ne multiplient pas les déclencheurs du module et ne touchent pas aux déclencheurs d’autres fonctions.
+
+Un résultat d’envoi incertain reste en état `review` : le PDF est conservé et le renvoi automatique est arrêté pour éviter les doublons. La vérification décrite plus haut reste nécessaire. Le lancement quotidien reviendra la nuit suivante pour les autres journées.
