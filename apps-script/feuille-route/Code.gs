@@ -16,7 +16,7 @@ const OUTCOMES = Object.freeze({
 function doGet(event) {
   const params = event && event.parameter || {};
   if (params.service === 'route-api') {
-    try { root_(); return routeJson_({ok: true, routeApi: 1}); }
+    try { root_(); return routeJson_({ok: true, routeApi: 2}); }
     catch (_) { return routeJson_({ok: false, error: 'Service indisponible.'}); }
   }
   if (params.receipt !== undefined) {
@@ -91,6 +91,10 @@ function validateCourse_(p) {
     return s;
   };
   const identity = text(p.identity, 300);
+  const rawNumber = String(p.missionNumber || '').trim();
+  const digits = rawNumber.replace(/\D/g, '');
+  if (!/^[\d /.-]+$/.test(rawNumber) || digits.length !== 11) throw new Error('Indiquez les 11 chiffres du numéro de course 112.');
+  const missionNumber = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4, 7) + '/' + digits.slice(7);
   if (!['domicile', 'autre'].includes(p.pickup)) throw new Error('Choisissez le lieu de prise en charge.');
   const address = p.pickup === 'autre' ? text(p.address, 240) : '';
   if (p.pickup === 'autre' && !address) throw new Error('Adresse de prise en charge manquante.');
@@ -106,7 +110,7 @@ function validateCourse_(p) {
     if (bytes.length > ROUTE.maxPhotoBytes || bytes.length < 5 || (bytes[0] & 255) !== 255 || (bytes[1] & 255) !== 216 || (bytes[2] & 255) !== 255 || (bytes[bytes.length - 2] & 255) !== 255 || (bytes[bytes.length - 1] & 255) !== 217) throw new Error('Une photo JPEG valide est nécessaire.');
   }
   if (!photo && !identity && outcome !== 'absent') throw new Error('Ajoutez la photo de l’étiquette ou l’identité du patient.');
-  return {id: p.id, identity: identity, pickup: p.pickup, address: address,
+  return {id: p.id, missionNumber: missionNumber, identity: identity, pickup: p.pickup, address: address,
     destination: p.destination, hospital: hospital, outcome: outcome, photo: photo};
 }
 function routeDay_(now) { return Utilities.formatDate(now, ROUTE.timezone, 'yyyy-MM-dd'); }
@@ -256,6 +260,7 @@ function buildPdf_(folder, day, records) {
       const value = record.course;
       line('CS OUPEYE - FEUILLE DE ROUTE', 17, true);
       line('Journée : ' + day + '   |   Course ' + (index + 1) + '/' + records.length);
+      line('N° de course 112 : ' + (value.missionNumber || 'Non renseigné (ancienne fiche)'));
       line('Enregistrement : ' + Utilities.formatDate(new Date(record.receivedAt), ROUTE.timezone, 'dd/MM/yyyy HH:mm'));
       line('Référence : ' + value.id, 8);
       line('Identité du patient : ' + (value.identity || (value.photo ? 'Voir étiquette ci-dessous' : 'Pas de patient')));

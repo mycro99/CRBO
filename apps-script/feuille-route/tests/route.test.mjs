@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 const source=fs.readFileSync(new URL('../Code.gs',import.meta.url),'utf8');
-const sample={id:'11111111-1111-4111-8111-111111111111',identity:'Patient fictif',pickup:'domicile',destination:'hopital',hospital:'AR',photo:'',website:''};
+const sample={id:'11111111-1111-4111-8111-111111111111',identity:'Patient fictif',missionNumber:'60/26/295/0259',pickup:'domicile',destination:'hopital',hospital:'AR',photo:'',website:''};
 function harness({quota=10,sendFails=false,buildFails=false,manifestFails=false,sentStateFails=false,deleteFails=false,shared=false}={}){
  const files=new Map(),events=[],mails=[],props=new Map();let next=1;
  function file(name,content){const id=String(next++),f={getId:()=>id,getName:()=>name,getBlob:()=>({getDataAsString:()=>content,getBytes:()=>[37,80,68,70,45]}),setContent:s=>{const state=JSON.parse(s);if(sentStateFails&&state.phase==='sent')throw Error('Interrupted after mail');content=s;events.push('state:'+state.phase);return f;}};files.set(id,f);return f;}
@@ -81,14 +81,16 @@ test('PDF build uses document text formatting, scales label and places one expli
  const text={setFontSize(){return this;},setBold(){return this;}};
  const paragraph={setSpacingBefore(){return this;},setSpacingAfter(){return this;},setLineSpacing(){return this;},editAsText:()=>text};
  const image={getWidth:()=>1800,getHeight:()=>900,setWidth(w){assert.ok(w<=490);return this;},setHeight(height){assert.ok(height<=280);return this;}};
- const body={clear(){},setPageWidth(){return this;},setPageHeight(){return this;},setMarginTop(){return this;},setMarginBottom(){return this;},setMarginLeft(){return this;},setMarginRight(){return this;},setAttributes(){},appendParagraph:()=>paragraph,appendPageBreak:()=>{breaks++;},appendImage:()=>{images++;return image;}};
+ const lines=[];
+ const body={clear(){},setPageWidth(){return this;},setPageHeight(){return this;},setMarginTop(){return this;},setMarginBottom(){return this;},setMarginLeft(){return this;},setMarginRight(){return this;},setAttributes(){},appendParagraph:value=>{lines.push(value);return paragraph;},appendPageBreak:()=>{breaks++;},appendImage:()=>{images++;return image;}};
  h.ctx.DocumentApp={Attribute:{FONT_FAMILY:'font',FONT_SIZE:'size'},create:()=>({getId:()=> 'doc',getBody:()=>body,saveAndClose:()=>{closed=true;}})};
  h.ctx.Utilities.newBlob=()=>({});
  h.ctx.DriveApp.getFileById=()=>({getId:()=> 'doc',moveTo(){},getAs:()=>{assert.equal(closed,true);return {setName(){return this;},getBytes:()=>[37,80,68,70,45]};}});
  h.ctx.removeFile_=()=>{removed=true;};
  const folder={getFilesByName:()=>({hasNext:()=>false}),createFile:()=>{saved=true;return {getId:()=> 'pdf'};}};
  const records=Array.from({length:20},()=>({receivedAt:'2026-11-01T12:00:00Z',course:{...sample,photo:Buffer.from([255,216,255,0,255,217]).toString('base64')}}));
- h.ctx.buildPdf_(folder,'2026-11-01',records);assert.equal(breaks,19);assert.equal(images,20);assert.equal(saved,true);assert.equal(removed,true);
+ delete records[0].course.missionNumber;
+ h.ctx.buildPdf_(folder,'2026-11-01',records);assert.ok(lines.includes('N° de course 112 : Non renseigné (ancienne fiche)'));assert.ok(lines.includes('N° de course 112 : 60/26/295/0259'));assert.equal(breaks,19);assert.equal(images,20);assert.equal(saved,true);assert.equal(removed,true);
 });
 test('scheduler closes only prior Belgian dates and never the active day',()=>{
  const h=harness();h.ctx.routeDay_=()=> '2026-11-02';const folders=['2026-11-01','2026-11-02','2026-11-03','other'].map(name=>({getName:()=>name}));let i=0,processed=[];
@@ -114,5 +116,12 @@ test('anonymous POST plus technical receipt confirms storage without exposing pa
  const receipt=h.ctx.doGet({parameter:{receipt:sample.id}});assert.equal(receipt.stored,true);assert.equal(receipt.receipt,sample.id);assert.deepEqual(Object.keys(receipt).sort(),['day','ok','receipt','stored']);
  assert.equal(h.ctx.doGet({parameter:{receipt:'22222222-2222-4222-8222-222222222222'}}).stored,false);
  assert.equal(h.ctx.doPost({postData:{contents:'not json'}}).ok,false);assert.equal(h.ctx.doPost({postData:{contents:'x'.repeat(900001)}}).ok,false);
- assert.equal(h.ctx.doGet({parameter:{service:'route-api'}}).routeApi,1);
+ assert.equal(h.ctx.doGet({parameter:{service:'route-api'}}).routeApi,2);
+});
+
+test('course number is mandatory and normalized on the server, preserving leading zeros',()=>{
+ const h=harness();assert.equal(h.ctx.validateCourse_({...sample,missionNumber:'60262950259'}).missionNumber,'60/26/295/0259');
+ assert.equal(h.ctx.validateCourse_({...sample,missionNumber:'00260000001'}).missionNumber,'00/26/000/0001');
+ for(const missionNumber of ['', '123', '602629502590', 'AA60262950259'])assert.throws(()=>h.ctx.validateCourse_({...sample,missionNumber}));
+ h.ctx.enregistrerCourse(sample);const stored=JSON.parse([...h.files.values()][0].getBlob().getDataAsString());assert.equal(stored.course.missionNumber,sample.missionNumber);
 });

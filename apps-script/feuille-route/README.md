@@ -67,3 +67,9 @@ Le formulaire est maintenant affiché directement par GitHub Pages. Le navigateu
 4. Recharger https://mycro99.github.io/CRBO/feuille-route.html et faire un essai fictif en navigation normale.
 
 Le POST utilise `credentials: omit` et une réponse opaque ; une réponse opaque n’est jamais considérée comme un succès. Un GET distinct avec l’identifiant aléatoire de la soumission doit confirmer `stored: true` avant d’annoncer l’enregistrement. Le reçu n’expose ni photo, ni nom, ni adresse, ni empreinte du contenu. Les erreurs d’enregistrement conservent les réponses dans la page. Le QR code reste identique.
+
+## Numéro de course 112
+
+Champ obligatoire de 11 chiffres, format `60/26/295/0259` (2/2/3/4). Les séparateurs se placent sans interrompre la saisie et un numéro collé avec ou sans `/` est accepté. Le serveur normalise et conserve ce numéro, puis l’affiche sur la page PDF correspondante. Les fiches déjà enregistrées sans numéro restent traitées normalement, avec « Non renseigné (ancienne fiche) » dans leur PDF.
+
+Cette évolution nécessite de remplacer **Code.gs** et publier une **nouvelle version du déploiement existant**, avec la même URL. Inutile de réinstaller le déclencheur. Le formulaire vérifie `routeApi: 2` avant de permettre un enregistrement : un ancien serveur ne doit pas ignorer silencieusement le nouveau champ. Le fichier Form.html hébergé par Google n’est pas nécessaire à l’usage du formulaire CRBO.

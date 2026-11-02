@@ -8,7 +8,7 @@ async function status(params){
 }
 export async function checkRouteService(){
   const result=await status({service:'route-api'});
-  if(!result.ok||result.routeApi!==1)throw new Error('Service indisponible.');
+  if(!result.ok||result.routeApi!==2)throw new Error('Service indisponible.');
 }
 export async function sendCourse(payload){
   if(!/^[a-f0-9-]{36}$/i.test(payload.id||''))throw new Error('Référence invalide.');

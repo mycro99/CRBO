@@ -13,7 +13,7 @@ test('form is hosted on CRBO, has no Google navigation and does not persist pati
  new vm.Script(html.match(/<script type="module">([\s\S]*?)<\/script>/)[1].replace(/^import .*;$/m,''));
 });
 test('capability request is anonymous and rejects old HTML deployments',async()=>{
- await withFetch(async(url,opt)=>{assert.equal(opt.credentials,'omit');assert.equal(new URL(url).searchParams.get('service'),'route-api');return {ok:true,json:async()=>({ok:true,routeApi:1})};},()=>api.checkRouteService());
+ await withFetch(async(url,opt)=>{assert.equal(opt.credentials,'omit');assert.equal(new URL(url).searchParams.get('service'),'route-api');return {ok:true,json:async()=>({ok:true,routeApi:2})};},()=>api.checkRouteService());
  await withFetch(async()=>({ok:true,json:async()=>{throw Error('HTML');}}),()=>assert.rejects(api.checkRouteService()));
 });
 test('opaque POST is followed by a matching receipt; GET never includes patient fields',async()=>{
@@ -24,4 +24,8 @@ test('network interruption after POST still recovers an authoritative stored rec
 });
 test('opaque result or mismatched receipt never shows success',async()=>{
  await withFetch(async(url,opt)=>opt.method==='POST'?{type:'opaque'}:{ok:true,json:async()=>({ok:true,stored:true,receipt:'another-id'})},()=>assert.rejects(api.sendCourse(payload),/confirmation/));
+});
+
+test('an old server is rejected so it cannot silently discard the course number',async()=>{
+ await withFetch(async()=>({ok:true,json:async()=>({ok:true,routeApi:1})}),()=>assert.rejects(api.checkRouteService()));
 });
