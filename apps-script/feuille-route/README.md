@@ -1,6 +1,6 @@
 # Feuille de route CS Oupeye - module à activer
 
-Ce module est indépendant de `apps-script/Code.gs` : **ne pas remplacer le script des checklists**. Aucun formulaire patient n'est encore relié à l'accueil de CRBO. Il reste à installer ce nouveau projet et fournir son URL `/exec` pour l'ajout du lien et du QR code.
+Ce module est indépendant de `apps-script/Code.gs` : **ne pas remplacer le script des checklists**. Le formulaire est relié depuis les accès rapides de CRBO via `feuille-route.html`. Le QR code stable pointe vers cette page de redirection. L'affiche imprimable est `feuille-route-qr.html` et l'image `assets/qr-feuille-route.png`. Aucune donnée patient ne passe dans les URL ou le code du dépôt.
 
 ## Installation (contactoupeye@gmail.com)
 
@@ -50,3 +50,9 @@ Dans Drive, un dossier de journée contenant `batch.json` avec `phase: "review"`
 `node --test apps-script/feuille-route/tests/route.test.mjs`
 
 Le rendu Google Docs/PDF, les autorisations Google et le déclencheur réel doivent encore être vérifiés sur le nouveau déploiement avec des données fictives. Les tests simulés ne remplacent pas cet essai.
+
+## Application Web reliée
+
+https://script.google.com/macros/s/AKfycbyTKz-6nf540Fgd87UfD4bADYcy1Qk5gDYWDvE6pcytlPVgDGqe5A8RYjaeV19NRfSvSA/exec
+
+Après modification du script, mettre à jour le déploiement existant (Modifier > Nouvelle version) pour conserver cette URL.
