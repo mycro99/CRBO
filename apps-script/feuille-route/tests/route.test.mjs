@@ -16,7 +16,7 @@ function harness({quota=10,sendFails=false,buildFails=false,manifestFails=false,
   Session:{getEffectiveUser:()=>({getEmail:()=> 'contactoupeye@gmail.com'})},
   LockService:{getScriptLock:()=>({tryLock:()=>{lock=true;return true;},releaseLock:()=>{lock=false;}})},
   PropertiesService:{getScriptProperties:()=>({getProperty:k=>props.get(k),setProperty:(k,v)=>props.set(k,v),getProperties:()=>Object.fromEntries(props),deleteProperty:k=>props.delete(k)})},
-  Utilities:{base64Decode:s=>[...Buffer.from(s,'base64')].map(b=>b>127?b-256:b),base64EncodeWebSafe:b=>Buffer.from(b).toString('base64url'),DigestAlgorithm:{SHA_256:'sha256'},Charset:{UTF_8:'utf8'},computeDigest:(_,s)=>crypto.createHash('sha256').update(typeof s==='string'?s:Buffer.from(s)).digest(),formatDate:(d,zone)=>new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(d)},
+  Utilities:{base64Decode:s=>[...Buffer.from(s,'base64')].map(b=>b>127?b-256:b),base64EncodeWebSafe:b=>Buffer.from(b).toString('base64url'),DigestAlgorithm:{SHA_256:'sha256'},Charset:{UTF_8:'utf8'},computeDigest:(_,s)=>crypto.createHash('sha256').update(typeof s==='string'?s:Buffer.from(s)).digest(),formatDate:(d,zone,pattern)=>{const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(d).map(x=>[x.type,x.value]));if(pattern==='HH:mm:ss')return parts.hour+':'+parts.minute+':'+parts.second;if(pattern==='dd/MM/yyyy')return parts.day+'/'+parts.month+'/'+parts.year;return parts.year+'-'+parts.month+'-'+parts.day;}},
   DriveApp:{Access:{PRIVATE:'PRIVATE'},getFileById:id=>{if(!files.has(id))throw Error('Missing');return files.get(id);}},
   MailApp:{getRemainingDailyQuota:()=>quota,sendEmail:mail=>{events.push('send');if(sendFails)throw Error('Unknown transport result');mails.push(mail);}},
  };
@@ -76,21 +76,40 @@ test('pending receipt recovers an already persisted record after a lost acknowle
  const h=harness();h.ctx.enregistrerCourse(sample);const key='RECEIPT_'+sample.id,receipt=JSON.parse(h.props.get(key));receipt.saved=false;h.props.set(key,JSON.stringify(receipt));
  const result=h.ctx.enregistrerCourse(sample);assert.equal(result.day,receipt.day);assert.equal(h.files.size,1);assert.equal(JSON.parse(h.props.get(key)).saved,true);
 });
-test('PDF build uses document text formatting, scales label and places one explicit break between records',()=>{
+test('PDF creates one framed card per course, separate blocks, bold number and Belgian timestamp',()=>{
  const h=harness();h.ctx.buildPdf_=h.realBuild;let breaks=0,images=0,closed=false,removed=false,saved=false;
- const text={setFontSize(){return this;},setBold(){return this;}};
- const paragraph={setSpacingBefore(){return this;},setSpacingAfter(){return this;},setLineSpacing(){return this;},editAsText:()=>text};
- const image={getWidth:()=>1800,getHeight:()=>900,setWidth(w){assert.ok(w<=490);return this;},setHeight(height){assert.ok(height<=280);return this;}};
- const lines=[];
- const body={clear(){},setPageWidth(){return this;},setPageHeight(){return this;},setMarginTop(){return this;},setMarginBottom(){return this;},setMarginLeft(){return this;},setMarginRight(){return this;},setAttributes(){},appendParagraph:value=>{lines.push(value);return paragraph;},appendPageBreak:()=>{breaks++;},appendImage:()=>{images++;return image;}};
- h.ctx.DocumentApp={Attribute:{FONT_FAMILY:'font',FONT_SIZE:'size'},create:()=>({getId:()=> 'doc',getBody:()=>body,saveAndClose:()=>{closed=true;}})};
+ const paragraphs=[],tables=[];
+ const image={getWidth:()=>1800,getHeight:()=>900,setWidth(w){assert.ok(w<=407);return this;},setHeight(height){assert.ok(height<=280);return this;}};
+ function paragraph(value){
+  const style={text:value};paragraphs.push(style);
+  const text={setFontFamily(v){style.font=v;return this;},setFontSize(v){style.size=v;return this;},setBold(v){style.bold=v;return this;},setForegroundColor(v){style.color=v;return this;}};
+  const p={setSpacingBefore(){return this;},setSpacingAfter(){return this;},setLineSpacing(){return this;},setAlignment(v){style.align=v;return this;},editAsText:()=>text,appendInlineImage(){images++;return image;},asParagraph(){return this;}};return p;
+ }
+ function table(rows){
+  const cells=rows.map(row=>{const first=paragraph(row[0]);return {setBackgroundColor(){return this;},setPaddingTop(){return this;},setPaddingBottom(){return this;},setPaddingLeft(){return this;},setPaddingRight(){return this;},getChild:()=>first,appendParagraph:paragraph};});
+  const t={setColumnWidth(index,w){assert.equal(w,435);return this;},setBorderColor(){return this;},setBorderWidth(){return this;},getRow:i=>({getCell:()=>cells[i]})};tables.push(t);return t;
+ }
+ const body={clear(){},setPageWidth(){return this;},setPageHeight(){return this;},setMarginTop(){return this;},setMarginBottom(){return this;},setMarginLeft(v){assert.equal(v,80);return this;},setMarginRight(v){assert.equal(v,80);return this;},setAttributes(){},appendParagraph:paragraph,appendTable:table,appendPageBreak:()=>{breaks++;}};
+ h.ctx.DocumentApp={Attribute:{FONT_FAMILY:'font',FONT_SIZE:'size'},HorizontalAlignment:{CENTER:'center',LEFT:'left'},create:()=>({getId:()=> 'doc',getBody:()=>body,saveAndClose:()=>{closed=true;}})};
  h.ctx.Utilities.newBlob=()=>({});
  h.ctx.DriveApp.getFileById=()=>({getId:()=> 'doc',moveTo(){},getAs:()=>{assert.equal(closed,true);return {setName(){return this;},getBytes:()=>[37,80,68,70,45]};}});
  h.ctx.removeFile_=()=>{removed=true;};
  const folder={getFilesByName:()=>({hasNext:()=>false}),createFile:()=>{saved=true;return {getId:()=> 'pdf'};}};
  const records=Array.from({length:20},()=>({receivedAt:'2026-11-01T12:00:00Z',course:{...sample,photo:Buffer.from([255,216,255,0,255,217]).toString('base64')}}));
  delete records[0].course.missionNumber;
- h.ctx.buildPdf_(folder,'2026-11-01',records);assert.ok(lines.includes('N° de course 112 : Non renseigné (ancienne fiche)'));assert.ok(lines.includes('N° de course 112 : 60/26/295/0259'));assert.equal(breaks,19);assert.equal(images,20);assert.equal(saved,true);assert.equal(removed,true);
+ h.ctx.buildPdf_(folder,'2026-11-01',records);
+ assert.ok(paragraphs.some(p=>p.text==='Non renseigné (ancienne fiche)'));
+ assert.ok(paragraphs.some(p=>p.text==='60/26/295/0259'&&p.bold===true&&p.size===23&&p.align==='center'));
+ assert.ok(paragraphs.some(p=>p.text==='Enregistrée le 01/11/2026 à 13:00:00'));
+ for(const label of ['PATIENT','PRISE EN CHARGE','DESTINATION'])assert.equal(paragraphs.filter(p=>p.text===label&&p.bold).length,20);
+ assert.equal(tables.length,20);assert.equal(breaks,19);assert.equal(images,20);assert.equal(saved,true);assert.equal(removed,true);
+});
+test('card presentation keeps address, outcome and the original receivedAt across summer/winter time',()=>{
+ const h=harness();
+ const record={receivedAt:'2026-07-01T22:05:06Z',course:{...sample,pickup:'autre',address:'Adresse fictive',destination:'sans_prise_en_charge',outcome:'refus',photo:''}};
+ const card=h.ctx.routeCard_(record,0,1,'2026-07-02');const lines=card.rows.flatMap(r=>r.lines).map(l=>l.text);
+ assert.ok(lines.includes('Enregistrée le 02/07/2026 à 00:05:06'));assert.ok(lines.includes('Adresse fictive'));assert.ok(lines.includes('Refus'));
+ assert.ok(lines.includes('Journée du 02/07/2026 · Course 1 / 1'));assert.equal(card.rows[2].photo,'');
 });
 test('scheduler closes only prior Belgian dates and never the active day',()=>{
  const h=harness();h.ctx.routeDay_=()=> '2026-11-02';const folders=['2026-11-01','2026-11-02','2026-11-03','other'].map(name=>({getName:()=>name}));let i=0,processed=[];

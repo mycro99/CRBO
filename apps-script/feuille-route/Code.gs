@@ -238,6 +238,41 @@ function pdfHash_(blob) {
   if (bytes.length < 5 || bytes.length > ROUTE.maxPdfBytes || bytes.slice(0, 5).map(b => String.fromCharCode(b & 255)).join('') !== '%PDF-') throw new Error('Sauvegarde PDF invalide.');
   return Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes));
 }
+/** Modèle de présentation : aucune donnée supplémentaire n’est enregistrée. */
+function routeCard_(record, index, count, day) {
+  const value = record.course;
+  const line = (text, size, bold, color) => ({text: String(text), size: size, bold: Boolean(bold), color: color || '#142D43'});
+  const row = (lines, background, center, padding) => ({lines: lines, background: background || '#FFFFFF', center: Boolean(center), padding: padding === undefined ? 9 : padding});
+  const date = new Date(record.receivedAt);
+  const recorded = 'Enregistrée le ' + Utilities.formatDate(date, ROUTE.timezone, 'dd/MM/yyyy') + ' à ' + Utilities.formatDate(date, ROUTE.timezone, 'HH:mm:ss');
+  const displayDay = day.split('-').reverse().join('/');
+  const number = value.missionNumber || 'Non renseigné (ancienne fiche)';
+  const patient = row([
+    line('PATIENT', 9, true, '#137E81'),
+    line(value.identity || (value.photo ? 'Identité sur l’étiquette ci-dessous' : 'Pas de patient'), 11, false)
+  ]);
+  patient.photo = value.photo || '';
+  const pickup = [line('PRISE EN CHARGE', 9, true, '#137E81'), line(value.pickup === 'domicile' ? 'Domicile' : 'Autre lieu', 11, true)];
+  if (value.pickup === 'autre') pickup.push(line(value.address, 11, false));
+  const destination = [line('DESTINATION', 9, true, '#137E81')];
+  if (value.destination === 'hopital') destination.push(line(value.hospital + ' - ' + HOSPITALS[value.hospital], 12, true));
+  else {
+    destination.push(line('Pas de prise en charge', 10, false, '#506474'));
+    destination.push(line(OUTCOMES[value.outcome], 12, true));
+  }
+  const card = {width: 435, rows: [
+    row([line('CS OUPEYE', 14, true, '#FFFFFF'), line('FEUILLE DE ROUTE', 9, true, '#FFFFFF')], '#142D43', true, 12),
+    row([line('N° DE COURSE 112', 9, true, '#506474'), line(number, value.missionNumber ? 23 : 13, true), line(recorded, 10, false, '#506474')], '#F0F5F8', true, 12),
+    patient, row(pickup), row(destination),
+    row([line('Journée du ' + displayDay + ' · Course ' + (index + 1) + ' / ' + count, 9, false, '#506474'), line('Réf. ' + value.id, 7, false, '#6C7D89')], '#F7F9FA', true, 8)
+  ]};
+  const textHeight = card.rows.reduce((height, section) => height + section.padding * 2 + section.lines.reduce((total, item) => {
+    const capacity = Math.max(1, Math.floor((card.width - 28) / (item.size * 1.0)));
+    return total + Math.max(1, Math.ceil(item.text.length / capacity)) * item.size * 1.2 + 3;
+  }, 0), 0);
+  card.photoMaxHeight = Math.max(80, Math.min(280, 680 - textHeight));
+  return card;
+}
 function buildPdf_(folder, day, records) {
   // Des noms fixes permettent de reprendre/nettoyer une génération interrompue.
   const stalePdf = named_(folder, 'feuille-route-' + day + '.pdf');
@@ -248,31 +283,41 @@ function buildPdf_(folder, day, records) {
   const docFile = DriveApp.getFileById(doc.getId()); docFile.moveTo(folder);
   try {
     const body = doc.getBody(); body.clear();
-    body.setPageWidth(595.28).setPageHeight(841.89).setMarginTop(30).setMarginBottom(30).setMarginLeft(36).setMarginRight(36);
-    body.setAttributes({[DocumentApp.Attribute.FONT_FAMILY]: 'Arial', [DocumentApp.Attribute.FONT_SIZE]: 11});
-    const line = (text, size, bold) => {
-      const p = body.appendParagraph(text).setSpacingBefore(0).setSpacingAfter(7).setLineSpacing(1);
-      p.editAsText().setFontSize(size || 11).setBold(Boolean(bold));
-      return p;
-    };
+    body.setPageWidth(595.28).setPageHeight(841.89).setMarginTop(64).setMarginBottom(64).setMarginLeft(80).setMarginRight(80);
+    // Les paragraphes vides autour des tableaux ne doivent pas créer de pages supplémentaires.
+    body.setAttributes({[DocumentApp.Attribute.FONT_FAMILY]: 'Arial', [DocumentApp.Attribute.FONT_SIZE]: 1});
     records.forEach((record, index) => {
       if (index) body.appendPageBreak();
-      const value = record.course;
-      line('CS OUPEYE - FEUILLE DE ROUTE', 17, true);
-      line('Journée : ' + day + '   |   Course ' + (index + 1) + '/' + records.length);
-      line('N° de course 112 : ' + (value.missionNumber || 'Non renseigné (ancienne fiche)'));
-      line('Enregistrement : ' + Utilities.formatDate(new Date(record.receivedAt), ROUTE.timezone, 'dd/MM/yyyy HH:mm'));
-      line('Référence : ' + value.id, 8);
-      line('Identité du patient : ' + (value.identity || (value.photo ? 'Voir étiquette ci-dessous' : 'Pas de patient')));
-      line('Lieu de prise en charge : ' + (value.pickup === 'domicile' ? 'Domicile' : 'Autre - ' + value.address));
-      line(value.destination === 'hopital' ? 'Destination : ' + value.hospital + ' - ' + HOSPITALS[value.hospital] : 'Pas de prise en charge : ' + OUTCOMES[value.outcome]);
-      if (value.photo) {
-        line('Étiquette patient :');
-        const img = body.appendImage(Utilities.newBlob(Utilities.base64Decode(value.photo), 'image/jpeg', 'etiquette.jpg'));
-        const width = img.getWidth(), height = img.getHeight();
-        const scale = Math.min(490 / width, 280 / height, 1);
-        img.setWidth(Math.max(1, Math.floor(width * scale))).setHeight(Math.max(1, Math.floor(height * scale)));
-      }
+      const card = routeCard_(record, index, records.length, day);
+      const spacer = body.appendParagraph('').setSpacingBefore(0).setSpacingAfter(0).setLineSpacing(1);
+      spacer.editAsText().setFontSize(1);
+      const table = body.appendTable(card.rows.map(row => [row.lines[0].text]));
+      table.setColumnWidth(0, card.width).setBorderColor('#CCD7DF').setBorderWidth(0.75);
+      let estimatedHeight = 0;
+      card.rows.forEach((row, rowIndex) => {
+        const cell = table.getRow(rowIndex).getCell(0);
+        cell.setBackgroundColor(row.background).setPaddingTop(row.padding).setPaddingBottom(row.padding).setPaddingLeft(14).setPaddingRight(14);
+        estimatedHeight += row.padding * 2;
+        row.lines.forEach((line, lineIndex) => {
+          const paragraph = lineIndex === 0 ? cell.getChild(0).asParagraph() : cell.appendParagraph(line.text);
+          paragraph.setSpacingBefore(0).setSpacingAfter(3).setLineSpacing(1)
+            .setAlignment(row.center ? DocumentApp.HorizontalAlignment.CENTER : DocumentApp.HorizontalAlignment.LEFT);
+          paragraph.editAsText().setFontFamily('Arial').setFontSize(line.size).setBold(line.bold).setForegroundColor(line.color);
+          const charactersPerLine = Math.max(1, Math.floor((card.width - 28) / (line.size * 1.0)));
+          estimatedHeight += Math.max(1, Math.ceil(line.text.length / charactersPerLine)) * line.size * 1.2 + 3;
+        });
+        if (row.photo) {
+          const paragraph = cell.appendParagraph('').setSpacingBefore(5).setSpacingAfter(0).setLineSpacing(1)
+            .setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+          const image = paragraph.appendInlineImage(Utilities.newBlob(Utilities.base64Decode(row.photo), 'image/jpeg', 'etiquette.jpg'));
+          const width = image.getWidth(), height = image.getHeight();
+          const scale = Math.min((card.width - 28) / width, card.photoMaxHeight / height, 1);
+          image.setWidth(Math.max(1, Math.floor(width * scale))).setHeight(Math.max(1, Math.floor(height * scale)));
+          estimatedHeight += Math.floor(height * scale) + 8;
+        }
+      });
+      // Centrage du cadre sur sa page ; une carte longue garde toute la hauteur disponible.
+      spacer.setSpacingAfter(Math.max(0, (700 - estimatedHeight) / 2));
     });
     doc.saveAndClose();
     const blob = docFile.getAs(MimeType.PDF).setName('feuille-route-' + day + '.pdf');

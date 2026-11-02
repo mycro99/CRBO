@@ -73,3 +73,9 @@ Le POST utilise `credentials: omit` et une réponse opaque ; une réponse opaque
 Champ obligatoire de 11 chiffres, format `60/26/295/0259` (2/2/3/4). Les séparateurs se placent sans interrompre la saisie et un numéro collé avec ou sans `/` est accepté. Le serveur normalise et conserve ce numéro, puis l’affiche sur la page PDF correspondante. Les fiches déjà enregistrées sans numéro restent traitées normalement, avec « Non renseigné (ancienne fiche) » dans leur PDF.
 
 Cette évolution nécessite de remplacer **Code.gs** et publier une **nouvelle version du déploiement existant**, avec la même URL. Inutile de réinstaller le déclencheur. Le formulaire vérifie `routeApi: 2` avant de permettre un enregistrement : un ancien serveur ne doit pas ignorer silencieusement le nouveau champ. Le fichier Form.html hébergé par Google n’est pas nécessaire à l’usage du formulaire CRBO.
+
+## Présentation du PDF
+
+Une course par page A4, avec cadre centré, bandeau CS Oupeye, numéro de course en gros caractères gras, et trois blocs séparés : Patient / Prise en charge / Destination. La photo reste dans le bloc patient avec ses proportions conservées. La date et l’heure affichées sont celles de l’enregistrement initial côté serveur, avec secondes et fuseau Europe/Brussels (heure d’été/hiver), pas celles de l’envoi du PDF.
+
+Pour appliquer cette présentation : remplacer Code.gs, enregistrer, puis publier une nouvelle version du déploiement existant. Le déclencheur existant reste en place ; ne pas relancer l’installation. La présentation est appliquée lors des prochaines générations. Un PDF déjà envoyé ou déjà sauvegardé en attente n’est ni écrasé, ni régénéré automatiquement. Le rendu Google Docs final doit être contrôlé au prochain essai : les tests locaux vérifient la structure et les paramètres de style sans exporter réellement depuis Google.
