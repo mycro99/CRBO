@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const serverSource = fs.readFileSync(new URL('../Code.gs', import.meta.url), 'utf8');
 const browserSource = fs.readFileSync(new URL('../../checklist-email.js', import.meta.url), 'utf8');
 
-function server({ count = 0, quota = 100, account = 'contactoupeye@gmail.com', locked = false, signedBytes = false } = {}) {
+function server({ count = 0, quota = 100, account = 'contactoupeye@gmail.com', locked = false, signedBytes = false, mailError = false, failSentReceipt = false } = {}) {
   const mails = [], cache = new Map(), properties = new Map();
   properties.set('CHECKLIST_SEND_COUNTER', JSON.stringify({ date: '2026-10-09', count }));
   let held = false;
@@ -16,22 +16,22 @@ function server({ count = 0, quota = 100, account = 'contactoupeye@gmail.com', l
       tryLock: () => (held = !locked), hasLock: () => held, releaseLock: () => { held = false; }
     }) },
     CacheService: { getScriptCache: () => ({ get: key => cache.get(key), put: (key, value) => cache.set(key, value) }) },
-    PropertiesService: { getScriptProperties: () => ({ getProperty: key => properties.get(key), setProperty: (key, value) => properties.set(key, value) }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: key => properties.get(key), setProperty: (key, value) => { if (failSentReceipt && key.startsWith('MAIL_RECEIPT:') && JSON.parse(value).state === 'sent') throw new Error('Storage down'); properties.set(key, value); }, getProperties: () => Object.fromEntries(properties), deleteProperty: key => properties.delete(key) }) },
     Session: { getEffectiveUser: () => ({ getEmail: () => account }) },
     Utilities: {
       formatDate: () => '2026-10-09',
       base64Decode: value => [...Buffer.from(value, 'base64')].map(b => signedBytes && b > 127 ? b - 256 : b),
       newBlob: (bytes, type, name) => ({ bytes, type, name })
     },
-    MailApp: { getRemainingDailyQuota: () => quota, sendEmail: mail => mails.push(mail) },
+    MailApp: { getRemainingDailyQuota: () => quota, sendEmail: mail => { if (mailError) throw new Error('Google timeout'); mails.push(mail); } },
     ContentService: { MimeType: { JSON: 'JSON' }, createTextOutput: value => ({ setMimeType: () => JSON.parse(value) }) }
   };
   vm.createContext(context);
   vm.runInContext(serverSource, context);
   return {
-    get: () => context.doGet(),
+    get: id => context.doGet(id ? { parameter: { receipt: id } } : undefined),
     post: payload => context.doPost({ postData: { contents: JSON.stringify(payload) } }),
-    mails, properties, held: () => held
+    mails, properties, clearCache: () => cache.clear(), held: () => held
   };
 }
 
@@ -100,32 +100,75 @@ test('existing quota, daily limit, lock and sender protections remain active', (
   assert.ok(service.get().supportedTypes.includes('tenues'));
 });
 
-async function browser({ type = 'tenues', name = 'Kévin Leruth', date = '2026-10-09', ready = true, networkError = false, action = 'send', photos, photoReady = false, failPost = false } = {}) {
+// Un double IndexedDB valide les transactions, y compris la reprise après rechargement.
+function fakeDatabase(records, failSave) {
+  return { open() {
+    const opening = {};
+    queueMicrotask(() => {
+      opening.result = { transaction() {
+        const transaction = { objectStore: () => ({
+          getAll: () => operation(() => [...records.values()]),
+          put: value => operation(() => { if (failSave) throw new Error('Quota'); records.set(value.requestId, structuredClone(value)); }),
+          delete: key => operation(() => records.delete(key))
+        }) };
+        function operation(fn) {
+          const request = {};
+          queueMicrotask(() => { try { request.result = fn(); transaction.oncomplete(); } catch (_) { transaction.onabort(); } });
+          return request;
+        }
+        return transaction;
+      } };
+      opening.onsuccess();
+    });
+    return opening;
+  } };
+}
+
+async function browser({ type = 'tenues', name = 'Kévin Leruth', date = '2026-10-09', ready = true,
+  networkError = false, action = 'send', photos, photoReady = true, failPost = false,
+  receipt = 'sent', records = new Map(), failSave = false, submit = true } = {}) {
+  function element() {
+    return { textContent: '', children: [], style: {}, listeners: {},
+      appendChild(child) { this.children.push(child); }, replaceChildren() { this.children = []; },
+      setAttribute() {}, addEventListener(event, fn) { this.listeners[event] = fn; }, focus() {},
+      parentNode: { insertBefore() {} }
+    };
+  }
   const elements = {
     nom: { value: name, focus() {} }, plaque: { value: '1-ABC-234', focus() {} },
-    date: { value: date, focus() {} }, actionStatus: { textContent: '' },
+    date: { value: date, focus() {} }, actionStatus: element(),
     pdfButton: { textContent: 'Télécharger' }, emailButton: { textContent: 'Envoyer' }
   };
-  let built = 0, downloaded = 0, payload, probes = 0, released = 0;
+  let built = 0, downloaded = 0, payload, probes = 0, released = 0, posts = 0, time = Date.now();
+  const created = [];
+  class Clock extends Date { static now() { time += 10000; return time; } }
   const context = {
-    document: { getElementById: id => elements[id] }, console: { error() {} },
-    Uint8Array, Date, Math, Error, AbortController, setTimeout, clearTimeout,
-    window: { btoa: value => Buffer.from(value, 'binary').toString('base64'), crypto: { randomUUID: () => 'test' } },
+    document: { readyState: 'loading', addEventListener() {}, getElementById: id => elements[id],
+      createElement: () => { const item = element(); created.push(item); return item; } },
+    console: { error() {} }, URL, Blob, indexedDB: fakeDatabase(records, failSave),
+    Uint8Array, Date: Clock, Math, Error, AbortController,
+    setTimeout: (fn, ms) => ms === 1500 ? setTimeout(fn, 0) : setTimeout(fn, ms), clearTimeout,
+    window: { location: { pathname: '/test' }, btoa: value => Buffer.from(value, 'binary').toString('base64'),
+      atob: value => Buffer.from(value, 'base64').toString('binary'), crypto: { randomUUID: () => 'test-uuid-1234567890123456789' } },
     fetch: async (url, options) => {
       if (networkError) throw new Error('Réseau indisponible');
+      assert.equal(options.credentials, 'omit');
       if (!options.method) {
+        if (new URL(url).searchParams.has('receipt')) return { ok: true, json: async () => ({ ok: true, state: posts ? receipt : 'missing', error: receipt === 'failed' ? 'Quota épuisé' : undefined }) };
         probes++;
-        return { ok: true, json: async () => ready ? { ok: true, supportedTypes: ['tenues'], photoAttachments: photoReady } : { ok: true } };
+        return { ok: true, json: async () => ({ ok: true, receiptApi: ready ? 1 : undefined,
+          supportedTypes: ['ambulance','tpmr','fit','peremption','tenues'], photoAttachments: photoReady }) };
       }
+      posts++;
       if (failPost) throw new Error('Transmission interrompue');
       assert.equal(options.mode, 'no-cors');
+      assert.equal(records.size, 1, 'la copie doit être validée avant le POST');
       payload = JSON.parse(options.body);
       return {};
     }
   };
-  vm.createContext(context);
-  vm.runInContext(browserSource, context);
-  await context.window.ChecklistMailer.run({
+  vm.createContext(context); vm.runInContext(browserSource, context);
+  if (submit) await context.window.ChecklistMailer.run({
     action, type, filename: 'commande.pdf',
     ...(photos ? { prepareAttachments: async () => ({ photos, release: () => released++ }) } : {}),
     buildPdf: async () => {
@@ -133,50 +176,75 @@ async function browser({ type = 'tenues', name = 'Kévin Leruth', date = '2026-1
       return { save: () => downloaded++, output: () => ({ size: 5, arrayBuffer: async () => Uint8Array.from([37, 80, 68, 70, 45]).buffer }) };
     }
   });
-  return { built, downloaded, payload, probes, elements, released };
+  return { built, downloaded, payload, probes, elements, released, records, created, context, posts };
 }
 
-test('browser blocks an old server before PDF creation or POST', async () => {
+test('old deployment blocks POST but preserves a complete local copy', async () => {
   const result = await browser({ ready: false });
-  assert.equal(result.built, 0);
-  assert.equal(result.payload, undefined);
+  assert.equal(result.built, 1);
+  assert.equal(result.posts, 0);
+  assert.equal(result.records.size, 1);
   assert.match(result.elements.actionStatus.textContent, /script Google doit être mis à jour/);
   assert.equal(result.elements.emailButton.disabled, false);
 });
 
-test('browser transmits a uniform order accepted by the server', async () => {
+test('browser only confirms after the server receipt, then removes the copy', async () => {
   const result = await browser();
   assert.equal(result.payload.demandeur, 'Kévin Leruth');
   assert.equal(result.payload.checklistType, 'tenues');
-  assert.equal(result.payload.plaque, undefined);
   assert.equal(server().post(result.payload).ok, true);
-  assert.match(result.elements.actionStatus.textContent, /transmise au service/);
+  assert.match(result.elements.actionStatus.textContent, /Envoi confirmé par Google/);
+  assert.equal(result.records.size, 0);
   assert.equal(result.elements.emailButton.disabled, false);
-  assert.equal(result.elements.emailButton.textContent, 'Envoyer');
 });
 
-test('checklists skip readiness, while downloads work without a mail service', async () => {
-  for (const type of ['ambulance', 'tpmr', 'fit', 'peremption']) {
-    const result = await browser({ type, ready: false });
-    assert.equal(result.probes, 0);
+test('all document types require receipts; download needs no mail service', async () => {
+  for (const type of ['ambulance','tpmr','fit','peremption']) {
+    const result = await browser({ type });
+    assert.equal(result.probes, 1);
     assert.equal(result.payload.plaque, '1-ABC-234');
-    assert.equal(server().post(result.payload).ok, true);
+    assert.equal(result.records.size, 0);
   }
   const download = await browser({ action: 'download', networkError: true });
   assert.equal(download.downloaded, 1);
   assert.equal(download.probes, 0);
 });
 
-test('missing identity or date prevents transmission; network errors restore buttons', async () => {
+test('missing fields block; network and local storage failures never claim success', async () => {
   for (const settings of [{ name: '' }, { date: '' }]) {
     const result = await browser(settings);
-    assert.equal(result.built, 0);
-    assert.equal(result.payload, undefined);
+    assert.equal(result.built, 0); assert.equal(result.posts, 0);
   }
-  const failure = await browser({ networkError: true });
-  assert.equal(failure.payload, undefined);
-  assert.equal(failure.elements.emailButton.disabled, false);
-  assert.match(failure.elements.actionStatus.textContent, /Réseau indisponible/);
+  const network = await browser({ networkError: true });
+  assert.equal(network.records.size, 1);
+  assert.match(network.elements.actionStatus.textContent, /Réseau indisponible/);
+  const storage = await browser({ failSave: true });
+  assert.equal(storage.posts, 0);
+  assert.match(storage.elements.actionStatus.textContent, /sauvegarder/);
+});
+
+test('opaque response without receipt is not success; PDF and photos survive reload and retry', async () => {
+  const records = new Map();
+  const attempt = await browser({ type: 'ambulance', receipt: 'missing', records, photos: [photo] });
+  assert.equal(attempt.records.size, 1);
+  assert.match(attempt.elements.actionStatus.textContent, /Envoi non confirmé/);
+  const id = [...records.keys()][0];
+  const retry = await browser({ records });
+  assert.equal(retry.posts, 0, 'un nouveau document ne doit pas remplacer la copie');
+  const button = retry.created.find(item => item.textContent === 'Vérifier / réessayer');
+  await button.listeners.click();
+  assert.equal(retry.records.size, 0);
+  assert.match(retry.elements.actionStatus.textContent, /Envoi confirmé/);
+  assert.equal(id, attempt.payload.requestId);
+});
+
+test('explicit refusal and uncertain send keep backup and show no success', async () => {
+  for (const receipt of ['failed', 'review', 'sending']) {
+    const result = await browser({ receipt });
+    assert.equal(result.records.size, 1);
+    assert.doesNotMatch(result.elements.actionStatus.textContent, /Envoi confirmé/);
+    if (receipt === 'failed') assert.match(result.elements.actionStatus.textContent, /Quota épuisé/);
+  }
 });
 
 const photo = {
@@ -194,36 +262,36 @@ test('all three vehicle checklists send JPEGs separately from the unchanged PDF'
     assert.equal(result.payload.pdfBase64, Buffer.from('%PDF-').toString('base64'));
     assert.equal(JSON.stringify(result.payload.photos), JSON.stringify([photo]));
     assert.equal(result.released, 1);
-    assert.match(result.elements.actionStatus.textContent, /Checklist et photos transmises/);
+    assert.match(result.elements.actionStatus.textContent, /Envoi confirmé/);
   }
 });
 
 test('photo requests cannot silently lose JPEGs on the current Google script', async () => {
-  const result = await browser({ type: 'ambulance', photos: [photo] });
+  const result = await browser({ type: 'ambulance', photos: [photo], photoReady: false });
   assert.equal(result.probes, 1);
-  assert.equal(result.built, 0);
+  assert.equal(result.built, 1);
   assert.equal(result.payload, undefined);
   assert.equal(result.released, 1);
   assert.equal(result.elements.emailButton.disabled, false);
-  assert.match(result.elements.actionStatus.textContent, /aucun mail n’a été envoyé/);
+  assert.match(result.elements.actionStatus.textContent, /ne prend pas encore en charge les photos/);
 });
 
-test('empty photo selections keep normal sending without probing the photo service', async () => {
+test('empty photo selections use the same confirmed sending', async () => {
   for (const type of ['ambulance', 'tpmr', 'fit']) {
     const result = await browser({ type, photos: [] });
-    assert.equal(result.probes, 0);
-    assert.equal(result.payload.photos, undefined);
+    assert.equal(result.probes, 1);
+    assert.equal(result.payload.photos.length, 0);
     assert.equal(result.released, 1);
     assert.equal(server().post(result.payload).ok, true);
   }
 });
 
 test('photo controls are released when network transmission fails', async () => {
-  const result = await browser({ type: 'fit', photos: [photo], photoReady: true, failPost: true });
+  const result = await browser({ type: 'fit', photos: [photo], photoReady: true, failPost: true, receipt: 'missing' });
   assert.equal(result.released, 1);
   assert.equal(result.elements.emailButton.disabled, false);
   assert.equal(result.payload, undefined);
-  assert.match(result.elements.actionStatus.textContent, /Transmission interrompue/);
+  assert.match(result.elements.actionStatus.textContent, /Envoi non confirmé/);
 });
 
 const jpeg = { filename: '../../ignored.exe', mimeType: 'image/jpeg', base64: Buffer.from([255, 216, 255, 224, 0, 255, 217]).toString('base64') };
@@ -284,5 +352,43 @@ test('combined JPEG size is limited to 6 MiB and photo retries never send twice'
   const request = { ...valid, plaque: 'ABC', photos: [jpeg] };
   assert.equal(service.post(request).ok, true);
   assert.equal(service.post(request).duplicate, true);
+  assert.equal(service.mails.length, 1);
+});
+
+
+test('durable receipt confirms send even after volatile cache is gone', () => {
+  const service = server();
+  const payload = { ...valid, requestId: 'durable-request-123456789', plaque: 'ABC' };
+  assert.equal(service.post(payload).ok, true);
+  assert.equal(service.get(payload.requestId).state, 'sent');
+  service.clearCache();
+  assert.equal(service.post(payload).duplicate, true);
+  assert.equal(service.mails.length, 1);
+  assert.equal(service.get('unknown-request-123456789').state, 'missing');
+  assert.equal(service.get('../invalid').ok, false);
+  const receipt = JSON.stringify(service.get(payload.requestId));
+  assert.doesNotMatch(receipt, /ABC|PDF|base64|recipient/);
+});
+
+test('server quota failure is readable by receipt; ambiguous mail errors prohibit resending', () => {
+  const payload = { ...valid, requestId: 'failure-request-123456789', plaque: 'ABC' };
+  const quota = server({ quota: 0 });
+  assert.equal(quota.post(payload).ok, false);
+  assert.equal(quota.get(payload.requestId).state, 'failed');
+  assert.match(quota.get(payload.requestId).error, /quota/);
+  const uncertain = server({ mailError: true });
+  assert.equal(uncertain.post(payload).ok, false);
+  assert.equal(uncertain.get(payload.requestId).state, 'review');
+  assert.equal(uncertain.post(payload).ok, false);
+  assert.equal(uncertain.get(payload.requestId).state, 'review');
+});
+
+test('receipt persistence failure after MailApp never allows a second mail', () => {
+  const service = server({ failSentReceipt: true });
+  const payload = { ...valid, requestId: 'storage-failure-123456789', plaque: 'ABC' };
+  assert.equal(service.post(payload).ok, false);
+  assert.equal(service.mails.length, 1);
+  assert.equal(service.get(payload.requestId).state, 'sending');
+  service.post(payload);
   assert.equal(service.mails.length, 1);
 });

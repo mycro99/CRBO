@@ -37,70 +37,192 @@
     });
   }
 
-  async function checkService(feature) {
+  let busy = false;
+  let database;
+  let pendingPanel;
+
+  // IndexedDB, plutôt que localStorage : le PDF et les photos peuvent dépasser 5 Mo.
+  function openDatabase() {
+    if (!database) database = new Promise(function (resolve, reject) {
+      const request = indexedDB.open("crbo-checklist-outbox", 1);
+      request.onupgradeneeded = function () { request.result.createObjectStore("outbox", { keyPath: "requestId" }); };
+      request.onsuccess = function () { resolve(request.result); };
+      request.onerror = function () { reject(new Error("Sauvegarde locale indisponible. Aucun envoi lancé ; gardez cette page ouverte.")); };
+      request.onblocked = function () { reject(new Error("Sauvegarde locale bloquée. Fermez les autres onglets CRBO puis réessayez.")); };
+    });
+    return database;
+  }
+
+  async function outbox(operation, value) {
+    const db = await openDatabase();
+    return new Promise(function (resolve, reject) {
+      const transaction = db.transaction("outbox", operation === "getAll" ? "readonly" : "readwrite");
+      const request = transaction.objectStore("outbox")[operation](value);
+      transaction.oncomplete = function () { resolve(request.result); };
+      transaction.onabort = transaction.onerror = function () {
+        reject(new Error("Impossible de sauvegarder le document sur cet appareil. Gardez cette page ouverte."));
+      };
+    });
+  }
+
+  async function getService(parameters) {
     const controller = new AbortController();
-    const timeout = setTimeout(function () { controller.abort(); }, 15000);
+    const timeout = setTimeout(function () { controller.abort(); }, 12000);
     try {
-      const response = await fetch(WEB_APP_URL, { signal: controller.signal, cache: "no-store" });
-      const service = await response.json();
-      const available = feature === "photos" ? service.photoAttachments === true :
-        Array.isArray(service.supportedTypes) && service.supportedTypes.includes("tenues");
-      if (!response.ok || !service.ok || !available) {
-        throw new Error(feature === "photos"
-          ? "L’envoi des photos en pièces jointes nécessite la mise à jour du script Google. Vos photos sont conservées sur cette page ; aucun mail n’a été envoyé."
-          : "L’envoi des commandes de tenues n’est pas encore activé. Le script Google doit être mis à jour.");
-      }
-    } finally {
-      clearTimeout(timeout);
+      const url = new URL(WEB_APP_URL);
+      Object.entries(parameters || {}).forEach(function (entry) { url.searchParams.set(entry[0], entry[1]); });
+      url.searchParams.set("_", Date.now());
+      const response = await fetch(url.href, { credentials: "omit", cache: "no-store", signal: controller.signal });
+      if (!response.ok) throw new Error("Le service Google ne répond pas correctement.");
+      const result = await response.json();
+      if (!result.ok) throw new Error(result.error || "Réponse du service Google invalide.");
+      return result;
+    } finally { clearTimeout(timeout); }
+  }
+
+  async function requireService(record) {
+    const service = await getService();
+    if (service.receiptApi !== 1) {
+      throw new Error("Le script Google doit être mis à jour pour confirmer les envois. Le document est sauvegardé sur cet appareil ; aucun nouvel envoi lancé.");
+    }
+    if (record.photos && record.photos.length && service.photoAttachments !== true) {
+      throw new Error("Le script Google ne prend pas encore en charge les photos. Le document est sauvegardé.");
+    }
+    if (!Array.isArray(service.supportedTypes) || !service.supportedTypes.includes(record.checklistType)) {
+      throw new Error("Ce type de document n’est pas pris en charge par le script Google.");
     }
   }
 
+  async function finishReceipt(record, receipt) {
+    if (receipt.state === "sent") {
+      await outbox("delete", record.requestId);
+      setStatus("Envoi confirmé par Google. La réception dans la boîte destinataire peut prendre quelques instants.");
+      return true;
+    }
+    if (receipt.state === "failed") throw new Error("Envoi refusé : " + (receipt.error || "réessayez ultérieurement."));
+    if (receipt.state === "review") throw new Error(receipt.error || "Envoi incertain : faites vérifier les exécutions du script avant de renvoyer.");
+    return false;
+  }
+
+  async function transmit(record) {
+    await requireService(record);
+    const previous = await getService({ receipt: record.requestId });
+    // Une erreur connue avant MailApp peut être réessayée ; un envoi incertain reste bloqué.
+    if (previous.state === "sent" || previous.state === "review") {
+      await finishReceipt(record, previous);
+      return;
+    }
+    if (Date.now() - record.savedAt > 29 * 86400000) {
+      throw new Error("Cette copie a plus de 29 jours : vérifiez les anciens envois avant de la renvoyer. Son PDF reste téléchargeable.");
+    }
+    if (previous.state === "missing" || previous.state === "failed") {
+      setStatus("Copie sauvegardée. Transmission du PDF et des photos… Gardez cette page ouverte.");
+      const controller = new AbortController();
+      const timeout = setTimeout(function () { controller.abort(); }, 45000);
+      try {
+        await fetch(WEB_APP_URL, {
+          method: "POST", mode: "no-cors", credentials: "omit", signal: controller.signal,
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(record)
+        });
+      } catch (_) {
+        // Une coupure ne prouve pas que MailApp n’a pas travaillé : chercher le reçu.
+      } finally { clearTimeout(timeout); }
+    } else if (previous.state !== "sending") {
+      throw new Error("État d’envoi inconnu. La copie est conservée ; aucun renvoi lancé.");
+    }
+    setStatus("Vérification de la confirmation Google… La copie reste sauvegardée sur cet appareil.");
+    const deadline = Date.now() + 45000;
+    while (Date.now() < deadline) {
+      const receipt = await getService({ receipt: record.requestId });
+      if (await finishReceipt(record, receipt)) return;
+      await new Promise(function (resolve) { setTimeout(resolve, 1500); });
+    }
+    throw new Error("Envoi non confirmé. Le PDF et les photos restent sauvegardés sur cet appareil. Utilisez « Vérifier / réessayer » ; ne recréez pas la checklist.");
+  }
+
   async function sendPdf(pdf, type, photos) {
-    const typeLabel = TYPE_LABELS[type];
     const uniformOrder = type === "tenues";
-    const plaqueInput = document.getElementById(uniformOrder ? "nom" : "plaque");
-    const dateInput = document.getElementById("date");
-    const plaque = plaqueInput ? plaqueInput.value.trim() : "";
-    const checklistDate = dateInput ? dateInput.value : "";
-
-    if (!typeLabel) throw new Error("Type de document inconnu.");
-    if (!plaque) {
-      if (plaqueInput) plaqueInput.focus();
-      throw new Error(uniformOrder ? "Indiquez votre nom avant l’envoi." : "Indiquez la plaque avant l’envoi.");
-    }
-    if (!checklistDate) {
-      if (dateInput) dateInput.focus();
-      throw new Error("Indiquez la date avant l’envoi.");
-    }
-
+    const identity = document.getElementById(uniformOrder ? "nom" : "plaque").value.trim();
+    const checklistDate = document.getElementById("date").value;
+    if (!TYPE_LABELS[type] || !identity || !checklistDate) throw new Error("Identité, date ou type de document manquant.");
     const blob = pdf.output("blob");
-    if (blob.size > MAX_PDF_BYTES) {
-      throw new Error("Le PDF dépasse 10 Mo. Réduisez le contenu du rapport, puis réessayez.");
+    if (blob.size > MAX_PDF_BYTES) throw new Error("Le PDF dépasse 10 Mo. Réduisez le contenu puis réessayez.");
+    if (!window.crypto || !window.crypto.randomUUID) throw new Error("Ce navigateur doit être mis à jour pour sécuriser le suivi des envois.");
+    const record = {
+      requestId: window.crypto.randomUUID(), savedAt: Date.now(), path: window.location.pathname,
+      pdfBase64: await blobToBase64(blob), checklistType: type, checklistDate: checklistDate,
+      ...(uniformOrder ? { demandeur: identity } : { plaque: identity }), photos: photos, website: ""
+    };
+    await outbox("put", record);
+    await renderPending();
+    await transmit(record);
+  }
+
+  function downloadAttachment(base64, mimeType, filename) {
+    const binary = window.atob(base64);
+    const bytes = Uint8Array.from(binary, function (character) { return character.charCodeAt(0); });
+    const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+    const link = document.createElement("a");
+    link.href = url; link.download = filename; link.click();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+  }
+
+  async function renderPending() {
+    const records = (await outbox("getAll")).filter(function (record) { return record.path === window.location.pathname; });
+    if (!pendingPanel) {
+      pendingPanel = document.createElement("section");
+      pendingPanel.setAttribute("aria-label", "Documents dont l’envoi reste à confirmer");
+      pendingPanel.style.cssText = "margin:16px 0;padding:14px;border:2px solid #b7791f;border-radius:10px;background:#fffbeb;color:#3d2b10";
+      const status = document.getElementById("actionStatus");
+      if (!status) return;
+      status.parentNode.insertBefore(pendingPanel, status);
     }
-
-    setStatus(photos.length ? "Transmission du PDF et des photos vers Gmail…" : "Transmission sécurisée du PDF vers Gmail…");
-    const pdfBase64 = await blobToBase64(blob);
-    const requestId = Date.now() + "-" + (window.crypto && window.crypto.randomUUID
-      ? window.crypto.randomUUID()
-      : Math.random().toString(36).slice(2));
-
-    await fetch(WEB_APP_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        pdfBase64: pdfBase64,
-        ...(uniformOrder ? { demandeur: plaque } : { plaque: plaque }),
-        checklistDate: checklistDate,
-        checklistType: type,
-        ...(photos.length ? { photos: photos } : {}),
-        requestId: requestId,
-        website: ""
-      })
+    pendingPanel.replaceChildren();
+    pendingPanel.hidden = !records.length;
+    if (!records.length) return;
+    const title = document.createElement("strong");
+    title.textContent = "Envois à confirmer — copies conservées sur cet appareil";
+    pendingPanel.appendChild(title);
+    const info = document.createElement("p");
+    info.textContent = "Reprenez ici un envoi interrompu. Le PDF et les photos sont conservés jusqu’à confirmation Google. Ils ne sont pas partagés entre appareils ; effacer les données du navigateur supprime ces copies.";
+    pendingPanel.appendChild(info);
+    records.sort(function (a, b) { return a.savedAt - b.savedAt; }).forEach(function (record) {
+      const row = document.createElement("div");
+      row.style.cssText = "padding:10px 0;border-top:1px solid #d6b878";
+      const label = document.createElement("p");
+      label.textContent = (record.plaque || record.demandeur) + " — " + record.checklistDate + " — " + record.photos.length + " photo(s)";
+      row.appendChild(label);
+      function button(text, handler) {
+        const element = document.createElement("button");
+        element.type = "button"; element.textContent = text; element.disabled = busy;
+        element.style.cssText = "margin:4px;padding:8px;cursor:pointer";
+        element.addEventListener("click", handler); row.appendChild(element);
+      }
+      button("Vérifier / réessayer", async function () {
+        if (busy) return;
+        busy = true; setButtonsDisabled(true);
+        try { await renderPending(); await transmit(record); }
+        catch (error) { setStatus(error.message || "Envoi non confirmé. Copie conservée."); }
+        finally { busy = false; setButtonsDisabled(false); await renderPending(); }
+      });
+      button("Télécharger le PDF sauvegardé", function () {
+        downloadAttachment(record.pdfBase64, "application/pdf", "checklist-" + record.checklistDate + ".pdf");
+      });
+      button("Supprimer la copie locale", async function () {
+        if (busy || !window.confirm("Supprimer définitivement le PDF et les photos sauvegardés sur cet appareil ? Cela ne confirme ni n’annule un éventuel envoi. En cas de doute, vérifiez d’abord les exécutions du script.")) return;
+        try { await outbox("delete", record.requestId); await renderPending(); }
+        catch (error) { setStatus(error.message); }
+      });
+      record.photos.forEach(function (photo, index) {
+        button("Photo " + (index + 1), function () { downloadAttachment(photo.base64, "image/jpeg", "photo-" + (index + 1) + ".jpg"); });
+      });
+      pendingPanel.appendChild(row);
     });
   }
 
   async function run(options) {
+    if (busy) return;
     const action = options.action;
     const activeButton = document.getElementById(action === "send" ? "emailButton" : "pdfButton");
     const originalText = activeButton ? activeButton.textContent : "";
@@ -120,16 +242,16 @@
       }
     }
 
+    busy = true;
     setButtonsDisabled(true);
     if (activeButton) activeButton.textContent = action === "send" ? "Envoi en cours…" : "Création du PDF…";
     setStatus(options.type === "tenues" ? "Préparation du bon de commande…" : "Préparation du rapport complet…");
 
     let photoSelection;
     try {
-      if (action === "send" && options.type === "tenues") {
-        setStatus("Vérification du service d’envoi…");
-        await checkService("tenues");
-        setStatus("Préparation du bon de commande…");
+      if (action === "send") {
+        const existing = (await outbox("getAll")).some(function (record) { return record.path === window.location.pathname; });
+        if (existing) throw new Error("Un document attend déjà confirmation. Utilisez « Vérifier / réessayer » pour ce document avant de créer un nouvel envoi.");
       }
       const photos = [];
       if (action === "send" && options.prepareAttachments) {
@@ -139,9 +261,7 @@
           if (!["ambulance", "tpmr", "fit"].includes(options.type)) {
             throw new Error("Les photos sont réservées aux checklists des véhicules.");
           }
-          setStatus("Vérification de l’envoi des photos en pièces jointes…");
-          await checkService("photos");
-          setStatus("Préparation du rapport complet…");
+
         }
       }
       const pdf = await options.buildPdf();
@@ -151,17 +271,27 @@
         setStatus(options.type === "tenues" ? "Le bon de commande PDF a été téléchargé." : "Le rapport PDF a été téléchargé.");
       } else {
         await sendPdf(pdf, options.type, photos);
-        setStatus(photos.length ? "Checklist et photos transmises au service d’envoi. Le mail peut prendre quelques secondes pour arriver." : options.type === "tenues" ? "Commande transmise au service d’envoi. Le mail peut prendre quelques secondes pour arriver." : "Checklist transmise. Le mail peut prendre quelques secondes pour arriver.");
+
       }
     } catch (error) {
       console.error("Erreur PDF ou envoi :", error);
       setStatus(error && error.message ? error.message : "Impossible de traiter la checklist. Veuillez réessayer.");
     } finally {
       if (photoSelection) photoSelection.release();
+      busy = false;
       setButtonsDisabled(false);
+      try { await renderPending(); } catch (_) {}
       if (activeButton) activeButton.textContent = originalText;
     }
   }
+
+  function initializeRecovery() {
+    renderPending().catch(function () {
+      setStatus("La sauvegarde locale n’est pas disponible sur ce navigateur. Les envois seront bloqués pour éviter de perdre le document.");
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initializeRecovery);
+  else initializeRecovery();
 
   window.ChecklistMailer = Object.freeze({ run: run });
 })();

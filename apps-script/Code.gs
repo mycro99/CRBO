@@ -23,18 +23,56 @@ const DOCUMENT_TYPES = Object.freeze({
   tenues: "Commande de tenues"
 });
 
-function doGet() {
+// Les reçus ne contiennent ni PDF, ni photos, ni plaque. Leur identifiant est secret.
+const RECEIPT_PREFIX = "MAIL_RECEIPT:";
+const RECEIPT_DAYS = 30;
+
+function readReceipt_(id) {
+  const raw = PropertiesService.getScriptProperties().getProperty(RECEIPT_PREFIX + id);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function writeReceipt_(id, state, error) {
+  if (!id) return;
+  const properties = PropertiesService.getScriptProperties();
+  properties.setProperty(RECEIPT_PREFIX + id, JSON.stringify({
+    state: state, updatedAt: Date.now(), ...(error ? { error: String(error).slice(0, 300) } : {})
+  }));
+}
+
+function pruneReceipts_() {
+  const properties = PropertiesService.getScriptProperties();
+  const all = properties.getProperties();
+  const cutoff = Date.now() - RECEIPT_DAYS * 86400000;
+  Object.keys(all).forEach(function (key) {
+    if (key.indexOf(RECEIPT_PREFIX) !== 0) return;
+    try { if (JSON.parse(all[key]).updatedAt < cutoff) properties.deleteProperty(key); } catch (_) {}
+  });
+}
+
+function doGet(event) {
+  const receipt = event && event.parameter && event.parameter.receipt;
+  if (receipt !== undefined) {
+    if (!/^[A-Za-z0-9_-]{16,100}$/.test(String(receipt))) {
+      return jsonResponse_({ ok: false, error: "Identifiant de reçu invalide." });
+    }
+    const result = readReceipt_(String(receipt));
+    return jsonResponse_({ ok: true, state: result ? result.state : "missing",
+      ...(result && result.error ? { error: result.error } : {}) });
+  }
   return jsonResponse_({
     ok: true,
     service: "checklist-ambulance",
     supportedTypes: Object.keys(DOCUMENT_TYPES),
     photoAttachments: true,
+    receiptApi: 1,
     message: "Le service d'envoi est actif."
   });
 }
 
 function doPost(event) {
   const lock = LockService.getScriptLock();
+  let requestId = "", mailAttempted = false, mailAccepted = false, previousReceipt = null;
   try {
     if (!event || !event.postData || !event.postData.contents) {
       throw new Error("Requête vide.");
@@ -58,7 +96,7 @@ function doPost(event) {
       throw new Error(uniformOrder ? "Nom du demandeur manquant." : "Plaque manquante.");
     }
     const checklistDate = normalizeDate_(payload.checklistDate);
-    const requestId = sanitizeRequestId_(payload.requestId);
+    requestId = sanitizeRequestId_(payload.requestId);
     const pdfBase64 = String(payload.pdfBase64 || "");
     const approximateBytes = Math.floor((pdfBase64.length * 3) / 4);
     if (!pdfBase64 || approximateBytes > CONFIG.maxPdfBytes + 3) {
@@ -66,6 +104,13 @@ function doPost(event) {
     }
     if (!lock.tryLock(5000)) {
       throw new Error("Un autre envoi est en cours. Réessaie dans quelques secondes.");
+    }
+    previousReceipt = requestId ? readReceipt_(requestId) : null;
+    if (previousReceipt && previousReceipt.state === "sent") {
+      return jsonResponse_({ ok: true, duplicate: true });
+    }
+    if (previousReceipt && ["sending", "review"].indexOf(previousReceipt.state) !== -1) {
+      throw new Error("Envoi précédent incertain : vérifier les exécutions avant tout nouvel envoi.");
     }
     const cache = CacheService.getScriptCache();
     if (requestId && cache.get("sent:" + requestId)) {
@@ -85,6 +130,10 @@ function doPost(event) {
     const filename = (uniformOrder ? "commande-tenues-" : "checklist-") + displayDate + ".pdf";
     const subject = (uniformOrder ? "Commande de tenues - " : "Checklist - ") + identity;
     const attachment = Utilities.newBlob(bytes, "application/pdf", filename);
+    pruneReceipts_();
+    // Écrit avant MailApp : un arrêt pendant l'envoi interdit un renvoi aveugle.
+    writeReceipt_(requestId, "sending");
+    mailAttempted = true;
     MailApp.sendEmail({
       to: CONFIG.recipient,
       subject: subject,
@@ -96,11 +145,20 @@ function doPost(event) {
       attachments: [attachment].concat(photoAttachments),
       name: uniformOrder ? "Commande de tenues - CS Oupeye" : CONFIG.senderName
     });
+    mailAccepted = true;
+    writeReceipt_(requestId, "sent");
     incrementDailyCount_();
     if (requestId) cache.put("sent:" + requestId, "1", 21600);
     return jsonResponse_({ ok: true, filename: filename, subject: subject, photoCount: photoAttachments.length });
   } catch (error) {
     console.error(error && error.stack ? error.stack : error);
+    if (lock.hasLock() && requestId && !(previousReceipt && ["sent", "sending", "review"].indexOf(previousReceipt.state) !== -1)) {
+      try {
+        if (mailAttempted && !mailAccepted) writeReceipt_(requestId, "review", "Envoi incertain. Vérifier les exécutions du script avant de renvoyer.");
+        else if (!mailAttempted) writeReceipt_(requestId, "failed", error.message || "Envoi refusé.");
+        // Si Gmail a accepté mais l'écriture a échoué, conserver « sending » ou « sent ».
+      } catch (receiptError) { console.error(receiptError); }
+    }
     return jsonResponse_({
       ok: false,
       error: error && error.message ? error.message : "Erreur d'envoi."
