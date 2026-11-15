@@ -252,7 +252,7 @@ async function browser({ type = 'tenues', name = 'Kévin Leruth', date = '2026-1
       return { save: () => downloaded++, output: () => ({ size: 5, arrayBuffer: async () => Uint8Array.from([37, 80, 68, 70, 45]).buffer }) };
     }
   });
-  return { built, downloaded, payload, probes, elements, released, records, created, context, posts };
+  return { built, downloaded, payload, probes, elements, released, records, created, context, posts, receivedIds };
 }
 
 test('old deployment blocks POST but preserves a complete local copy', async () => {
@@ -591,9 +591,8 @@ test('client acknowledges only durable server copies and does not require the ph
     const result = await browser({ type: 'ambulance', receipt, stored: true, photos: [photo] });
     assert.match(result.elements.actionStatus.textContent, /enregistrés sur Drive/);
     assert.match(result.elements.actionStatus.textContent, /pouvez fermer/);
-    assert.equal([...result.records.values()][0].serverAccepted, true);
-    assert.equal([...result.records.values()][0].photos.length, 1);
-    assert.equal(result.records.size, 1, 'copie locale conservée jusqu’au mail confirmé');
+    assert.equal(result.records.size, 0, 'PDF et photos locaux supprimés dès confirmation Drive');
+    assert.equal(result.payload.photos.length, 1, 'les photos ont été transférées avant suppression');
   }
   const incomplete = await browser({ receipt: 'queued', stored: false });
   assert.doesNotMatch(incomplete.elements.actionStatus.textContent, /pouvez fermer/);
@@ -604,11 +603,12 @@ test('client acknowledges only durable server copies and does not require the ph
   assert.match(uninstalled.elements.actionStatus.textContent, /installerFileEnvoi/);
 });
 
-test('client signals manual review while retaining local and server copies', async () => {
+test('client signals manual review and releases the local copy only after confirmed Drive backup', async () => {
   const result = await browser({ receipt: 'review', stored: true });
   assert.match(result.elements.actionStatus.textContent, /envoi incertain/);
-  assert.equal([...result.records.values()][0].serverState, 'review');
-  assert.equal(result.records.size, 1);
+  assert.equal(result.records.size, 0);
+  const unconfirmed = await browser({ receipt: 'review', stored: false });
+  assert.equal(unconfirmed.records.size, 1, 'aucune suppression sans confirmation Drive');
 });
 
 
@@ -624,14 +624,13 @@ test('daily cap queues documents and resumes on the next Brussels day', () => {
   assert.equal(service.pending().length, 0);
 });
 
-test('client may start another checklist after Drive acknowledgement without overwriting the first backup', async () => {
+test('client may start another checklist after Drive acknowledgement with no local accumulation', async () => {
   const result = await browser({ type: 'ambulance', receipt: 'queued', stored: true, photos: [photo] });
-  const firstId = [...result.records.keys()][0];
+  assert.equal(result.records.size, 0);
   await result.context.window.ChecklistMailer.run({ action: 'send', type: 'ambulance',
     buildPdf: async () => ({ output: () => ({ size: 5, arrayBuffer: async () => Uint8Array.from([37,80,68,70,45]).buffer }) }) });
-  assert.equal(result.records.size, 2);
-  assert.equal(result.records.has(firstId), true);
-  assert.equal([...result.records.values()].every(record => record.serverAccepted === true), true);
+  assert.equal(result.records.size, 0);
+  assert.equal(result.receivedIds.size, 2, 'chaque document garde son propre identifiant');
 });
 
 test('queue capacity rejects new uploads without deleting any existing incomplete or failed backups', () => {

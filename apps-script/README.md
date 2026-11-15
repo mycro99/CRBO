@@ -29,7 +29,7 @@ La requête POST est envoyée en `no-cors`, avec `credentials: "omit"`. Sa répo
 - **Enregistrement non confirmé** : conserver la copie locale et reprendre sur le même téléphone/navigateur avec **Vérifier / réessayer**. Aucun succès n’est inventé à partir de la fin du fetch.
 - **Envoi incertain** : le document reste sur Drive, un contrôle manuel est nécessaire et aucun renvoi aveugle n’est lancé.
 
-Après un reçu Drive, le site permet de préparer d’autres checklists. La copie locale reste disponible jusqu’au reçu `sent` ; son état est revérifié à la réouverture de la page. Il n’y a pas de renvoi depuis le téléphone en arrière-plan. Effacer les données du navigateur ou fermer une session privée peut supprimer les copies locales ; la copie déjà confirmée sur Drive n’en dépend plus.
+Après un reçu Drive, le site permet de préparer d’autres checklists. Le PDF et les photos sont supprimés du stockage local dès le reçu `stored: true` (sauvegarde complète sur Drive), sans attendre le mail. Sans cette confirmation, la copie locale reste disponible pour reprise. Les anciennes copies déjà marquées comme prises en charge sont revérifiées à la réouverture de leur checklist et supprimées uniquement après un nouveau reçu Drive ou un reçu `sent`. Il n’y a pas de renvoi depuis le téléphone en arrière-plan. Effacer les données du navigateur ou fermer une session privée peut supprimer les copies locales ; la copie déjà confirmée sur Drive n’en dépend plus.
 
 Le site bloque le POST si le script n’annonce pas la nouvelle file ou si son déclencheur n’est pas installé. Le document reste alors sur l’appareil.
 

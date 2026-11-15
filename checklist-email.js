@@ -111,9 +111,8 @@
       return true;
     }
     if (receipt.stored === true && ["queued", "retry", "sending", "review"].includes(receipt.state)) {
-      record.serverAccepted = true;
-      record.serverState = receipt.state;
-      await outbox("put", record);
+      // Drive a confirmé la sauvegarde complète : ne plus conserver PDF/JPEG sur le téléphone.
+      await outbox("delete", record.requestId);
       if (!quiet) setStatus(receipt.state === "review"
         ? "Copie enregistrée sur Drive, mais envoi incertain : prévenez le responsable pour vérification. Le document et les photos sont conservés."
         : "Document et photos enregistrés sur Drive. Vous pouvez fermer cette page : l’envoi par mail est pris en charge automatiquement.", receipt.state === "review" ? "warning" : "success");
@@ -208,7 +207,7 @@
     title.textContent = "Envoi à vérifier — options de récupération";
     pendingPanel.appendChild(title);
     const info = document.createElement("p");
-    info.textContent = "Sans confirmation Drive, reprenez l’envoi ici sur le même appareil. Une fois le document enregistré sur Drive, le serveur s’occupe du mail même si vous fermez cette page. Les copies locales restent disponibles jusqu’à confirmation d’envoi.";
+    info.textContent = "Sans confirmation Drive, reprenez l’envoi ici sur le même appareil. Une fois le document enregistré sur Drive, le serveur s’occupe du mail même si vous fermez cette page. La copie locale est supprimée dès confirmation de la sauvegarde complète sur Drive.";
     pendingPanel.appendChild(info);
     records.sort(function (a, b) { return a.savedAt - b.savedAt; }).forEach(function (record) {
       const row = document.createElement("div");
