@@ -104,17 +104,17 @@
     }
   }
 
-  async function finishReceipt(record, receipt) {
+  async function finishReceipt(record, receipt, quiet) {
     if (receipt.state === "sent") {
       await outbox("delete", record.requestId);
-      setStatus("Envoi confirmé par Google. Vous pouvez fermer cette page. La réception du mail peut prendre quelques instants.", "success");
+      if (!quiet) setStatus("Envoi confirmé par Google. Vous pouvez fermer cette page. La réception du mail peut prendre quelques instants.", "success");
       return true;
     }
     if (receipt.stored === true && ["queued", "retry", "sending", "review"].includes(receipt.state)) {
       record.serverAccepted = true;
       record.serverState = receipt.state;
       await outbox("put", record);
-      setStatus(receipt.state === "review"
+      if (!quiet) setStatus(receipt.state === "review"
         ? "Copie enregistrée sur Drive, mais envoi incertain : prévenez le responsable pour vérification. Le document et les photos sont conservés."
         : "Document et photos enregistrés sur Drive. Vous pouvez fermer cette page : l’envoi par mail est pris en charge automatiquement.", receipt.state === "review" ? "warning" : "success");
       return true;
@@ -319,7 +319,7 @@
         if (busy) break;
         try {
           const receipt = await getService({ receipt: record.requestId });
-          if (!busy) await finishReceipt(record, receipt);
+          if (!busy) await finishReceipt(record, receipt, true);
         } catch (_) { /* Hors connexion : laisser les copies et leurs boutons disponibles. */ }
       }
       await renderPending();
