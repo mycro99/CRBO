@@ -6,32 +6,97 @@ import vm from 'node:vm';
 const serverSource = fs.readFileSync(new URL('../Code.gs', import.meta.url), 'utf8');
 const browserSource = fs.readFileSync(new URL('../../checklist-email.js', import.meta.url), 'utf8');
 
-function server({ count = 0, quota = 100, account = 'contactoupeye@gmail.com', locked = false, signedBytes = false, mailError = false, failSentReceipt = false } = {}) {
-  const mails = [], cache = new Map(), properties = new Map();
-  properties.set('CHECKLIST_SEND_COUNTER', JSON.stringify({ date: '2026-10-09', count }));
-  let held = false;
+function server(options = {}) {
+  const state = { count: 0, quota: 100, account: 'contactoupeye@gmail.com', active: 'contactoupeye@gmail.com',
+    locked: false, signedBytes: false, mailError: false, failSentReceipt: false, failSentManifest: false,
+    installed: true, failCreateAt: 0, failTrash: false, shared: false, now: Date.parse('2026-10-09T12:00:00Z'), ...options };
+  const mails = [], properties = new Map(), logs = [], files = new Map(), folders = new Map(), triggers = [];
+  properties.set('CHECKLIST_SEND_COUNTER', JSON.stringify({ date: '2026-10-09', count: state.count }));
+  let held = false, nextId = 0, creates = 0;
+  class Clock extends Date { constructor(...args) { super(...(args.length ? args : [state.now])); } static now() { return state.now; } }
+  function iterator(items) { let i = 0; return { hasNext: () => i < items.length, next: () => items[i++] }; }
+  function blob(content, type, name) {
+    const bytes = typeof content === 'string' ? [...Buffer.from(content)] : Array.from(content);
+    return { bytes, type, name, getBytes: () => bytes, getName: () => name, getContentType: () => type,
+      getDataAsString: () => Buffer.from(bytes.map(b => b & 255)).toString(),
+      setName(value) { name = value; this.name = value; return this; },
+      setContentType(value) { type = value; this.type = value; return this; } };
+  }
+  function folder(name, parent) {
+    const id = 'folder-' + ++nextId;
+    const item = { id, name, parent, trashed: false, childFolders: [], childFiles: [],
+      getId: () => id, getUrl: () => 'https://drive.google.com/drive/folders/' + id,
+      isTrashed: () => item.trashed || !!(parent && parent.isTrashed()),
+      getSharingAccess: () => state.shared ? 'PUBLIC' : 'PRIVATE', getEditors: () => [], getViewers: () => [],
+      setSharing(access, permission) { assert.equal(access, 'PRIVATE'); assert.equal(permission, 'NONE'); return item; },
+      getFolders: () => iterator(item.childFolders.filter(f => !f.isTrashed())),
+      getFoldersByName: value => iterator(item.childFolders.filter(f => f.name === value && !f.isTrashed())),
+      getFiles: () => iterator(item.childFiles.filter(f => !f.isTrashed())),
+      getFilesByName: value => iterator(item.childFiles.filter(f => f.name === value && !f.isTrashed())),
+      createFolder(value) { return folder(value, item); },
+      setTrashed(value) { if (state.failTrash) throw new Error('Drive cleanup failed'); item.trashed = value; return item; },
+      createFile(value) {
+        creates++;
+        if (state.failCreateAt === creates) throw new Error('Drive upload failed');
+        const fileId = 'file-' + ++nextId;
+        let contents = blob(value.getBytes(), value.getContentType(), value.getName());
+        const file = { id: fileId, name: value.getName(), trashed: false,
+          getId: () => fileId, getSize: () => contents.getBytes().length,
+          getBlob: () => blob(contents.getBytes(), contents.getContentType(), file.name),
+          isTrashed: () => file.trashed || item.isTrashed(),
+          setTrashed(value) { file.trashed = value; return file; },
+          setContent(value) {
+            if (file.name === 'envoi.json' && state.failSentManifest && JSON.parse(value).state === 'sent') throw new Error('Drive sent marker failed');
+            contents = blob(value, contents.getContentType(), file.name); return file;
+          }
+        };
+        item.childFiles.push(file); files.set(fileId, file); return file;
+      }
+    };
+    folders.set(id, item); if (parent) parent.childFolders.push(item); return item;
+  }
   const context = {
-    console: { error() {} },
-    LockService: { getScriptLock: () => ({
-      tryLock: () => (held = !locked), hasLock: () => held, releaseLock: () => { held = false; }
-    }) },
-    CacheService: { getScriptCache: () => ({ get: key => cache.get(key), put: (key, value) => cache.set(key, value) }) },
-    PropertiesService: { getScriptProperties: () => ({ getProperty: key => properties.get(key), setProperty: (key, value) => { if (failSentReceipt && key.startsWith('MAIL_RECEIPT:') && JSON.parse(value).state === 'sent') throw new Error('Storage down'); properties.set(key, value); }, getProperties: () => Object.fromEntries(properties), deleteProperty: key => properties.delete(key) }) },
-    Session: { getEffectiveUser: () => ({ getEmail: () => account }) },
+    Date: Clock, console: { error: value => logs.push(value), warn: value => logs.push(value), log: value => logs.push(value) },
+    LockService: { getScriptLock: () => ({ tryLock: () => (held = !state.locked), hasLock: () => held, releaseLock: () => { held = false; } }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: key => properties.get(key),
+      setProperty: (key, value) => { if (state.failSentReceipt && key.startsWith('MAIL_RECEIPT:') && JSON.parse(value).state === 'sent') throw new Error('Storage down'); properties.set(key, value); },
+      getProperties: () => Object.fromEntries(properties), deleteProperty: key => properties.delete(key) }) },
+    Session: { getEffectiveUser: () => ({ getEmail: () => state.account }), getActiveUser: () => ({ getEmail: () => state.active }) },
     Utilities: {
-      formatDate: () => '2026-10-09',
-      base64Decode: value => [...Buffer.from(value, 'base64')].map(b => signedBytes && b > 127 ? b - 256 : b),
-      newBlob: (bytes, type, name) => ({ bytes, type, name })
+      getUuid: () => 'generated-uuid-12345678901234567890',
+      formatDate: date => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Brussels' }).format(date),
+      base64Decode: value => [...Buffer.from(value, 'base64')].map(b => state.signedBytes && b > 127 ? b - 256 : b),
+      newBlob: blob
     },
-    MailApp: { getRemainingDailyQuota: () => quota, sendEmail: mail => { if (mailError) throw new Error('Google timeout'); mails.push(mail); } },
+    DriveApp: { Access: { PRIVATE: 'PRIVATE' }, Permission: { NONE: 'NONE' },
+      createFolder: name => folder(name), getFolderById: id => { if (!folders.has(id)) throw new Error('Folder missing'); return folders.get(id); },
+      getFileById: id => { if (!files.has(id)) throw new Error('File missing'); return files.get(id); } },
+    ScriptApp: { getProjectTriggers: () => [...triggers], deleteTrigger: trigger => triggers.splice(triggers.indexOf(trigger), 1),
+      newTrigger: handler => ({ timeBased() { return this; }, everyMinutes(minutes) { assert.equal(minutes, 5); return this; },
+        create() { const trigger = { getHandlerFunction: () => handler }; triggers.push(trigger); return trigger; } }) },
+    MailApp: { getRemainingDailyQuota: () => state.quota, sendEmail: mail => {
+      if (state.mailError) throw new Error('Google timeout'); mails.push(mail); state.quota--;
+    } },
     ContentService: { MimeType: { JSON: 'JSON' }, createTextOutput: value => ({ setMimeType: () => JSON.parse(value) }) }
   };
-  vm.createContext(context);
-  vm.runInContext(serverSource, context);
+  vm.createContext(context); vm.runInContext(serverSource, context);
+  if (state.installed) context.installerFileEnvoi();
+  function pending() {
+    const root = folders.get(properties.get('CRBO_MAIL_QUEUE_ROOT'));
+    return root ? root.childFolders.filter(f => !f.isTrashed()) : [];
+  }
+  function job(id) {
+    const f = pending().find(f => f.name === 'envoi-' + id);
+    if (!f) return null;
+    const manifest = f.getFilesByName('envoi.json');
+    return manifest.hasNext() ? JSON.parse(manifest.next().getBlob().getDataAsString()) : null;
+  }
   return {
     get: id => context.doGet(id ? { parameter: { receipt: id } } : undefined),
     post: payload => context.doPost({ postData: { contents: JSON.stringify(payload) } }),
-    mails, properties, clearCache: () => cache.clear(), held: () => held
+    run: () => context.traiterFileEnvoi(), install: () => context.installerFileEnvoi(),
+    mails, properties, clearCache() {}, held: () => held, state, folders, files, triggers, pending, job, logs,
+    advance: milliseconds => { state.now += milliseconds; }
   };
 }
 
@@ -88,11 +153,17 @@ test('invalid documents, missing names and unknown types never send a mail', () 
 });
 
 test('existing quota, daily limit, lock and sender protections remain active', () => {
-  for (const settings of [{ count: 30 }, { quota: 0 }, { locked: true }, { account: 'other@example.com' }]) {
+  for (const settings of [{ locked: true, installed: false }, { account: 'other@example.com', active: 'other@example.com', installed: false }]) {
     const service = server(settings);
     assert.equal(service.post({ ...valid, checklistType: 'tenues', demandeur: 'Kevin' }).ok, false);
     assert.equal(service.mails.length, 0);
     assert.equal(service.held(), false);
+  }
+  for (const settings of [{ count: 30 }, { quota: 0 }]) {
+    const service = server(settings);
+    assert.equal(service.post({ ...valid, plaque: 'ABC' }).ok, true);
+    assert.equal(service.pending().length, 1);
+    assert.equal(service.mails.length, 0);
   }
   const service = server();
   assert.equal(service.post({ ...valid, website: 'bot' }).ok, true);
@@ -126,7 +197,7 @@ function fakeDatabase(records, failSave) {
 
 async function browser({ type = 'tenues', name = 'Kévin Leruth', date = '2026-10-09', ready = true,
   networkError = false, action = 'send', photos, photoReady = true, failPost = false,
-  receipt = 'sent', records = new Map(), failSave = false, submit = true } = {}) {
+  receipt = 'sent', stored = false, queueReady = true, records = new Map(), failSave = false, submit = true } = {}) {
   function element() {
     return { textContent: '', children: [], style: {}, listeners: {},
       appendChild(child) { this.children.push(child); }, replaceChildren() { this.children = []; },
@@ -139,7 +210,8 @@ async function browser({ type = 'tenues', name = 'Kévin Leruth', date = '2026-1
     date: { value: date, focus() {} }, actionStatus: element(),
     pdfButton: { textContent: 'Télécharger' }, emailButton: { textContent: 'Envoyer' }
   };
-  let built = 0, downloaded = 0, payload, probes = 0, released = 0, posts = 0, time = Date.now();
+  let built = 0, downloaded = 0, payload, probes = 0, released = 0, posts = 0, uuid = 0, time = Date.now();
+  const receivedIds = new Set();
   const created = [];
   class Clock extends Date { static now() { time += 10000; return time; } }
   const context = {
@@ -149,21 +221,25 @@ async function browser({ type = 'tenues', name = 'Kévin Leruth', date = '2026-1
     Uint8Array, Date: Clock, Math, Error, AbortController,
     setTimeout: (fn, ms) => ms === 1500 ? setTimeout(fn, 0) : setTimeout(fn, ms), clearTimeout,
     window: { location: { pathname: '/test' }, btoa: value => Buffer.from(value, 'binary').toString('base64'),
-      atob: value => Buffer.from(value, 'base64').toString('binary'), crypto: { randomUUID: () => 'test-uuid-1234567890123456789' } },
+      atob: value => Buffer.from(value, 'base64').toString('binary'), crypto: { randomUUID: () => 'test-uuid-1234567890123456789-' + ++uuid } },
     fetch: async (url, options) => {
       if (networkError) throw new Error('Réseau indisponible');
       assert.equal(options.credentials, 'omit');
       if (!options.method) {
-        if (new URL(url).searchParams.has('receipt')) return { ok: true, json: async () => ({ ok: true, state: posts ? receipt : 'missing', error: receipt === 'failed' ? 'Quota épuisé' : undefined }) };
+        if (new URL(url).searchParams.has('receipt')) {
+          const known = receivedIds.has(new URL(url).searchParams.get('receipt'));
+          return { ok: true, json: async () => ({ ok: true, stored: known && stored, state: known ? receipt : 'missing', error: receipt === 'failed' ? 'Quota épuisé' : undefined }) };
+        }
         probes++;
-        return { ok: true, json: async () => ({ ok: true, receiptApi: ready ? 1 : undefined,
+        return { ok: true, json: async () => ({ ok: true, receiptApi: ready ? 1 : undefined, serverQueue: ready ? 1 : undefined, queueReady,
           supportedTypes: ['ambulance','tpmr','fit','peremption','tenues'], photoAttachments: photoReady }) };
       }
       posts++;
       if (failPost) throw new Error('Transmission interrompue');
       assert.equal(options.mode, 'no-cors');
-      assert.equal(records.size, 1, 'la copie doit être validée avant le POST');
+      assert.equal(records.has(JSON.parse(options.body).requestId), true, 'la copie doit être validée avant le POST');
       payload = JSON.parse(options.body);
+      receivedIds.add(payload.requestId);
       return {};
     }
   };
@@ -373,22 +449,198 @@ test('durable receipt confirms send even after volatile cache is gone', () => {
 test('server quota failure is readable by receipt; ambiguous mail errors prohibit resending', () => {
   const payload = { ...valid, requestId: 'failure-request-123456789', plaque: 'ABC' };
   const quota = server({ quota: 0 });
-  assert.equal(quota.post(payload).ok, false);
-  assert.equal(quota.get(payload.requestId).state, 'failed');
-  assert.match(quota.get(payload.requestId).error, /quota/);
+  assert.equal(quota.post(payload).ok, true);
+  assert.equal(quota.get(payload.requestId).state, 'retry');
+  assert.equal(quota.get(payload.requestId).stored, true);
+  assert.match(quota.job(payload.requestId).lastError, /quota/);
   const uncertain = server({ mailError: true });
-  assert.equal(uncertain.post(payload).ok, false);
+  assert.equal(uncertain.post(payload).ok, true);
   assert.equal(uncertain.get(payload.requestId).state, 'review');
-  assert.equal(uncertain.post(payload).ok, false);
+  assert.equal(uncertain.post(payload).ok, true);
   assert.equal(uncertain.get(payload.requestId).state, 'review');
 });
 
 test('receipt persistence failure after MailApp never allows a second mail', () => {
   const service = server({ failSentReceipt: true });
   const payload = { ...valid, requestId: 'storage-failure-123456789', plaque: 'ABC' };
-  assert.equal(service.post(payload).ok, false);
+  assert.equal(service.post(payload).ok, true);
   assert.equal(service.mails.length, 1);
-  assert.equal(service.get(payload.requestId).state, 'sending');
+  assert.equal(service.get(payload.requestId).state, 'sent');
   service.post(payload);
   assert.equal(service.mails.length, 1);
+});
+
+
+test('installer is owner-only, idempotent and preserves other triggers and saved documents', () => {
+  const service = server({ installed: false });
+  assert.equal(service.get().queueReady, false);
+  service.install(); service.install();
+  assert.equal(service.get().serverQueue, 1);
+  assert.equal(service.get().queueReady, true);
+  assert.equal(service.triggers.length, 1);
+  service.triggers.push({ getHandlerFunction: () => 'otherJob' });
+  service.install();
+  assert.equal(service.triggers.length, 2);
+  const unauthenticated = server({ installed: false, active: '' });
+  assert.throws(() => unauthenticated.install(), /éditeur/);
+  assert.equal(unauthenticated.folders.size, 0);
+  assert.equal(unauthenticated.post({ ...valid, plaque: 'ABC' }).ok, false);
+  assert.equal(unauthenticated.mails.length, 0);
+});
+
+test('quota failure preserves the complete PDF and JPEGs; trigger later sends and cleans up', () => {
+  const service = server({ quota: 0 });
+  const payload = { ...valid, requestId: 'queued-request-123456789', plaque: 'ABC', photos: [jpeg] };
+  assert.equal(service.post(payload).ok, true);
+  const job = service.job(payload.requestId);
+  assert.equal(job.state, 'retry'); assert.equal(job.files.length, 2);
+  assert.equal(service.get(payload.requestId).stored, true);
+  assert.equal(service.get(payload.requestId).state, 'retry');
+  assert.equal(service.mails.length, 0);
+  for (const item of job.files) assert.equal(service.files.get(item.id).isTrashed(), false);
+  service.state.quota = 10;
+  service.run(); assert.equal(service.mails.length, 0, 'respecter la date de reprise');
+  service.advance(3600001); service.run();
+  assert.equal(service.mails.length, 1);
+  assert.equal(service.mails[0].attachments.length, 2);
+  assert.equal(service.pending().length, 0);
+  assert.equal(service.get(payload.requestId).state, 'sent');
+  service.run(); service.post(payload);
+  assert.equal(service.mails.length, 1, 'pas de doublon après nettoyage Drive');
+});
+
+test('failed automated retry keeps all backups and sends nothing', () => {
+  const service = server({ quota: 0 });
+  const payload = { ...valid, requestId: 'failed-retry-1234567890', plaque: 'ABC', photos: [jpeg, jpeg] };
+  service.post(payload); service.advance(3600001); service.run();
+  assert.equal(service.pending().length, 1); assert.equal(service.mails.length, 0);
+  assert.equal(service.job(payload.requestId).files.length, 3);
+  assert.equal(service.job(payload.requestId).state, 'retry');
+  service.advance(86400000 * 31); service.run();
+  assert.equal(service.get(payload.requestId).stored, true);
+  assert.equal(service.pending().length, 1, 'aucune expiration des sauvegardes non envoyées');
+});
+
+test('partial Drive upload is never acknowledged as stored and never sent; same-ID retry recovers', () => {
+  const service = server({ failCreateAt: 2 });
+  const payload = { ...valid, requestId: 'partial-upload-123456789', plaque: 'ABC', photos: [jpeg] };
+  assert.equal(service.post(payload).ok, false);
+  assert.equal(service.get(payload.requestId).stored, false);
+  service.run(); assert.equal(service.mails.length, 0);
+  assert.equal(service.pending().length, 1, 'fragments conservés pour diagnostic');
+  assert.equal(service.post(payload).ok, true);
+  assert.equal(service.mails.length, 1);
+  assert.equal(service.pending().length, 0);
+});
+
+test('lost property receipt does not hide a complete Drive job or authorize another POST', () => {
+  const service = server({ quota: 0 });
+  const payload = { ...valid, requestId: 'lost-receipt-123456789', plaque: 'ABC' };
+  service.post(payload); service.properties.delete('MAIL_RECEIPT:' + payload.requestId);
+  assert.equal(service.get(payload.requestId).state, 'retry');
+  assert.equal(service.get(payload.requestId).stored, true);
+  assert.equal(service.post(payload).duplicate, true);
+  assert.equal(service.pending().length, 1);
+});
+
+test('interruption after sending marker or exception during MailApp retains Drive copy in review', () => {
+  const service = server({ failSentManifest: true });
+  const payload = { ...valid, requestId: 'crash-after-mail-123456789', plaque: 'ABC', photos: [jpeg] };
+  service.post(payload);
+  assert.equal(service.mails.length, 1);
+  assert.equal(service.job(payload.requestId).state, 'sending');
+  service.run();
+  assert.equal(service.job(payload.requestId).state, 'review');
+  assert.equal(service.pending().length, 1);
+  service.run(); service.post(payload);
+  assert.equal(service.mails.length, 1);
+  const exception = server({ mailError: true });
+  exception.post(payload); exception.run(); exception.run();
+  assert.equal(exception.job(payload.requestId).state, 'review');
+  assert.equal(exception.pending().length, 1);
+});
+
+test('cleanup failure after success retains backup but never resends; next trigger only cleans', () => {
+  const service = server({ failTrash: true });
+  const payload = { ...valid, requestId: 'cleanup-failure-123456789', plaque: 'ABC' };
+  service.post(payload); service.run();
+  assert.equal(service.mails.length, 1);
+  assert.equal(service.pending().length, 1);
+  assert.equal(service.get(payload.requestId).state, 'sent');
+  service.state.failTrash = false; service.run();
+  assert.equal(service.pending().length, 0);
+  assert.equal(service.mails.length, 1);
+});
+
+test('worker preserves documents if an attachment is missing or queue folder is shared', () => {
+  const service = server({ quota: 0 });
+  const payload = { ...valid, requestId: 'missing-attachment-123456789', plaque: 'ABC' };
+  service.post(payload);
+  const item = service.job(payload.requestId).files[0];
+  service.files.get(item.id).setTrashed(true); service.state.quota = 10;
+  service.advance(3600001); service.run();
+  assert.equal(service.mails.length, 0);
+  assert.match(service.job(payload.requestId).lastError, /manquante/);
+  service.state.shared = true;
+  assert.throws(() => service.run(), /privé/);
+  assert.equal(service.pending().length, 1);
+});
+
+test('client acknowledges only durable server copies and does not require the phone for retry', async () => {
+  for (const receipt of ['queued', 'retry', 'sending']) {
+    const result = await browser({ type: 'ambulance', receipt, stored: true, photos: [photo] });
+    assert.match(result.elements.actionStatus.textContent, /enregistrés sur Drive/);
+    assert.match(result.elements.actionStatus.textContent, /pouvez fermer/);
+    assert.equal([...result.records.values()][0].serverAccepted, true);
+    assert.equal([...result.records.values()][0].photos.length, 1);
+    assert.equal(result.records.size, 1, 'copie locale conservée jusqu’au mail confirmé');
+  }
+  const incomplete = await browser({ receipt: 'queued', stored: false });
+  assert.doesNotMatch(incomplete.elements.actionStatus.textContent, /pouvez fermer/);
+  assert.equal([...incomplete.records.values()][0].serverAccepted, undefined);
+  const uninstalled = await browser({ queueReady: false });
+  assert.equal(uninstalled.posts, 0);
+  assert.equal(uninstalled.records.size, 1);
+  assert.match(uninstalled.elements.actionStatus.textContent, /installerFileEnvoi/);
+});
+
+test('client signals manual review while retaining local and server copies', async () => {
+  const result = await browser({ receipt: 'review', stored: true });
+  assert.match(result.elements.actionStatus.textContent, /envoi incertain/);
+  assert.equal([...result.records.values()][0].serverState, 'review');
+  assert.equal(result.records.size, 1);
+});
+
+
+test('daily cap queues documents and resumes on the next Brussels day', () => {
+  const service = server({ count: 30 });
+  const payload = { ...valid, requestId: 'next-day-retry-123456789', plaque: 'ABC' };
+  service.post(payload);
+  assert.equal(service.mails.length, 0);
+  assert.equal(service.job(payload.requestId).state, 'retry');
+  service.advance(86400001); service.run();
+  assert.equal(service.mails.length, 1);
+  assert.equal(JSON.parse(service.properties.get('CHECKLIST_SEND_COUNTER')).count, 1);
+  assert.equal(service.pending().length, 0);
+});
+
+test('client may start another checklist after Drive acknowledgement without overwriting the first backup', async () => {
+  const result = await browser({ type: 'ambulance', receipt: 'queued', stored: true, photos: [photo] });
+  const firstId = [...result.records.keys()][0];
+  await result.context.window.ChecklistMailer.run({ action: 'send', type: 'ambulance',
+    buildPdf: async () => ({ output: () => ({ size: 5, arrayBuffer: async () => Uint8Array.from([37,80,68,70,45]).buffer }) }) });
+  assert.equal(result.records.size, 2);
+  assert.equal(result.records.has(firstId), true);
+  assert.equal([...result.records.values()].every(record => record.serverAccepted === true), true);
+});
+
+test('queue capacity rejects new uploads without deleting any existing incomplete or failed backups', () => {
+  const service = server({ quota: 0 });
+  const root = service.folders.get(service.properties.get('CRBO_MAIL_QUEUE_ROOT'));
+  for (let i = 0; i < 60; i++) root.createFolder('existing-' + i);
+  const payload = { ...valid, requestId: 'full-queue-test-123456789', plaque: 'ABC' };
+  assert.equal(service.post(payload).ok, false);
+  assert.equal(service.pending().length, 60);
+  assert.equal(service.get(payload.requestId).stored, false);
+  assert.equal(service.mails.length, 0);
 });

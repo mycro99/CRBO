@@ -1,14 +1,8 @@
-# Photos séparées du PDF : contrat côté site
+# Photos des véhicules et file d’envoi
 
-Le site prépare les photos des checklists Ambulance, TPMR et FIT en JPEG séparés. La sélection et la compression restent dans `vehicle-photos.js`. Les photos ne sont plus insérées dans le PDF.
+Les checklists Ambulance, TPMR et FIT préparent jusqu’à 12 JPEG séparés du PDF (6 Mio cumulés) avec `vehicle-photos.js`. Le schéma annoté reste dans le PDF. Les photos ne sont pas incorporées dans les pages du PDF.
 
-**Le code Google doit être déployé manuellement dans le projet existant.** Le PDF terminé et les photos sont sauvegardés sur l’appareil avant transmission. Le site vérifie ensuite les capacités `photoAttachments: true` et `receiptApi: 1`. Un ancien déploiement bloque le POST, sans supprimer la copie locale. Le suivi des reçus s’applique aussi aux autres documents.
-
-## Activation dans Google Apps Script
-
-Le `doGet()` annonce `photoAttachments: true` dans cette version de `Code.gs`. Cette capacité devient visible pour le site après la mise à jour du déploiement existant (voir `README.md`).
-
-Le POST conserve tous ses champs existants et ajoute, si des photos sont présentes :
+Le POST conserve ses champs existants et ajoute les photos :
 
 ```json
 {
@@ -22,6 +16,8 @@ Le POST conserve tous ses champs existants et ajoute, si des photos sont présen
 }
 ```
 
-Le serveur valide les types de checklist autorisés, le nombre de photos (12 maximum), le MIME et la signature JPEG, ainsi que la taille cumulée des JPEG décodés (6 Mio maximum), puis joint les blobs à côté du PDF dans **un même mail**. Les noms sont reconstruits sur le serveur. Une photo invalide bloque tout le mail pour éviter un envoi incomplet. Le destinataire fixe, la vérification du compte, le compteur journalier, le verrou et la protection contre les doublons sont conservés.
+Le serveur valide les types, le nombre, la signature JPEG et la taille avant de créer les fichiers Drive. Il reconstruit les noms et conserve le PDF avec les JPEG dans un sous-dossier privé. Une photo invalide bloque l’ensemble du document ; il ne confirme jamais une sauvegarde partielle.
 
-Le mode `no-cors` ne permet pas de lire le résultat du POST. Un GET séparé consulte désormais le reçu : aucun succès n’est annoncé sans l’état `sent` écrit après le retour de MailApp. La copie locale reste disponible tant que cet état n’est pas confirmé. Voir `README.md` pour la reprise et les limites de conservation. Un essai réel reste nécessaire après le redéploiement Google.
+Le manifest complet est créé en dernier. L’envoi initial et les tentatives automatiques lisent les mêmes fichiers Drive et joignent tous les JPEG à côté du PDF dans **un seul mail**. Tout échec ou état incertain conserve la sauvegarde. Seul un envoi confirmé permet la mise à la corbeille du dossier complet.
+
+Le site exige `photoAttachments: true`, `receiptApi: 1`, `serverQueue: 1` et `queueReady: true`. Le reçu indépendant `stored: true` permet de fermer la page ; `sent` confirme ensuite le retour réussi de MailApp. Voir [README.md](README.md) pour le manifeste Apps Script, l’installation du déclencheur et les règles de reprise.

@@ -82,9 +82,10 @@
 
   async function requireService(record) {
     const service = await getService();
-    if (service.receiptApi !== 1) {
-      throw new Error("Le script Google doit être mis à jour pour confirmer les envois. Le document est sauvegardé sur cet appareil ; aucun nouvel envoi lancé.");
+    if (service.receiptApi !== 1 || service.serverQueue !== 1) {
+      throw new Error("Le script Google doit être mis à jour pour activer la file d’envoi. Le document est sauvegardé sur cet appareil ; aucun nouvel envoi lancé.");
     }
+    if (service.queueReady !== true) throw new Error("Exécutez installerFileEnvoi dans l’éditeur Google puis redéployez. Le document reste sauvegardé sur cet appareil.");
     if (record.photos && record.photos.length && service.photoAttachments !== true) {
       throw new Error("Le script Google ne prend pas encore en charge les photos. Le document est sauvegardé.");
     }
@@ -99,6 +100,15 @@
       setStatus("Envoi confirmé par Google. La réception dans la boîte destinataire peut prendre quelques instants.");
       return true;
     }
+    if (receipt.stored === true && ["queued", "retry", "sending", "review"].includes(receipt.state)) {
+      record.serverAccepted = true;
+      record.serverState = receipt.state;
+      await outbox("put", record);
+      setStatus(receipt.state === "review"
+        ? "Copie enregistrée sur Drive, mais envoi incertain : prévenez le responsable pour vérification. Le document et les photos sont conservés."
+        : "Document et photos enregistrés sur Drive. L’envoi est pris en charge automatiquement ; vous pouvez fermer cette page.");
+      return true;
+    }
     if (receipt.state === "failed") throw new Error("Envoi refusé : " + (receipt.error || "réessayez ultérieurement."));
     if (receipt.state === "review") throw new Error(receipt.error || "Envoi incertain : faites vérifier les exécutions du script avant de renvoyer.");
     return false;
@@ -108,7 +118,7 @@
     await requireService(record);
     const previous = await getService({ receipt: record.requestId });
     // Une erreur connue avant MailApp peut être réessayée ; un envoi incertain reste bloqué.
-    if (previous.state === "sent" || previous.state === "review") {
+    if (previous.stored === true || previous.state === "sent" || previous.state === "review") {
       await finishReceipt(record, previous);
       return;
     }
@@ -182,16 +192,16 @@
     pendingPanel.hidden = !records.length;
     if (!records.length) return;
     const title = document.createElement("strong");
-    title.textContent = "Envois à confirmer — copies conservées sur cet appareil";
+    title.textContent = "Suivi des envois — copies de secours";
     pendingPanel.appendChild(title);
     const info = document.createElement("p");
-    info.textContent = "Reprenez ici un envoi interrompu. Le PDF et les photos sont conservés jusqu’à confirmation Google. Ils ne sont pas partagés entre appareils ; effacer les données du navigateur supprime ces copies.";
+    info.textContent = "Sans confirmation Drive, reprenez l’envoi ici sur le même appareil. Une fois le document enregistré sur Drive, le serveur s’occupe du mail même si vous fermez cette page. Les copies locales restent disponibles jusqu’à confirmation d’envoi.";
     pendingPanel.appendChild(info);
     records.sort(function (a, b) { return a.savedAt - b.savedAt; }).forEach(function (record) {
       const row = document.createElement("div");
       row.style.cssText = "padding:10px 0;border-top:1px solid #d6b878";
       const label = document.createElement("p");
-      label.textContent = (record.plaque || record.demandeur) + " — " + record.checklistDate + " — " + record.photos.length + " photo(s)";
+      label.textContent = (record.plaque || record.demandeur) + " — " + record.checklistDate + " — " + record.photos.length + " photo(s) — " + (record.serverAccepted ? record.serverState === "review" ? "Sur Drive — vérification nécessaire" : "Sur Drive — envoi pris en charge" : "Enregistrement Drive non confirmé");
       row.appendChild(label);
       function button(text, handler) {
         const element = document.createElement("button");
@@ -199,7 +209,7 @@
         element.style.cssText = "margin:4px;padding:8px;cursor:pointer";
         element.addEventListener("click", handler); row.appendChild(element);
       }
-      button("Vérifier / réessayer", async function () {
+      button(record.serverAccepted ? "Vérifier l’envoi" : "Vérifier / réessayer", async function () {
         if (busy) return;
         busy = true; setButtonsDisabled(true);
         try { await renderPending(); await transmit(record); }
@@ -250,7 +260,7 @@
     let photoSelection;
     try {
       if (action === "send") {
-        const existing = (await outbox("getAll")).some(function (record) { return record.path === window.location.pathname; });
+        const existing = (await outbox("getAll")).some(function (record) { return record.path === window.location.pathname && !record.serverAccepted; });
         if (existing) throw new Error("Un document attend déjà confirmation. Utilisez « Vérifier / réessayer » pour ce document avant de créer un nouvel envoi.");
       }
       const photos = [];
@@ -286,7 +296,17 @@
   }
 
   function initializeRecovery() {
-    renderPending().catch(function () {
+    renderPending().then(async function () {
+      const records = (await outbox("getAll")).filter(function (record) { return record.path === window.location.pathname && record.serverAccepted; });
+      for (const record of records) {
+        if (busy) break;
+        try {
+          const receipt = await getService({ receipt: record.requestId });
+          if (!busy) await finishReceipt(record, receipt);
+        } catch (_) { /* Hors connexion : laisser les copies et leurs boutons disponibles. */ }
+      }
+      await renderPending();
+    }).catch(function () {
       setStatus("La sauvegarde locale n’est pas disponible sur ce navigateur. Les envois seront bloqués pour éviter de perdre le document.");
     });
   }
