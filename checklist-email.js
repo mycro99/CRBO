@@ -25,9 +25,18 @@
     });
   }
 
-  function setStatus(message) {
+  function setStatus(message, tone) {
     const status = document.getElementById("actionStatus");
-    if (status) status.textContent = message;
+    if (!status) return;
+    const waiting = !tone && busy && sending;
+    const color = tone === "success" ? ["#ecfdf5", "#166534"] :
+      tone === "error" || tone === "warning" ? ["#fff1f2", "#9f1239"] :
+      waiting ? ["#fff7d6", "#713f12"] : ["#eff6ff", "#1e3a8a"];
+    status.textContent = waiting ? "ENVOI EN COURS — GARDEZ CETTE PAGE OUVERTE.\n" + message : message;
+    if (status.parentElement) status.parentElement.style.flexWrap = "wrap";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    status.style.cssText = "display:block;box-sizing:border-box;flex:0 0 auto;width:100%;max-width:none;margin:12px 0;padding:16px;border:2px solid " + color[1] + ";border-radius:10px;background:" + color[0] + ";color:" + color[1] + ";font-size:17px;font-weight:700;line-height:1.5;white-space:pre-line";
   }
 
   function setButtonsDisabled(disabled) {
@@ -38,6 +47,7 @@
   }
 
   let busy = false;
+  let sending = false;
   let database;
   let pendingPanel;
 
@@ -97,7 +107,7 @@
   async function finishReceipt(record, receipt) {
     if (receipt.state === "sent") {
       await outbox("delete", record.requestId);
-      setStatus("Envoi confirmé par Google. La réception dans la boîte destinataire peut prendre quelques instants.");
+      setStatus("Envoi confirmé par Google. Vous pouvez fermer cette page. La réception du mail peut prendre quelques instants.", "success");
       return true;
     }
     if (receipt.stored === true && ["queued", "retry", "sending", "review"].includes(receipt.state)) {
@@ -106,7 +116,7 @@
       await outbox("put", record);
       setStatus(receipt.state === "review"
         ? "Copie enregistrée sur Drive, mais envoi incertain : prévenez le responsable pour vérification. Le document et les photos sont conservés."
-        : "Document et photos enregistrés sur Drive. L’envoi est pris en charge automatiquement ; vous pouvez fermer cette page.");
+        : "Document et photos enregistrés sur Drive. Vous pouvez fermer cette page : l’envoi par mail est pris en charge automatiquement.", receipt.state === "review" ? "warning" : "success");
       return true;
     }
     if (receipt.state === "failed") throw new Error("Envoi refusé : " + (receipt.error || "réessayez ultérieurement."));
@@ -126,7 +136,7 @@
       throw new Error("Cette copie a plus de 29 jours : vérifiez les anciens envois avant de la renvoyer. Son PDF reste téléchargeable.");
     }
     if (previous.state === "missing" || previous.state === "failed") {
-      setStatus("Copie sauvegardée. Transmission du PDF et des photos… Gardez cette page ouverte.");
+      setStatus("Transmission du document et des photos…");
       const controller = new AbortController();
       const timeout = setTimeout(function () { controller.abort(); }, 45000);
       try {
@@ -141,7 +151,7 @@
     } else if (previous.state !== "sending") {
       throw new Error("État d’envoi inconnu. La copie est conservée ; aucun renvoi lancé.");
     }
-    setStatus("Vérification de la confirmation Google… La copie reste sauvegardée sur cet appareil.");
+    setStatus("Attendez le message de confirmation avant de quitter la checklist.");
     const deadline = Date.now() + 45000;
     while (Date.now() < deadline) {
       const receipt = await getService({ receipt: record.requestId });
@@ -179,20 +189,23 @@
   }
 
   async function renderPending() {
-    const records = (await outbox("getAll")).filter(function (record) { return record.path === window.location.pathname; });
+    const records = (await outbox("getAll")).filter(function (record) {
+      return record.path === window.location.pathname && (!record.serverAccepted || record.serverState === "review");
+    });
     if (!pendingPanel) {
-      pendingPanel = document.createElement("section");
+      pendingPanel = document.createElement("details");
       pendingPanel.setAttribute("aria-label", "Documents dont l’envoi reste à confirmer");
-      pendingPanel.style.cssText = "margin:16px 0;padding:14px;border:2px solid #b7791f;border-radius:10px;background:#fffbeb;color:#3d2b10";
+      pendingPanel.style.cssText = "box-sizing:border-box;width:100%;margin:8px 0;padding:12px;border:1px solid #b7791f;border-radius:10px;background:#fffbeb;color:#3d2b10";
       const status = document.getElementById("actionStatus");
       if (!status) return;
-      status.parentNode.insertBefore(pendingPanel, status);
+      status.parentNode.insertBefore(pendingPanel, status.nextSibling);
     }
     pendingPanel.replaceChildren();
-    pendingPanel.hidden = !records.length;
+    pendingPanel.hidden = busy || !records.length;
     if (!records.length) return;
-    const title = document.createElement("strong");
-    title.textContent = "Suivi des envois — copies de secours";
+    const title = document.createElement("summary");
+    title.style.cssText = "cursor:pointer;font-weight:700";
+    title.textContent = "Envoi à vérifier — options de récupération";
     pendingPanel.appendChild(title);
     const info = document.createElement("p");
     info.textContent = "Sans confirmation Drive, reprenez l’envoi ici sur le même appareil. Une fois le document enregistré sur Drive, le serveur s’occupe du mail même si vous fermez cette page. Les copies locales restent disponibles jusqu’à confirmation d’envoi.";
@@ -211,10 +224,10 @@
       }
       button(record.serverAccepted ? "Vérifier l’envoi" : "Vérifier / réessayer", async function () {
         if (busy) return;
-        busy = true; setButtonsDisabled(true);
+        busy = true; sending = true; setButtonsDisabled(true);
         try { await renderPending(); await transmit(record); }
-        catch (error) { setStatus(error.message || "Envoi non confirmé. Copie conservée."); }
-        finally { busy = false; setButtonsDisabled(false); await renderPending(); }
+        catch (error) { setStatus(error.message || "Envoi non confirmé. Copie conservée.", "error"); }
+        finally { busy = false; sending = false; setButtonsDisabled(false); await renderPending(); }
       });
       button("Télécharger le PDF sauvegardé", function () {
         downloadAttachment(record.pdfBase64, "application/pdf", "checklist-" + record.checklistDate + ".pdf");
@@ -222,7 +235,7 @@
       button("Supprimer la copie locale", async function () {
         if (busy || !window.confirm("Supprimer définitivement le PDF et les photos sauvegardés sur cet appareil ? Cela ne confirme ni n’annule un éventuel envoi. En cas de doute, vérifiez d’abord les exécutions du script.")) return;
         try { await outbox("delete", record.requestId); await renderPending(); }
-        catch (error) { setStatus(error.message); }
+        catch (error) { setStatus(error.message, "error"); }
       });
       record.photos.forEach(function (photo, index) {
         button("Photo " + (index + 1), function () { downloadAttachment(photo.base64, "image/jpeg", "photo-" + (index + 1) + ".jpg"); });
@@ -253,7 +266,9 @@
     }
 
     busy = true;
+    sending = action === "send";
     setButtonsDisabled(true);
+    await renderPending().catch(function () {});
     if (activeButton) activeButton.textContent = action === "send" ? "Envoi en cours…" : "Création du PDF…";
     setStatus(options.type === "tenues" ? "Préparation du bon de commande…" : "Préparation du rapport complet…");
 
@@ -285,10 +300,11 @@
       }
     } catch (error) {
       console.error("Erreur PDF ou envoi :", error);
-      setStatus(error && error.message ? error.message : "Impossible de traiter la checklist. Veuillez réessayer.");
+      setStatus(error && error.message ? error.message : "Impossible de traiter la checklist. Veuillez réessayer.", "error");
     } finally {
       if (photoSelection) photoSelection.release();
       busy = false;
+      sending = false;
       setButtonsDisabled(false);
       try { await renderPending(); } catch (_) {}
       if (activeButton) activeButton.textContent = originalText;
@@ -296,6 +312,7 @@
   }
 
   function initializeRecovery() {
+    setStatus("Après avoir appuyé sur Envoyer, gardez cette page ouverte jusqu’au message de confirmation.", "info");
     renderPending().then(async function () {
       const records = (await outbox("getAll")).filter(function (record) { return record.path === window.location.pathname && record.serverAccepted; });
       for (const record of records) {
