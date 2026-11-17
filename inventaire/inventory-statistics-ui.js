@@ -1,4 +1,5 @@
-import {annualStatistics,prepareStatisticsHistory,rankArticles} from './inventory-statistics.js?v=2';
+import {rankingBars,monthlyChart} from './inventory-statistics-charts.js?v=1';
+import {annualStatistics,prepareStatisticsHistory,rankArticles} from './inventory-statistics.js?v=charts-1';
 import {categoryLabel,fold,todayISO,formatDate} from './inventory-core.js?v=annual-1';
 import {escapeHTML as e,friendlyError,csvText,downloadFile} from './inventory-ui.js';
 
@@ -13,7 +14,7 @@ export function setupInventoryStatistics({getStore,getArticles,getUser}) {
   function invalidate() {
     generation++;controller?.abort();prepared=null;model=null;visible=[];loadedAt='';
     $('statistics-content').hidden=true;$('statistics-status').textContent='';
-    for(const id of ['statistics-summary','statistics-coverage','statistics-rankings','statistics-results','statistics-body','statistics-year'])$(id).replaceChildren();
+    for(const id of ['statistics-summary','statistics-coverage','statistics-rankings','statistics-results','statistics-body','statistics-year','statistics-monthly'])$(id).replaceChildren();
     $('statistics-search').value='';
     if(dialog.open)dialog.close();
   }
@@ -63,7 +64,7 @@ export function setupInventoryStatistics({getStore,getArticles,getUser}) {
   }
   function ranking(title,metric,direction) {
     const rows=rankArticles(visible,metric,direction);
-    return `<section class="statistics-ranking"><h3>${e(title)}</h3>${rows.length?`<ol>${rows.map(row=>`<li><span>${e(row.name)}</span><strong>${e(amount(row,metric))} <small>${e(row.unit)}</small></strong></li>`).join('')}</ol>`:'<p class="muted">Aucune quantité calculable dans cette sélection.</p>'}</section>`;
+    return rankingBars(title,rows,metric,direction);
   }
   function render(resetFilters=false) {
     if(!prepared || !getUser() || !dialog.open)return;
@@ -92,7 +93,8 @@ export function setupInventoryStatistics({getStore,getArticles,getUser}) {
     if(model.undated)warnings.push(`${integer.format(model.undated)} entrée(s) sans date valide : exclues des statistiques annuelles.`);
     if(model.rows.some(row=>row.unitChanged))warnings.push('Unité modifiée : les articles marqués † sont exclus des classements, car leurs anciennes quantités ne sont pas directement comparables.');
     $('statistics-coverage').textContent=warnings.join(' ');
-    $('statistics-rankings').innerHTML=ranking('Les plus commandés','ordered','desc')+ranking('Les moins commandés · hors zéro','ordered','asc')+ranking('Les plus sortis','consumed','desc')+ranking('Les moins sortis · hors zéro','consumed','asc');
+    $('statistics-rankings').innerHTML=ranking('Quantités commandées','ordered','desc')+ranking('Quantités commandées','ordered','asc')+ranking('Sorties de réserve','consumed','desc')+ranking('Sorties de réserve','consumed','asc');
+    $('statistics-monthly').innerHTML=monthlyChart(visible,model.year);
     $('statistics-results').textContent=`${integer.format(visible.length)} article(s) · tri : ${labels[metric]}, ${ascending?'croissant':'décroissant'}.`;
     $('statistics-body').innerHTML=visible.length?visible.map(row=>`<tr><th scope="row">${e(row.name)}${row.unitChanged?' †':''}<small>${e(categoryLabel(row.category))} · ${e(row.unit)}${row.deleted?' · Supprimé':!row.active?' · Archivé':''}${row.operations===0?' · Aucune opération enregistrée':''}</small></th><td>${e(amount(row,'ordered'))}</td><td>${e(amount(row,'cancelled'))}</td><td>${e(amount(row,'received'))}</td><td>${e(amount(row,'entries'))}</td><td><strong>${e(amount(row,'consumed'))}</strong></td><td>+${e(amount(row,'correctionAdded'))} / −${e(amount(row,'correctionRemoved'))}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">Aucun article dans cette sélection.</td></tr>';
   }

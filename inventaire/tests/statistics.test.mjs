@@ -100,3 +100,19 @@ test('an old closure without a prior balance flags unknown cancelled quantity in
  const row=result.rows.find(r=>r.id==='a');
  assert.equal(row.ordered,0);assert.equal(row.uncertainOrders,0);assert.equal(row.uncertainCancellations,1);assert.equal(result.uncertainOrderChanges,1);
 });
+
+test('monthly charts count filtered order/output/receipt operations, not quantities or stock corrections',()=>{
+ const result=compute([
+  event('1','order',{oldOrderQuantity:0,newOrderQuantity:50}),
+  event('2','receive',{receivedQuantity:10,remainingOrderQuantity:40}),
+  event('3','move',{oldStock:10,newStock:6}),
+  event('4','count',{oldStock:6,newStock:2}),
+  event('5','lot',{oldStock:2,newStock:22}),
+  event('6','lot',{action:'Répartition en lot'}),
+  event('7','move',{articleId:'b',oldStock:50,newStock:1,date:'2026-04-01T12:00:00Z'})
+ ]);
+ const row=result.rows.find(r=>r.id==='a');
+ assert.deepEqual(row.months[2],{ordered:1,consumed:1,received:2});
+ assert.deepEqual(row.months[3],{ordered:0,consumed:0,received:0});
+ assert.equal(result.rows.find(r=>r.id==='b').months[3].consumed,1);
+});

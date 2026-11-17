@@ -60,7 +60,7 @@ export function annualStatistics(prepared, articles, year, currentYear=Number(hi
     if(!rows.has(id)) {
       const a=catalog.get(id);
       rows.set(id,{id,name:a?.name || h.articleName || h.articleId || 'Article non identifié',category:a?.category || h.articleCategory || 'À classer',unit:a?.unit || h.articleUnit || 'unité',active:a?.active !== false,deleted:a?.deleted===true,
-        ordered:0,cancelled:0,received:0,entries:0,consumed:0,correctionAdded:0,correctionRemoved:0,operations:0,orderEvents:0,outputEvents:0,uncertainOrders:0,uncertainCancellations:0,unclassified:0,legacyMoves:0,unitChanged:false});
+        ordered:0,cancelled:0,received:0,entries:0,consumed:0,correctionAdded:0,correctionRemoved:0,operations:0,orderEvents:0,outputEvents:0,months:Array.from({length:12},()=>({ordered:0,consumed:0,received:0})),uncertainOrders:0,uncertainCancellations:0,unclassified:0,legacyMoves:0,unitChanged:false});
     }
     const row=rows.get(id);
     return row;
@@ -72,7 +72,7 @@ export function annualStatistics(prepared, articles, year, currentYear=Number(hi
     if(item.year>year) break;
     const h=item.entry, inYear=item.year===year;
     const type=String(h.type || ''), action=String(h.action || '');
-    const row=rowFor(h), previous=balances.get(row.id);
+    const row=rowFor(h), previous=balances.get(row.id), month=Number(item.day.slice(5,7))-1;
     if(inYear) { operations++; row.operations++; dates.push(item.day); if(h.articleUnit && normalized(h.articleUnit)!==normalized(row.unit))row.unitChanged=true; }
     if(type==='order') {
       const next=orderBalance(h), explicitPrevious=nonNegative(h.oldOrderQuantity);
@@ -82,6 +82,7 @@ export function annualStatistics(prepared, articles, year, currentYear=Number(hi
         row.orderEvents++;
         if(next!==null && old!==null && old!==undefined) {
           row.ordered+=Math.max(0,next-old); row.cancelled+=Math.max(0,old-next);
+          if(next>old)row.months[month].ordered++;
         } else {
           // Without the old balance even a closure can hide a cancellation.
           uncertainOrderChanges++; row.uncertainCancellations++;
@@ -99,7 +100,7 @@ export function annualStatistics(prepared, articles, year, currentYear=Number(hi
       }
       if(remaining===null && previous && amount!==null && amount>0 && previous.quantity>=amount) remaining=previous.quantity-amount;
       if(remaining!==null) balances.set(row.id,{quantity:remaining,time:item.time}); else balances.delete(row.id);
-      if(inYear) { if(amount!==null && amount>0) row.received+=amount; else { row.unclassified++; unknown++; } }
+      if(inYear) { if(amount!==null && amount>0) { row.received+=amount; row.months[month].received++; } else { row.unclassified++; unknown++; } }
     } else if(inYear && type==='count') {
       const delta=stockDelta(h);
       if(delta!==null) { row.correctionAdded+=Math.max(0,delta); row.correctionRemoved+=Math.max(0,-delta); }
@@ -107,13 +108,13 @@ export function annualStatistics(prepared, articles, year, currentYear=Number(hi
     } else if(inYear && type==='lot') {
       const old=nonNegative(h.oldStock), next=nonNegative(h.newStock);
       // An allocation into lots is NOT a delivery and does not change stock.
-      if(old!==null && next!==null && next>old) row.received+=next-old;
+      if(old!==null && next!==null && next>old) { row.received+=next-old; row.months[month].received++; }
       else if(old!==null && next!==null && old!==next) {row.unclassified++;unknown++;}
     } else if(inYear && (type==='move' || (!type && signedAction(action)!==null))) {
       const delta=stockDelta(h);
       if(delta!==null) {
         row.entries+=Math.max(0,delta);row.consumed+=Math.max(0,-delta);
-        if(delta<0) row.outputEvents++;
+        if(delta<0) { row.outputEvents++; row.months[month].consumed++; }
         if(!type){row.legacyMoves++;legacyMoves++;}
       } else {row.unclassified++;unknown++;}
     } else if(inYear && !['create','catalog','archive','delete','expiry','lotExpiry','expiration'].includes(type)) {
