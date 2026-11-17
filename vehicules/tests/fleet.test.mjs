@@ -152,3 +152,24 @@ test('vehicle page local script/style/navigation references resolve without any 
  }
  assert.doesNotMatch(html,/href="\.\.\/inventaire\/inventaire\.html"/);
 });
+
+test('principal vehicle assignment is valid and stays available, including alongside other statuses',()=>{
+ const principal={...event,id:'principal',kind:'primary',reason:'Affectation principale',location:'Centre principal'};
+ assert.equal(validateEvent(principal).kind,'primary');
+ const available=vehicleSituation(vehicle,[principal],'2026-11-11');
+ assert.equal(available.key,'primary');assert.equal(available.label,'Véhicule principal');assert.equal(available.current.length,0);assert.equal(available.assignment.id,'principal');
+ assert.equal(available.location,'Centre principal');
+ const borrowed=vehicleSituation(vehicle,[principal,event],'2026-11-11');
+ assert.equal(borrowed.key,'loan');assert.equal(borrowed.current.length,1);assert.equal(borrowed.assignment.id,'principal');assert.equal(borrowed.location,'Autre centre');
+ const future=vehicleSituation(vehicle,[principal],'2026-11-09');assert.equal(future.assignment,undefined);assert.equal(future.upcoming.length,1);
+ const closed=vehicleSituation(vehicle,[{...principal,open:false}],'2026-11-11');assert.equal(closed.key,'available');
+});
+
+test('principal assignment is persisted and closed through the same atomic event history',async()=>{
+ const m=mockStore();await create(m);
+ await m.store.saveEvent('TEST001',{type:'create',event:{...loan,kind:'primary'},expectedVehicleRevision:1},'principal-test');
+ assert.equal(m.database.get('vehicleEvents/event-principal-test').kind,'primary');
+ assert.equal(vehicleSituation({...m.database.get('vehicles/TEST001'),id:'TEST001'},m.store.state().events,'2026-11-11').current.length,0);
+ await m.store.saveEvent('TEST001',{type:'return',id:'event-principal-test',expectedVehicleRevision:2,expectedEventRevision:1,returnDate:'2026-11-13'},'end-principal');
+ assert.equal(m.database.get('vehicleEvents/event-principal-test').open,false);assert.equal(m.database.has('vehicleEvents/log-end-principal'),true);
+});

@@ -1,5 +1,5 @@
 export const CATEGORIES={amu:'Ambulance AMU / 112',transport:'Ambulance 105',tpmr:'TPMR',fit:'FIT',liaison:'Véhicule de liaison',other:'Autre'};
-export const EVENT_KINDS={loan:'Prêt / emprunt',garage:'Garage / réparation',maintenance:'Entretien / contrôle',unavailable:'Autre indisponibilité'};
+export const EVENT_KINDS={primary:'Véhicule principal',loan:'Prêt / emprunt',garage:'Garage / réparation',maintenance:'Entretien / contrôle',unavailable:'Autre indisponibilité'};
 export const TYRES={winter:'Hiver',summer:'Été',allseason:'4 saisons',unknown:'À préciser'};
 export const FIELD_LABELS={plate:'Plaque',category:'Catégorie',usage:'Utilisation / affectation',location:'Localisation habituelle',model:'Marque / modèle',km:'Kilométrage',inspectionDate:'Prochain contrôle technique',fuelDate:'Validité carte carburant',tyres:'Pneus',tyresDate:'Dernier changement de pneus',tablet:'Tablette',radio:'ISSI / radio',notes:'Remarques'};
 const clean=(value,max,label)=>{const text=String(value??'').trim();if(text.length>max)throw new Error(`${label} : ${max} caractères maximum.`);return text;};
@@ -33,10 +33,11 @@ export function deadline(value,today=todayISO()) {
 }
 export function vehicleSituation(vehicle,events,today=todayISO()) {
  const open=events.filter(event=>event.vehicleId===vehicle.id&&event.open===true&&!event.cancelled);
- const current=open.filter(event=>event.startDate<=today),priority={garage:4,unavailable:3,maintenance:2,loan:1};
+ const assignment=open.filter(event=>event.kind==='primary'&&event.startDate<=today).sort((a,b)=>b.startDate.localeCompare(a.startDate))[0];
+ const current=open.filter(event=>event.kind!=='primary'&&event.startDate<=today),priority={garage:4,unavailable:3,maintenance:2,loan:1};
  current.sort((a,b)=>(priority[b.kind]||0)-(priority[a.kind]||0)||a.startDate.localeCompare(b.startDate));
- const main=current[0],late=current.some(event=>event.endDate&&event.endDate<today);
- return {key:main?.kind||'available',label:main?EVENT_KINDS[main.kind]||'Indisponible':'Disponible',location:main?.location||vehicle.location||'À préciser',current,late,
+ const main=current[0],late=current.some(event=>event.endDate&&event.endDate<today)||Boolean(assignment?.endDate&&assignment.endDate<today);
+ return {key:main?.kind||(assignment?'primary':'available'),label:main?EVENT_KINDS[main.kind]||'Indisponible':assignment?'Véhicule principal':'Disponible',location:main?.location||assignment?.location||vehicle.location||'À préciser',current,assignment,late,
   upcoming:open.filter(event=>event.startDate>today).sort((a,b)=>a.startDate.localeCompare(b.startDate))};
 }
 export function overlaps(a,b){return a.startDate<=(b.endDate||'9999-12-31')&&b.startDate<=(a.endDate||'9999-12-31');}

@@ -1,4 +1,4 @@
-import {planVehicle,planEvent} from './fleet-core.js?v=1';
+import {planVehicle,planEvent} from './fleet-core.js?v=2';
 export function createFleetStore(sdk,db,auth){
  const {collection,doc,onSnapshot,query,where,runTransaction,serverTimestamp}=sdk;
  let vehicles=new Map(),events=new Map(),vehicleReady=false,eventReady=false,vehicleOnline=false,eventOnline=false,generation=0;
