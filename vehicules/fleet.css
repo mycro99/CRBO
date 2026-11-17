@@ -5,8 +5,8 @@
 .fleet-plate-text{display:block;min-width:0;overflow-wrap:anywhere}
 .fleet-plate-label{display:block;font-size:.78rem;letter-spacing:0;font-weight:700;margin-top:3px}
 .fleet-plate-mark{display:grid;place-items:center;flex:none;width:25px;height:25px;border:1px solid currentColor;border-radius:5px;font-size:1.18rem;line-height:1}
-.fleet-plate.available,.fleet-plate.primary,.fleet-state.available,.fleet-state.primary{background:#005331;color:#fff;border-color:#005331}
-.fleet-plate.loan,.fleet-state.loan{background:#ffb347;color:#251300;border-color:#914500}
-.fleet-plate.garage,.fleet-plate.unavailable,.fleet-plate.maintenance,.fleet-state.garage,.fleet-state.unavailable,.fleet-state.maintenance{background:#8f1630;color:#fff;border-color:#8f1630}
+.fleet-plate.available,.fleet-plate.primary,.fleet-state.available,.fleet-state.primary{background:#58d500;color:#152000;border-color:#256600}
+.fleet-plate.loan,.fleet-state.loan{background:#ff9100;color:#261400;border-color:#914500}
+.fleet-plate.garage,.fleet-plate.unavailable,.fleet-plate.maintenance,.fleet-state.garage,.fleet-state.unavailable,.fleet-state.maintenance{background:#e21b20;color:#fff;border-color:#a90f14}
 .fleet-plate.archived{border-color:#637282}
 .fleet-plate:focus-visible{outline:3px solid #1744a2;outline-offset:3px}
