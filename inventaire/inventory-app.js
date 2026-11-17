@@ -1,4 +1,4 @@
-import {setupInventoryStatistics} from './inventory-statistics-ui.js?v=1';
+import {setupInventoryStatistics} from './inventory-statistics-ui.js?v=2';
 import { SEED_CATEGORIES, SEED_ARTICLES } from './catalog-seed.js';
 import { CATALOG_IMAGES } from './catalog-images.js';
 import { articleFrom, categoryLabel, fold, normalizeBarcode, barcodeMatches, quantity, validDate, todayISO, expiryState, formatDate, safeImage, isArticlePhoto, expiryAlert, unallocatedStock, expiries, primaryExpiry, orderNeed, matchesFilter, splitBarcodes } from './inventory-core.js?v=annual-1';

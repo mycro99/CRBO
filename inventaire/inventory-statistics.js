@@ -60,12 +60,12 @@ export function annualStatistics(prepared, articles, year, currentYear=Number(hi
     if(!rows.has(id)) {
       const a=catalog.get(id);
       rows.set(id,{id,name:a?.name || h.articleName || h.articleId || 'Article non identifié',category:a?.category || h.articleCategory || 'À classer',unit:a?.unit || h.articleUnit || 'unité',active:a?.active !== false,deleted:a?.deleted===true,
-        ordered:0,cancelled:0,received:0,entries:0,consumed:0,correctionAdded:0,correctionRemoved:0,operations:0,orderEvents:0,outputEvents:0,uncertainOrders:0,unclassified:0,legacyMoves:0,unitChanged:false});
+        ordered:0,cancelled:0,received:0,entries:0,consumed:0,correctionAdded:0,correctionRemoved:0,operations:0,orderEvents:0,outputEvents:0,uncertainOrders:0,uncertainCancellations:0,unclassified:0,legacyMoves:0,unitChanged:false});
     }
     const row=rows.get(id);
     return row;
   };
-  let operations=0,unknown=0,uncertainOrders=0,legacyMoves=0;
+  let operations=0,unknown=0,uncertainOrders=0,uncertainOrderChanges=0,legacyMoves=0;
   const dates=[];
   // Includes older years to reconstruct the balance BEFORE a selected year's first order.
   for(const item of prepared.dated) {
@@ -82,7 +82,11 @@ export function annualStatistics(prepared, articles, year, currentYear=Number(hi
         row.orderEvents++;
         if(next!==null && old!==null && old!==undefined) {
           row.ordered+=Math.max(0,next-old); row.cancelled+=Math.max(0,old-next);
-        } else if(next!==0) { row.uncertainOrders++; uncertainOrders++; }
+        } else {
+          // Without the old balance even a closure can hide a cancellation.
+          uncertainOrderChanges++; row.uncertainCancellations++;
+          if(next!==0) { row.uncertainOrders++; uncertainOrders++; }
+        }
       }
       if(next!==null) balances.set(row.id,{quantity:next,time:item.time}); else balances.delete(row.id);
     } else if(type==='receive') {
@@ -122,7 +126,7 @@ export function annualStatistics(prepared, articles, year, currentYear=Number(hi
   if(year===currentYear) for(const article of articles) if(article.active!==false && !article.deleted && !result.some(r=>r.id===article.id)) {
     result.push({...rowFor({articleId:article.id}),operations:0});
   }
-  return {year,rows:result,operations,unknown,uncertainOrders,legacyMoves,undated:prepared.undated,
+  return {year,rows:result,operations,unknown,uncertainOrders,uncertainOrderChanges,legacyMoves,undated:prepared.undated,
     firstDay:dates[0] || '',lastDay:dates.at(-1) || '',historyFirstDay:prepared.firstDay,historyLastDay:prepared.lastDay,
     monthly:Array.from({length:12},(_,month)=>({month:month+1,operations:prepared.dated.filter(d=>d.year===year && Number(d.day.slice(5,7))===month+1).length}))};
 }

@@ -93,3 +93,10 @@ test('an error, aborted load or account change cannot return plausible partial a
  const aborted=historyStore(),controller=new AbortController();controller.abort();await assert.rejects(aborted.store.statisticsHistory({signal:controller.signal}),{name:'AbortError'});assert.equal(aborted.calls(),0);
  const signedOut=historyStore();signedOut.auth.currentUser=null;await assert.rejects(signedOut.store.statisticsHistory(),/Connexion staff/);
 });
+
+
+test('an old closure without a prior balance flags unknown cancelled quantity instead of inventing zero',()=>{
+ const result=compute([event('1','order',{action:'Commande clôturée'})]);
+ const row=result.rows.find(r=>r.id==='a');
+ assert.equal(row.ordered,0);assert.equal(row.uncertainOrders,0);assert.equal(row.uncertainCancellations,1);assert.equal(result.uncertainOrderChanges,1);
+});

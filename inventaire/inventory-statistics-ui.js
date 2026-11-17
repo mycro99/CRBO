@@ -1,4 +1,4 @@
-import {annualStatistics,prepareStatisticsHistory,rankArticles} from './inventory-statistics.js?v=1';
+import {annualStatistics,prepareStatisticsHistory,rankArticles} from './inventory-statistics.js?v=2';
 import {categoryLabel,fold,todayISO,formatDate} from './inventory-core.js?v=annual-1';
 import {escapeHTML as e,friendlyError,csvText,downloadFile} from './inventory-ui.js';
 
@@ -59,7 +59,7 @@ export function setupInventoryStatistics({getStore,getArticles,getUser}) {
   for(const id of ['statistics-category','statistics-unit','statistics-search','statistics-metric','statistics-direction'])$(id).addEventListener(id==='statistics-search'?'input':'change',()=>render());
   function amount(row,metric) {
     const value=integer.format(row[metric]);
-    return metric==='ordered' && row.uncertainOrders ? `${value} + ?` : value;
+    return (metric==='ordered' && row.uncertainOrders || metric==='cancelled' && row.uncertainCancellations) ? `${value} + ?` : value;
   }
   function ranking(title,metric,direction) {
     const rows=rankArticles(visible,metric,direction);
@@ -87,7 +87,7 @@ export function setupInventoryStatistics({getStore,getArticles,getUser}) {
     if(model.firstDay)warnings.push(`Données datées de l’année : du ${formatDate(model.firstDay)} au ${formatDate(model.lastDay)}.`);
     else warnings.push(`Aucune opération datée conservée pour ${model.year}.`);
     warnings.push('Calcul sur l’historique conservé uniquement : les périodes supprimées auparavant ne peuvent pas être reconstituées.');
-    if(model.uncertainOrders)warnings.push(`${integer.format(model.uncertainOrders)} ancien(s) solde(s) de commande sans quantité précédente : « + ? » indique une quantité commandée non reconstituable.`);
+    if(model.uncertainOrderChanges)warnings.push(`${integer.format(model.uncertainOrderChanges)} ancien(s) solde(s) de commande sans quantité précédente : « + ? » indique une quantité commandée ou annulée non reconstituable.`);
     if(model.unknown)warnings.push(`${integer.format(model.unknown)} opération(s) de l’année sans quantité exploitable : exclues des totaux.`);
     if(model.undated)warnings.push(`${integer.format(model.undated)} entrée(s) sans date valide : exclues des statistiques annuelles.`);
     if(model.rows.some(row=>row.unitChanged))warnings.push('Unité modifiée : les articles marqués † sont exclus des classements, car leurs anciennes quantités ne sont pas directement comparables.');
@@ -98,7 +98,7 @@ export function setupInventoryStatistics({getStore,getArticles,getUser}) {
   }
   $('statistics-csv').addEventListener('click',()=>{
     if(!model || !getUser())return;
-    const rows=[['Année','Article','Catégorie','Unité actuelle','Commandé calculable','Commandes non reconstituables','Annulé','Reçu','Autres entrées','Sorties','Corrections +','Corrections -','Opérations','Unité modifiée'],...visible.map(row=>[model.year,row.name,categoryLabel(row.category),row.unit,row.ordered,row.uncertainOrders,row.cancelled,row.received,row.entries,row.consumed,row.correctionAdded,row.correctionRemoved,row.operations,row.unitChanged?'oui':'non'])];
+    const rows=[['Année','Article','Catégorie','Unité actuelle','Commandé calculable','Commandes non reconstituables','Annulé calculable','Annulations non reconstituables','Reçu','Autres entrées','Sorties','Corrections +','Corrections -','Opérations','Unité modifiée'],...visible.map(row=>[model.year,row.name,categoryLabel(row.category),row.unit,row.ordered,row.uncertainOrders,row.cancelled,row.uncertainCancellations,row.received,row.entries,row.consumed,row.correctionAdded,row.correctionRemoved,row.operations,row.unitChanged?'oui':'non'])];
     downloadFile(`statistiques-inventaire-${model.year}.csv`,csvText(rows),'text/csv;charset=utf-8');
   });
   return {setUser};
