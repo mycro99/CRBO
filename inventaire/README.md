@@ -22,6 +22,26 @@
 - **Scanner** : fonctionnement inchangé ; utilise le même catalogue. Un code inconnu permet d’ouvrir une nouvelle fiche préremplie. Plusieurs correspondances affichent un choix explicite. Le doublon `4031815901417` reste inchangé ; la correction demandée pour les tensiomètres est décrite ci-dessous.
 - **Exporter** : PDF/CSV des articles correspondant aux filtres, PDF de réapprovisionnement, ou JSON de tous les documents `inventory` et du catalogue de référence (y compris archives). Le JSON n’inclut pas la collection `history` et n’est pas une sauvegarde intégrale de Firebase.
 
+## Statistiques annuelles
+
+Le bouton **Statistiques annuelles**, à côté d’Historique, ouvre un tableau privé calculé à la demande avec la session staff existante. Il propose l’année, la catégorie, l’unité, la recherche, les classements les plus/moins commandés et sortis (hors zéro), le détail par article et l’export CSV du tableau filtré. Les articles archivés ou supprimés restent dans les résultats s’ils ont des opérations pour l’année. Les articles actifs sans aucune opération sont présentés séparément pour l’année actuelle ; une absence de trace n’est pas une preuve d’absence d’utilisation.
+
+Le module lit **toute la collection history encore conservée**, par pages de 500 documents, et pas uniquement les 100 lignes du bouton Historique. Les lectures sont faites sur le serveur avec la connexion Firebase existante. Une lecture refusée, annulée ou interrompue par un changement de compte ne produit jamais de statistiques partielles présentées comme complètes. Les données restent en mémoire de la page, jusqu’à actualisation ou changement de compte ; elles ne sont ni publiées dans GitHub ni envoyées à un autre service. Chaque ouverture réutilise la lecture de la session ; **Actualiser l’historique** recharge les entrées. Le nombre d’entrées et la date du chargement sont affichés. Aucune écriture Firestore n’est déclenchée par la consultation.
+
+Règles de calcul :
+
+- **Commandé** : additions au restant à recevoir, et non somme des soldes successifs. Les annulations sont séparées. Une réception n’est pas une commande supplémentaire.
+- **Reçu** : quantités réceptionnées via la commande, ou ajoutées par réception d’un lot. Une simple répartition en lots n’ajoute rien.
+- **Autres entrées** : mouvements positifs de stock hors réception identifiée ; ils ne sont pas assimilés à des achats.
+- **Sorties** : mouvements négatifs, indicateur de consommation de la réserve. Le motif libre ne permet pas de distinguer sûrement un usage, une perte ou une péremption ; ce n’est pas un décompte d’utilisation patient.
+- **Corrections** : comptages et saisies directes du total, séparés des entrées/sorties. Les stocks initiaux, modifications de fiche et changements de péremption ne sont pas des consommations.
+
+Les années suivent **Europe/Brussels**, y compris pour les mouvements proches de minuit le 31 décembre. Les commandes anciennes sont reconstituées chronologiquement, en tenant compte des réceptions et des soldes des années précédentes. Si la première commande conservée n’indique pas le solde précédent, sa quantité ajoutée est inconnue : elle est signalée par **+ ?**, sans inventer de zéro initial. Les événements sans date, quantités non interprétables et historiques purgés par une ancienne version ne sont pas reconstitués. Un premier chargement peut donc présenter une année partielle ; le périmètre et les incertitudes sont visibles.
+
+Pour les **futures validations uniquement**, l’historique ajoute l’unité/catégorie de l’article et les quantités de commande avant/après modification. Le patch des stocks et des commandes garde sa logique existante ; aucun ancien document n’est réécrit ni recalculé en base. Les unités actuelles sont utilisées lorsque l’ancien historique n’en indique pas. Les unités différentes ne sont pas additionnées dans un grand total ; le filtre unité facilite les comparaisons. Les articles dont une unité historique diffère sont signalés et exclus des classements. Aucun prix ni montant financier n’est déduit de ces mouvements.
+
+Les règles Firestore, les données de stock et l’authentification restent celles du projet existant. Si aucun compte staff n’est connecté dans l’environnement de vérification, les chiffres réels ne sont pas accessibles à l’assistant ; l’application calcule les premiers résultats directement à l’ouverture avec le compte de l’utilisateur, sans données de démonstration.
+
 ## Conservation des données
 
 Le catalogue historique (268 articles) est extrait du commit `bc4669a1c457606374be29995901c4d5244ab764` et conservé dans `catalog-seed.js`. Les identifiants, noms, catégories, images, seuils et codes-barres de cette base de référence sont inchangés. **Ce fichier ne contient aucun stock initial ni aucune date de péremption.**

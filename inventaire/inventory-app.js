@@ -1,6 +1,7 @@
+import {setupInventoryStatistics} from './inventory-statistics-ui.js?v=1';
 import { SEED_CATEGORIES, SEED_ARTICLES } from './catalog-seed.js';
 import { CATALOG_IMAGES } from './catalog-images.js';
-import { articleFrom, categoryLabel, fold, normalizeBarcode, barcodeMatches, quantity, validDate, todayISO, expiryState, formatDate, safeImage, isArticlePhoto, expiryAlert, unallocatedStock, expiries, primaryExpiry, orderNeed, matchesFilter, splitBarcodes } from './inventory-core.js?v=6';
+import { articleFrom, categoryLabel, fold, normalizeBarcode, barcodeMatches, quantity, validDate, todayISO, expiryState, formatDate, safeImage, isArticlePhoto, expiryAlert, unallocatedStock, expiries, primaryExpiry, orderNeed, matchesFilter, splitBarcodes } from './inventory-core.js?v=annual-1';
 import { prepareArticlePhoto } from './article-photo.js?v=6';
 import { escapeHTML as e, uid, friendlyError, downloadFile, csvText, pdfTable } from './inventory-ui.js';
 import { BarcodeCamera, cameraError } from './barcode-camera.js?v=5';
@@ -16,6 +17,7 @@ const stockDraft=new Map();
 const camera=new BarcodeCamera('capture-reader');
 const current=id=>state.articles.find(a=>a.id===id);
 const materialRequests=setupMaterialRequests({articles:()=>state.articles,notify:(message,error)=>notify(message,error)});
+const statistics=setupInventoryStatistics({getStore:()=>store,getUser:()=>authUser,getArticles:()=>{const articles=new Map(state.articles.map(a=>[a.id,a]));for(const [id,raw] of state.records)if(!articles.has(id))articles.set(id,articleFrom(id,raw));return [...articles.values()];}});
 const writable=()=>Boolean(authUser && state.ready && state.online && navigator.onLine && !busy);
 const actionButton=(action,id,label,extra='')=>`<button type="button" class="button small" data-action="${action}" data-id="${e(id)}" ${extra}>${e(label)}</button>`;
 const badge=expiry=>`<span class="status ${e(expiry.key)}">${e(expiry.label)}</span>`;
@@ -343,10 +345,10 @@ function initialNavigation(){
 
 async function start(){
   try{
-    const client=await import('./firebase-client.js?v=6');store=client.store;
+    const client=await import('./firebase-client.js?v=annual-1');store=client.store;
     store.subscribe(next=>{state=next;render();initialNavigation();});
     client.watchAuth(user=>{
-      unsubscribeInventory();unsubscribeLast();stockDraft.clear();authUser=user;materialRequests.setUser(user);
+      unsubscribeInventory();unsubscribeLast();stockDraft.clear();authUser=user;materialRequests.setUser(user);statistics.setUser(user);
       if(!user){state={articles:[],records:new Map(),ready:false,online:false};countDraft.clear();$('inventory-body').innerHTML='<tr><td colspan="5" class="empty">Connectez-vous depuis l’accueil avec votre compte staff.</td></tr>';$('global-error').innerHTML='Session staff requise. <a href="../index.html">Revenir à l’accueil pour se connecter</a>';$('global-error').hidden=false;$('user-label').textContent='';if($('editor').open)$('editor').close();updateStatus();return;}
       $('user-label').textContent=user.email||'Session staff';$('global-error').hidden=true;countDraft.clear();countMode=false;restoreCountDraft();updateStatus();
       unsubscribeInventory=store.start(showError);

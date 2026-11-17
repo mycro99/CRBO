@@ -224,6 +224,10 @@ export function planOperation(id, raw, operation) {
     const amount = quantity(operation.quantity);
     if (article.orderQuantity !== operation.expectedQuantity) throw new Error('La commande a changé. Rouvrez-la.');
     patch.inventoryOrder = {quantity:amount};
+    extra.oldOrderQuantity = article.orderQuantity;
+    extra.newOrderQuantity = amount;
+    extra.orderedQuantity = Math.max(0,amount-article.orderQuantity);
+    extra.cancelledOrderQuantity = Math.max(0,article.orderQuantity-amount);
     action = amount ? `Commande en cours : ${amount}` : 'Commande clôturée';
   } else if (type === 'receive') {
     requireStock();
@@ -232,9 +236,11 @@ export function planOperation(id, raw, operation) {
     if (!amount || amount > article.orderQuantity) throw new Error('Quantité supérieure à la commande restante ou nulle.');
     patch.inventoryOrder = {quantity:article.orderQuantity - amount};
     setStock(article.stock + amount);
+    extra.oldOrderQuantity = article.orderQuantity;
+    extra.newOrderQuantity = patch.inventoryOrder.quantity;
     extra.receivedQuantity = amount;
     extra.remainingOrderQuantity = patch.inventoryOrder.quantity;
     action = `Commande reçue : +${amount} · ${patch.inventoryOrder.quantity ? 'Reste à recevoir : '+patch.inventoryOrder.quantity : 'Commande clôturée'}`;
   } else throw new Error('Opération non reconnue.');
-  return {patch, history:{type,articleId:id,articleName:patch.catalog?.name || article.name,action,...extra}};
+  return {patch, history:{type,articleId:id,articleUnit:patch.catalog?.unit || article.unit,articleCategory:patch.catalog?.category || article.category,articleName:patch.catalog?.name || article.name,action,...extra}};
 }

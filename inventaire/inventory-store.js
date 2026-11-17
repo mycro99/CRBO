@@ -1,8 +1,8 @@
-import { mergeInventory, planOperation } from './inventory-core.js?v=6';
+import { mergeInventory, planOperation } from './inventory-core.js?v=annual-1';
 
 // The SDK is injected so data-safety tests run without contacting production.
 export function createInventoryStore(sdk, db, auth) {
-  const {collection,doc,onSnapshot,query,orderBy,limit,getDocs,runTransaction,serverTimestamp} = sdk;
+  const {collection,doc,onSnapshot,query,orderBy,limit,getDocs,getDocsFromServer,documentId,startAfter,runTransaction,serverTimestamp} = sdk;
   let records = new Map(), ready = false, online = false;
   const listeners = new Set();
   function state() { return {articles:mergeInventory(records),records:new Map(records),ready,online}; }
@@ -57,6 +57,27 @@ export function createInventoryStore(sdk, db, auth) {
     history:async () => {
       const snapshot = await getDocs(query(collection(db,'history'),orderBy('date','desc'),limit(100)));
       return snapshot.docs.map(d => ({id:d.id,...d.data()}));
+    },
+    statisticsHistory:async ({onProgress=()=>{},signal}={}) => {
+      const owner=auth.currentUser?.uid;
+      if(!owner) throw new Error('Connexion staff requise pour lire les statistiques.');
+      const entries=[];
+      let cursor;
+      const assertSession=()=>{
+        if(signal?.aborted) throw Object.assign(new Error('Chargement annulé.'),{name:'AbortError'});
+        if(auth.currentUser?.uid!==owner) throw new Error('La session a changé. Rouvrez les statistiques après connexion.');
+      };
+      while(true) {
+        assertSession();
+        const constraints=[orderBy(documentId()),limit(500)];
+        if(cursor) constraints.push(startAfter(cursor));
+        const snapshot=await getDocsFromServer(query(collection(db,'history'),...constraints));
+        assertSession();
+        entries.push(...snapshot.docs.map(d=>({...d.data(),id:d.id})));
+        onProgress(entries.length);
+        if(snapshot.docs.length<500) return entries;
+        cursor=snapshot.docs.at(-1);
+      }
     },
     lastUpdate:(next,error) => onSnapshot(doc(db,'metadata','lastUpdate'),snap => next(snap.exists()?snap.data():null),error)
   };
