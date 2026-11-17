@@ -5,7 +5,7 @@ import { articleFrom, categoryLabel, fold, normalizeBarcode, barcodeMatches, qua
 import { prepareArticlePhoto } from './article-photo.js?v=6';
 import { escapeHTML as e, uid, friendlyError, downloadFile, csvText, pdfTable } from './inventory-ui.js';
 import { BarcodeCamera, cameraError } from './barcode-camera.js?v=5';
-import { setupMaterialRequests } from './material-requests.js?v=4';
+import { setupMaterialRequests } from './material-requests.js?v=dialog-1';
 
 const $=id=>document.getElementById(id);
 let store, state={articles:[],records:new Map(),ready:false,online:false}, busy=0, authUser=null;

@@ -15,6 +15,8 @@ export function setupMaterialRequests({articles,notify}){
     const token=await as.getIdToken();const response=await fetch(method==='GET'?REQUEST_API+'?deaYear='+historyYear:REQUEST_API,{method,headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(15000)});const data=await response.json();if(!response.ok){const error=new Error(data.error||'Demandes indisponibles.');error.status=response.status;throw error;}return data;
   }
   function render(){
+    document.getElementById('requests-close').disabled=busy;
+    document.getElementById('dea-requests-close').disabled=busy;
     const materialRows=rows.filter(r=>r.request_type!=='dea'),deaRows=rows.filter(r=>r.request_type==='dea');
     deaButton.hidden=!authorized;deaButton.disabled=!authorized;deaButton.textContent=`DEA (${deaRows.length})`;
     pendingTab.textContent=`À traiter (${deaRows.length})`;historyTab.textContent=`Traitées (${historyYears.reduce((sum,row)=>sum+row.count,0)})`;
@@ -37,11 +39,12 @@ export function setupMaterialRequests({articles,notify}){
     finally{if(g===generation){loading=false;render();}}
   }
   button.addEventListener('click',()=>{if(!isOwner(user))return;render();dialog.showModal();refresh();});
-  document.getElementById('requests-close').addEventListener('click',()=>dialog.close());
+  document.getElementById('requests-close').addEventListener('click',()=>{if(!busy)dialog.close();});
   document.getElementById('requests-refresh').addEventListener('click',refresh);
   document.getElementById('dea-requests-refresh').addEventListener('click',refresh);
   deaButton.addEventListener('click',()=>{if(!isOwner(user))return;render();deaDialog.showModal();refresh();});
-  document.getElementById('dea-requests-close').addEventListener('click',()=>deaDialog.close());
+  document.getElementById('dea-requests-close').addEventListener('click',()=>{if(!busy)deaDialog.close();});
+  for(const modal of [dialog,deaDialog])modal.addEventListener('cancel',event=>{if(busy)event.preventDefault();});
   pendingTab.addEventListener('click',()=>{deaTab='pending';render();});
   historyTab.addEventListener('click',()=>{deaTab='history';render();});
   yearSelect.addEventListener('change',()=>{if(loading||busy)return;historyYear=Number(yearSelect.value);history=[];render();refresh();});
