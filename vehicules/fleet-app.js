@@ -13,6 +13,12 @@ function updateStatus(){
  $('fleet-submit').disabled=!writable();document.querySelectorAll('[data-fleet-close]').forEach(b=>b.disabled=saving);
 }
 function deadlineBadge(date){const due=deadline(date);return `<span class="status ${due.key}">${e(due.label)}</span>${date&&due.key!=='ok'?`<small>${e(displayDate(date))}</small>`:''}`;}
+const statusMarks={available:'✓',primary:'✓',loan:'↗',garage:'×',unavailable:'×',maintenance:'×',archived:'–'};
+function plateBadge(v,s){
+ const key=v.active===false?'archived':s.key;
+ const label=v.active===false?'Archivé':s.label;
+ return `<button type="button" class="fleet-plate ${e(key)}" data-action="detail" data-vehicle="${e(v.id)}"><span class="fleet-plate-mark" aria-hidden="true">${e(statusMarks[key]||'–')}</span><span class="fleet-plate-text">${e(v.plate)}<span class="fleet-plate-label">${e(label)}</span></span></button>`;
+}
 function situationBadge(s){return `<span class="fleet-state ${e(s.key)}">${e(s.label)}</span>${s.assignment&&s.current.length?'<small>Véhicule principal</small>':''}${s.late?'<small class="fleet-late">Fin prévue dépassée — suivi à clôturer</small>':''}${s.current.length>1?`<small>${s.current.length} suivis simultanés</small>`:''}`;}
 function render(){
  updateStatus();if(!state.ready)return;
@@ -28,7 +34,7 @@ function render(){
  $('fleet-count').textContent=`${rows.length} véhicule(s) affiché(s)`;
  $('fleet-body').innerHTML=rows.length?rows.map(v=>{
   const s=situation(v),next=s.upcoming[0],ongoing=s.current[0]||s.assignment;
-  return `<tr><th scope="row"><button type="button" class="fleet-plate ${e(v.active===false?'archived':s.key)}" data-action="detail" data-vehicle="${e(v.id)}">${e(v.plate)}</button><small>${e(v.usage||CATEGORIES[v.category]||v.category)}</small><small>${e(v.model||'Modèle à renseigner')}${v.active===false?' · Archivé':''}</small></th><td data-label="Situation / lieu">${situationBadge(s)}<small>${e(s.location)}</small>${ongoing?`<small>${e(ongoing.reason)}</small><small>Du ${e(displayDate(ongoing.startDate))} au ${e(ongoing.endDate?displayDate(ongoing.endDate):'fin à confirmer')}</small>`:''}${next?`<small class="fleet-next">Prévu le ${e(displayDate(next.startDate))} : ${e(EVENT_KINDS[next.kind])}</small>`:''}</td><td data-label="Kilométrage">${v.km===null||v.km===undefined?'—':number.format(v.km)+' km'}</td><td data-label="Contrôle technique">${deadlineBadge(v.inspectionDate)}</td><td data-label="Carte carburant">${deadlineBadge(v.fuelDate)}</td><td data-label="Pneus / équipements"><strong>${e(TYRES[v.tyres]||'À préciser')}</strong>${v.tyresDate?`<small>Changement : ${e(displayDate(v.tyresDate))}</small>`:''}<small>Tablette : ${e(v.tablet||'—')}</small><small>Radio / ISSI : ${e(v.radio||'—')}</small></td><td><div class="fleet-actions">${act('detail',v.id,'Fiche / historique')}${v.active!==false?act('event',v.id,'Prêt / indisponibilité',true):''}</div></td></tr>`;
+  return `<tr><th scope="row">${plateBadge(v,s)}<small>${e(v.usage||CATEGORIES[v.category]||v.category)}</small><small>${e(v.model||'Modèle à renseigner')}${v.active===false?' · Archivé':''}</small></th><td data-label="Situation / lieu">${situationBadge(s)}<small>${e(s.location)}</small>${ongoing?`<small>${e(ongoing.reason)}</small><small>Du ${e(displayDate(ongoing.startDate))} au ${e(ongoing.endDate?displayDate(ongoing.endDate):'fin à confirmer')}</small>`:''}${next?`<small class="fleet-next">Prévu le ${e(displayDate(next.startDate))} : ${e(EVENT_KINDS[next.kind])}</small>`:''}</td><td data-label="Kilométrage">${v.km===null||v.km===undefined?'—':number.format(v.km)+' km'}</td><td data-label="Contrôle technique">${deadlineBadge(v.inspectionDate)}</td><td data-label="Carte carburant">${deadlineBadge(v.fuelDate)}</td><td data-label="Pneus / équipements"><strong>${e(TYRES[v.tyres]||'À préciser')}</strong>${v.tyresDate?`<small>Changement : ${e(displayDate(v.tyresDate))}</small>`:''}<small>Tablette : ${e(v.tablet||'—')}</small><small>Radio / ISSI : ${e(v.radio||'—')}</small></td><td><div class="fleet-actions">${act('detail',v.id,'Fiche / historique')}${v.active!==false?act('event',v.id,'Prêt / indisponibilité',true):''}</div></td></tr>`;
  }).join(''):'<tr><td colspan="7" class="empty">Aucun véhicule dans cette sélection. Utilisez « Ajouter un véhicule » pour créer une fiche.</td></tr>';
  if(detailId&&$('fleet-detail').open)renderDetail();
 }
