@@ -16,7 +16,7 @@ Depuis une fiche, **Ajouter un prêt / suivi** demande un type, un motif, le lie
 
 Le type **Véhicule principal** enregistre une affectation datée, sans rendre le véhicule indisponible. Elle reste visible pendant un prêt ou une panne, qui restent prioritaires dans le statut. Un suivi futur apparaît comme prévu. À partir du début, un prêt, garage, entretien ou autre indisponibilité rend le véhicule indisponible. **Une fin prévue passée ne clôture jamais automatiquement un suivi** : l’état reste ouvert avec l’alerte de retour/fin dépassée. Utiliser **Confirmer le retour / la fin** avec une date réelle entre le début et aujourd’hui. La date prévue est conservée en parallèle. Le véhicule retrouve sa localisation habituelle quand aucun suivi courant ne subsiste.
 
-**Annuler ce suivi** exige un motif et conserve la trace. Il n’y a aucune suppression physique de suivi ou de véhicule. L’archivage du véhicule est réversible et bloqué tant qu’un suivi reste ouvert, y compris un suivi futur. Les véhicules archivés se consultent via le filtre.
+**Annuler ce suivi** exige un motif et conserve la trace. Il n’y a aucune suppression physique de suivi ou de véhicule. Le bouton **Retirer du parc**, dans le tableau et sur la fiche, archive le véhicule. Ce retrait est réversible via **Remettre dans le parc** et bloqué tant qu’un suivi reste ouvert, y compris un suivi futur. Les véhicules archivés se consultent via le filtre.
 
 La fiche affiche les suivis ouverts, prévus, terminés et annulés, ainsi qu’un journal des créations, modifications, clôtures et archivages avec auteur et date. Le CSV exporte les fiches du parc (y compris archives), pas les historiques de suivi. L’historique d’un véhicule n’est chargé que lors de l’ouverture de sa fiche.
 
