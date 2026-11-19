@@ -1,6 +1,6 @@
 import {planVehicle,planEvent} from './fleet-core.js?v=2';
 export function createFleetStore(sdk,db,auth){
- const {collection,doc,onSnapshot,query,where,runTransaction,serverTimestamp}=sdk;
+ const {collection,doc,onSnapshot,query,where,limit,getDocsFromServer,runTransaction,serverTimestamp}=sdk;
  let vehicles=new Map(),events=new Map(),vehicleReady=false,eventReady=false,vehicleOnline=false,eventOnline=false,generation=0;
  const listeners=new Set();
  const state=()=>({vehicles:[...vehicles].map(([id,data])=>({...data,id})),events:[...events].map(([id,data])=>({...data,id})),ready:vehicleReady&&eventReady,online:vehicleOnline&&eventOnline});
@@ -60,6 +60,27 @@ export function createFleetStore(sdk,db,auth){
    transaction.set(auditRef,{vehicleId:id,kind:'record',open:false,action:active?'Véhicule réactivé':'Véhicule archivé',createdAt:stamp,by:user});return {id};
   });
  }
- return {state,start,subscribe(listener){listeners.add(listener);return ()=>listeners.delete(listener);},saveVehicle,saveEvent,setActive,
+ async function deleteArchivedVehicle(id,revision,createdAt){
+  assertWrite();
+  const owner=auth.currentUser.uid,ref=doc(db,'vehicles',id);
+  return runTransaction(db,async transaction=>{
+   assertWrite(owner);
+   const snapshot=await transaction.get(ref),raw=snapshot.exists()?snapshot.data():null;
+   checkRevision(raw,revision);
+   if(!raw.createdAt||!createdAt||raw.createdAt.seconds!==createdAt.seconds||
+      raw.createdAt.nanoseconds!==createdAt.nanoseconds)throw new Error('La fiche a changé. Rouvrez-la avant de confirmer.');
+   if(raw.active!==false)throw new Error('Seul un véhicule archivé peut être supprimé définitivement.');
+   if(raw.openEventCount!==0)throw new Error('Clôturez les suivis ouverts avant la suppression.');
+   // Every application write to the history also updates the vehicle read above.
+   // A concurrent change therefore forces a retry instead of leaving orphan history.
+   const history=await getDocsFromServer(query(collection(db,'vehicleEvents'),where('vehicleId','==',id),limit(500)));
+   if(history.docs.length>=500)throw new Error('Historique trop volumineux pour une suppression en une fois. Aucune donnée supprimée.');
+   if(history.docs.some(entry=>entry.data().open===true))throw new Error('Clôturez les suivis ouverts avant la suppression.');
+   assertWrite(owner);
+   for(const entry of history.docs)transaction.delete(doc(db,'vehicleEvents',entry.id));
+   transaction.delete(ref);
+  });
+ }
+ return {state,start,subscribe(listener){listeners.add(listener);return ()=>listeners.delete(listener);},saveVehicle,saveEvent,setActive,deleteArchivedVehicle,
   watchHistory:(id,next,error)=>onSnapshot(query(collection(db,'vehicleEvents'),where('vehicleId','==',id)),{includeMetadataChanges:true},snapshot=>next(snapshot.docs.map(d=>({...d.data(),id:d.id})),snapshot.metadata),error)};
 }

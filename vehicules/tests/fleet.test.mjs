@@ -66,14 +66,14 @@ function mockStore(){
  let subscriptions=[],writes=0,denied=false,cached=false,chain=Promise.resolve();
  const clone=value=>structuredClone(value);
  const snapshot=target=>({metadata:{fromCache:cached},docs:[...database].filter(([path,data])=>path.startsWith(target.path+'/')&&(!target.where||data[target.where.field]===target.where.value)).map(([path,data])=>({id:path.split('/').at(-1),data:()=>clone(data)}))});
- const sdk={collection:(_,path)=>({path}),doc:(_,collection,id)=>collection+'/'+id,query:(target,condition)=>({...target,where:condition}),where:(field,op,value)=>({field,value}),serverTimestamp:()=>({seconds:1794916800}),
+ const sdk={collection:(_,path)=>({path}),doc:(_,collection,id)=>collection+'/'+id,query:(target,condition,max)=>({...target,where:condition,max}),limit:n=>n,getDocsFromServer:async target=>({docs:snapshot(target).docs.slice(0,target.max)}),where:(field,op,value)=>({field,value}),serverTimestamp:()=>({seconds:1794916800}),
   onSnapshot:(target,options,next,error)=>{const subscription={target,next,error};subscriptions.push(subscription);next(snapshot(target));return ()=>{subscriptions=subscriptions.filter(s=>s!==subscription);};},
   runTransaction:async(_,callback)=>{
    const run=chain.then(async()=>{
     const pending=[];
-    const result=await callback({get:async path=>({exists:()=>database.has(path),data:()=>clone(database.get(path))}),set:(path,data,options)=>pending.push({path,data,options})});
+    const result=await callback({get:async path=>({exists:()=>database.has(path),data:()=>clone(database.get(path))}),set:(path,data,options)=>pending.push({path,data,options}),delete:path=>pending.push({path,remove:true})});
     if(denied)throw Object.assign(new Error('denied'),{code:'permission-denied'});
-    for(const p of pending){writes++;database.set(p.path,p.options?.merge?{...database.get(p.path),...clone(p.data)}:clone(p.data));}
+    for(const p of pending){writes++;if(p.remove){database.delete(p.path);continue;}database.set(p.path,p.options?.merge?{...database.get(p.path),...clone(p.data)}:clone(p.data));}
     for(const s of [...subscriptions])s.next(snapshot(s.target));return result;
    });chain=run.catch(()=>{});return run;
   }};
@@ -172,4 +172,30 @@ test('principal assignment is persisted and closed through the same atomic event
  assert.equal(vehicleSituation({...m.database.get('vehicles/TEST001'),id:'TEST001'},m.store.state().events,'2026-11-11').current.length,0);
  await m.store.saveEvent('TEST001',{type:'return',id:'event-principal-test',expectedVehicleRevision:2,expectedEventRevision:1,returnDate:'2026-11-13'},'end-principal');
  assert.equal(m.database.get('vehicleEvents/event-principal-test').open,false);assert.equal(m.database.has('vehicleEvents/log-end-principal'),true);
+});
+
+
+test('permanent deletion removes only the archived vehicle and all of its history',async()=>{
+ const m=mockStore();await create(m);
+ const createdAt=m.database.get('vehicles/TEST001').createdAt;
+ await assert.rejects(m.store.deleteArchivedVehicle('TEST001',1,createdAt),/archivé/);
+ await m.store.setActive('TEST001',false,1,'archive-test');
+ m.database.set('vehicleEvents/other-history',{vehicleId:'OTHER001',open:false});
+ await assert.rejects(m.store.deleteArchivedVehicle('TEST001',1,createdAt),/changé/);
+ await assert.rejects(m.store.deleteArchivedVehicle('TEST001',2,{seconds:0}),/changé/);
+ await m.store.deleteArchivedVehicle('TEST001',2,createdAt);
+ assert.deepEqual([...m.database.keys()].sort(),['inventory/untouched','vehicleEvents/other-history']);
+});
+
+test('large histories and permission errors never cause partial deletion',async()=>{
+ const m=mockStore();await create(m);await m.store.setActive('TEST001',false,1,'archive-test');
+ const createdAt=m.database.get('vehicles/TEST001').createdAt,writes=m.writes();
+ for(let i=0;i<498;i++)m.database.set('vehicleEvents/import-'+i,{vehicleId:'TEST001',open:false});
+ await assert.rejects(m.store.deleteArchivedVehicle('TEST001',2,createdAt),/volumineux/);
+ assert.equal(m.writes(),writes);
+ m.database.delete('vehicleEvents/import-0');m.deny();
+ await assert.rejects(m.store.deleteArchivedVehicle('TEST001',2,createdAt),{code:'permission-denied'});
+ assert.equal(m.writes(),writes);
+ assert.ok(m.database.has('vehicles/TEST001'));
+ assert.ok(m.database.has('vehicleEvents/log-archive-test'));
 });
